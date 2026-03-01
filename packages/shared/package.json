@@ -1,0 +1,25 @@
+{
+  "name": "@repo/shared",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.16.0",
+    "dotenv": "^17.3.1"
+  },
+  "dependencies": {
+    "@effect/sql-pg": "^0.50.3",
+    "better-auth": "^1.4.18",
+    "drizzle-kit": "^1.0.0-beta.15-859cf75",
+    "drizzle-orm": "^1.0.0-beta.15-859cf75",
+    "effect": "^3.19.19",
+    "pg": "^8.18.0",
+    "zod": "^4.3.6"
+  }
+}

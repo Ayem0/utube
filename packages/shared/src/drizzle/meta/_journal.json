@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1770974801523,
+      "tag": "0000_wise_songbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1771157124406,
+      "tag": "0001_tiny_firebrand",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771157162021,
+      "tag": "0002_demonic_mulholland_black",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+<div className="relative w-72 h-80 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden font-sans">
+    <input type="checkbox" id="submenu-toggle" className="peer hidden" />
+
+    <div className="flex w-[200%] transition-transform duration-300 ease-in-out peer-checked:-translate-x-1/2">
+        <div className="w-1/2 flex flex-col p-2">
+            <h2 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Main Menu
+            </h2>
+            <a href="#" className="px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-md">
+                Dashboard
+            </a>
+
+            <label htmlFor="submenu-toggle"
+                className="flex items-center justify-between px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-md cursor-pointer">
+                <span>Settings</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </label>
+
+            <a href="#" className="px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-md">
+                Profile
+            </a>
+        </div>
+
+        <div className="w-1/2 flex flex-col p-2 bg-gray-50">
+            <label htmlFor="submenu-toggle"
+                className="flex items-center gap-2 px-4 py-2 mb-2 text-blue-600 font-medium cursor-pointer hover:underline">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Back to Main
+            </label>
+
+            <h2 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Settings
+            </h2>
+            <a href="#" className="px-4 py-3 text-gray-700 hover:bg-white hover:shadow-sm rounded-md">
+                Account Privacy
+            </a>
+            <a href="#" className="px-4 py-3 text-gray-700 hover:bg-white hover:shadow-sm rounded-md">
+                Notifications
+            </a>
+            <a href="#" className="px-4 py-3 text-gray-700 hover:bg-white hover:shadow-sm rounded-md">
+                Security
+            </a>
+        </div>
+    </div>
+</div>
