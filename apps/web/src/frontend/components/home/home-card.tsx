@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
-import { Link } from '@tanstack/react-router';
+import { Link, useRouter } from '@tanstack/react-router';
 import { Image } from '@unpic/react';
 import { FastAverageColor } from 'fast-average-color';
 import { EllipsisVertical } from 'lucide-react';
@@ -20,6 +20,7 @@ import type { FakeVideo } from './home-feed';
 export function HomeCard({ video }: { video: FakeVideo }) {
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   useEffect(() => {
     const img = imgRef.current;
     const container = containerRef.current;
@@ -41,9 +42,12 @@ export function HomeCard({ video }: { video: FakeVideo }) {
   }, []);
   return (
     <div
-      className="flex flex-col rounded-lg hover:bg-(--fac-color)/20 transition-colors duration-200"
+      className="flex flex-col rounded-lg hover:bg-(--fac-color)/20 transition-colors duration-200 cursor-pointer"
       ref={containerRef}
       key={video.id}
+      onClick={() =>
+        router.navigate({ to: '/watch/$id', params: { id: video.id } })
+      }
     >
       <Link to="/watch/$id" params={{ id: video.id }}>
         <div className="relative p-2">
@@ -58,61 +62,61 @@ export function HomeCard({ video }: { video: FakeVideo }) {
             <span>{formatDuration(video.duration)}</span>
           </div>
         </div>
+      </Link>
 
-        <div className="flex flex-row w-full">
-          <div className="flex flex-row px-2 pb-2 w-full">
-            <Link to="/channel">
-              <Image
-                src={video.channel.img}
-                layout="fixed"
-                className="rounded-full pt-1"
-                width={32}
-                height={32}
-              />
-            </Link>
+      <div className="flex flex-row w-full">
+        <div className="flex flex-row px-2 pb-2 w-full">
+          <Link to="/channel" onClick={(e) => e.stopPropagation()}>
+            <Image
+              src={video.channel.img}
+              layout="fixed"
+              className="rounded-full pt-1"
+              width={32}
+              height={32}
+            />
+          </Link>
 
-            <div className="flex flex-col pl-2">
-              <span className="align-text-top">{video.title}</span>
-              <div className="text-muted-foreground">
-                <Link to="/channel">
-                  <span className="text-muted-foreground hover:text-white">
-                    {video.channel.name}
-                  </span>
-                </Link>
-              </div>
-              <div className="text-muted-foreground gap-2 flex">
-                <span className="text-nowrap">
-                  {formatViews(video.views)} views
+          <div className="flex flex-col pl-2">
+            <span className="align-text-top">{video.title}</span>
+            <div className="text-muted-foreground">
+              <Link to="/channel" onClick={(e) => e.stopPropagation()}>
+                <span className="text-muted-foreground hover:text-white">
+                  {video.channel.name}
                 </span>
-                <span>.</span>
-                <span>{formatUploadedAt(video.uploadedAt)}</span>
-              </div>
+              </Link>
+            </div>
+            <div className="text-muted-foreground gap-2 flex">
+              <span className="text-nowrap">
+                {formatViews(video.views)} views
+              </span>
+              <span>.</span>
+              <span>{formatUploadedAt(video.uploadedAt)}</span>
             </div>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              onClick={(e) => e.preventDefault()}
-              render={
-                <Button variant="ghost" className="rounded-full size-9" />
-              }
-            >
-              <EllipsisVertical className="size-7" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Billing</DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </DropdownMenuGroup>
-              <DropdownMenuGroup>
-                <DropdownMenuItem>Team</DropdownMenuItem>
-                <DropdownMenuItem>Subscription</DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
-      </Link>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            render={<Button variant="ghost" className="rounded-full size-9" />}
+          >
+            <EllipsisVertical className="size-7" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuItem>Profile</DropdownMenuItem>
+              <DropdownMenuItem>Billing</DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </DropdownMenuGroup>
+            <DropdownMenuGroup>
+              <DropdownMenuItem>Team</DropdownMenuItem>
+              <DropdownMenuItem>Subscription</DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 }

@@ -8,116 +8,116 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root.tsx';
-import { Route as AppChannelIndexRouteImport } from './routes/_app/channel/index';
-import { Route as AppIndexRouteImport } from './routes/_app/index';
-import { Route as AppResultsIndexRouteImport } from './routes/_app/results/index';
-import { Route as AppRouteRouteImport } from './routes/_app/route.tsx';
-import { Route as AppTestIndexRouteImport } from './routes/_app/test/index';
-import { Route as AppWatchIdIndexRouteImport } from './routes/_app/watch/$id.index.tsx';
-import { Route as AuthLoginRouteImport } from './routes/_auth/login.tsx';
-import { Route as AuthSignupRouteImport } from './routes/_auth/signup.tsx';
-import { Route as AuthenticatedStudioIndexRouteImport } from './routes/_authenticated/studio/index';
-import { Route as AuthenticatedStudioUploadRouteImport } from './routes/_authenticated/studio/upload.tsx';
-import { Route as ApiSplatRouteImport } from './routes/api/$.ts';
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as AppRouteRouteImport } from './routes/_app/route'
+import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as ApiSplatRouteImport } from './routes/api/$'
+import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
+import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as AuthenticatedStudioIndexRouteImport } from './routes/_authenticated/studio/index'
+import { Route as AppTestIndexRouteImport } from './routes/_app/test/index'
+import { Route as AppResultsIndexRouteImport } from './routes/_app/results/index'
+import { Route as AppChannelIndexRouteImport } from './routes/_app/channel/index'
+import { Route as AuthenticatedStudioUploadRouteImport } from './routes/_authenticated/studio/upload'
+import { Route as AppWatchIdIndexRouteImport } from './routes/_app/watch/$id.index'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRouteRoute,
-} as any);
+} as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
   id: '/api/$',
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
   id: '/_auth/signup',
   path: '/signup',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/_auth/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AuthenticatedStudioIndexRoute =
   AuthenticatedStudioIndexRouteImport.update({
     id: '/_authenticated/studio/',
     path: '/studio/',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const AppTestIndexRoute = AppTestIndexRouteImport.update({
   id: '/test/',
   path: '/test/',
   getParentRoute: () => AppRouteRoute,
-} as any);
+} as any)
 const AppResultsIndexRoute = AppResultsIndexRouteImport.update({
   id: '/results/',
   path: '/results/',
   getParentRoute: () => AppRouteRoute,
-} as any);
+} as any)
 const AppChannelIndexRoute = AppChannelIndexRouteImport.update({
   id: '/channel/',
   path: '/channel/',
   getParentRoute: () => AppRouteRoute,
-} as any);
+} as any)
 const AuthenticatedStudioUploadRoute =
   AuthenticatedStudioUploadRouteImport.update({
     id: '/_authenticated/studio/upload',
     path: '/studio/upload',
     getParentRoute: () => rootRouteImport,
-  } as any);
+  } as any)
 const AppWatchIdIndexRoute = AppWatchIdIndexRouteImport.update({
   id: '/watch/$id/',
   path: '/watch/$id/',
   getParentRoute: () => AppRouteRoute,
-} as any);
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AppIndexRoute;
-  '/login': typeof AuthLoginRoute;
-  '/signup': typeof AuthSignupRoute;
-  '/api/$': typeof ApiSplatRoute;
-  '/studio/upload': typeof AuthenticatedStudioUploadRoute;
-  '/channel/': typeof AppChannelIndexRoute;
-  '/results/': typeof AppResultsIndexRoute;
-  '/test/': typeof AppTestIndexRoute;
-  '/studio/': typeof AuthenticatedStudioIndexRoute;
-  '/watch/$id/': typeof AppWatchIdIndexRoute;
+  '/': typeof AppIndexRoute
+  '/login': typeof AuthLoginRoute
+  '/signup': typeof AuthSignupRoute
+  '/api/$': typeof ApiSplatRoute
+  '/studio/upload': typeof AuthenticatedStudioUploadRoute
+  '/channel/': typeof AppChannelIndexRoute
+  '/results/': typeof AppResultsIndexRoute
+  '/test/': typeof AppTestIndexRoute
+  '/studio/': typeof AuthenticatedStudioIndexRoute
+  '/watch/$id/': typeof AppWatchIdIndexRoute
 }
 export interface FileRoutesByTo {
-  '/login': typeof AuthLoginRoute;
-  '/signup': typeof AuthSignupRoute;
-  '/api/$': typeof ApiSplatRoute;
-  '/': typeof AppIndexRoute;
-  '/studio/upload': typeof AuthenticatedStudioUploadRoute;
-  '/channel': typeof AppChannelIndexRoute;
-  '/results': typeof AppResultsIndexRoute;
-  '/test': typeof AppTestIndexRoute;
-  '/studio': typeof AuthenticatedStudioIndexRoute;
-  '/watch/$id': typeof AppWatchIdIndexRoute;
+  '/login': typeof AuthLoginRoute
+  '/signup': typeof AuthSignupRoute
+  '/api/$': typeof ApiSplatRoute
+  '/': typeof AppIndexRoute
+  '/studio/upload': typeof AuthenticatedStudioUploadRoute
+  '/channel': typeof AppChannelIndexRoute
+  '/results': typeof AppResultsIndexRoute
+  '/test': typeof AppTestIndexRoute
+  '/studio': typeof AuthenticatedStudioIndexRoute
+  '/watch/$id': typeof AppWatchIdIndexRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  '/_app': typeof AppRouteRouteWithChildren;
-  '/_auth/login': typeof AuthLoginRoute;
-  '/_auth/signup': typeof AuthSignupRoute;
-  '/api/$': typeof ApiSplatRoute;
-  '/_app/': typeof AppIndexRoute;
-  '/_authenticated/studio/upload': typeof AuthenticatedStudioUploadRoute;
-  '/_app/channel/': typeof AppChannelIndexRoute;
-  '/_app/results/': typeof AppResultsIndexRoute;
-  '/_app/test/': typeof AppTestIndexRoute;
-  '/_authenticated/studio/': typeof AuthenticatedStudioIndexRoute;
-  '/_app/watch/$id/': typeof AppWatchIdIndexRoute;
+  __root__: typeof rootRouteImport
+  '/_app': typeof AppRouteRouteWithChildren
+  '/_auth/login': typeof AuthLoginRoute
+  '/_auth/signup': typeof AuthSignupRoute
+  '/api/$': typeof ApiSplatRoute
+  '/_app/': typeof AppIndexRoute
+  '/_authenticated/studio/upload': typeof AuthenticatedStudioUploadRoute
+  '/_app/channel/': typeof AppChannelIndexRoute
+  '/_app/results/': typeof AppResultsIndexRoute
+  '/_app/test/': typeof AppTestIndexRoute
+  '/_authenticated/studio/': typeof AuthenticatedStudioIndexRoute
+  '/_app/watch/$id/': typeof AppWatchIdIndexRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/login'
@@ -128,8 +128,8 @@ export interface FileRouteTypes {
     | '/results/'
     | '/test/'
     | '/studio/'
-    | '/watch/$id/';
-  fileRoutesByTo: FileRoutesByTo;
+    | '/watch/$id/'
+  fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/signup'
@@ -140,7 +140,7 @@ export interface FileRouteTypes {
     | '/results'
     | '/test'
     | '/studio'
-    | '/watch/$id';
+    | '/watch/$id'
   id:
     | '__root__'
     | '/_app'
@@ -153,106 +153,106 @@ export interface FileRouteTypes {
     | '/_app/results/'
     | '/_app/test/'
     | '/_authenticated/studio/'
-    | '/_app/watch/$id/';
-  fileRoutesById: FileRoutesById;
+    | '/_app/watch/$id/'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AppRouteRoute: typeof AppRouteRouteWithChildren;
-  AuthLoginRoute: typeof AuthLoginRoute;
-  AuthSignupRoute: typeof AuthSignupRoute;
-  ApiSplatRoute: typeof ApiSplatRoute;
-  AuthenticatedStudioUploadRoute: typeof AuthenticatedStudioUploadRoute;
-  AuthenticatedStudioIndexRoute: typeof AuthenticatedStudioIndexRoute;
+  AppRouteRoute: typeof AppRouteRouteWithChildren
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthSignupRoute: typeof AuthSignupRoute
+  ApiSplatRoute: typeof ApiSplatRoute
+  AuthenticatedStudioUploadRoute: typeof AuthenticatedStudioUploadRoute
+  AuthenticatedStudioIndexRoute: typeof AuthenticatedStudioIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/_app': {
-      id: '/_app';
-      path: '';
-      fullPath: '/';
-      preLoaderRoute: typeof AppRouteRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/': {
-      id: '/_app/';
-      path: '/';
-      fullPath: '/';
-      preLoaderRoute: typeof AppIndexRouteImport;
-      parentRoute: typeof AppRouteRoute;
-    };
+      id: '/_app/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/api/$': {
-      id: '/api/$';
-      path: '/api/$';
-      fullPath: '/api/$';
-      preLoaderRoute: typeof ApiSplatRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/api/$'
+      path: '/api/$'
+      fullPath: '/api/$'
+      preLoaderRoute: typeof ApiSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_auth/signup': {
-      id: '/_auth/signup';
-      path: '/signup';
-      fullPath: '/signup';
-      preLoaderRoute: typeof AuthSignupRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/_auth/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof AuthSignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_auth/login': {
-      id: '/_auth/login';
-      path: '/login';
-      fullPath: '/login';
-      preLoaderRoute: typeof AuthLoginRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/_auth/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/studio/': {
-      id: '/_authenticated/studio/';
-      path: '/studio';
-      fullPath: '/studio/';
-      preLoaderRoute: typeof AuthenticatedStudioIndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/_authenticated/studio/'
+      path: '/studio'
+      fullPath: '/studio/'
+      preLoaderRoute: typeof AuthenticatedStudioIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/test/': {
-      id: '/_app/test/';
-      path: '/test';
-      fullPath: '/test/';
-      preLoaderRoute: typeof AppTestIndexRouteImport;
-      parentRoute: typeof AppRouteRoute;
-    };
+      id: '/_app/test/'
+      path: '/test'
+      fullPath: '/test/'
+      preLoaderRoute: typeof AppTestIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/results/': {
-      id: '/_app/results/';
-      path: '/results';
-      fullPath: '/results/';
-      preLoaderRoute: typeof AppResultsIndexRouteImport;
-      parentRoute: typeof AppRouteRoute;
-    };
+      id: '/_app/results/'
+      path: '/results'
+      fullPath: '/results/'
+      preLoaderRoute: typeof AppResultsIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/channel/': {
-      id: '/_app/channel/';
-      path: '/channel';
-      fullPath: '/channel/';
-      preLoaderRoute: typeof AppChannelIndexRouteImport;
-      parentRoute: typeof AppRouteRoute;
-    };
+      id: '/_app/channel/'
+      path: '/channel'
+      fullPath: '/channel/'
+      preLoaderRoute: typeof AppChannelIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_authenticated/studio/upload': {
-      id: '/_authenticated/studio/upload';
-      path: '/studio/upload';
-      fullPath: '/studio/upload';
-      preLoaderRoute: typeof AuthenticatedStudioUploadRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/_authenticated/studio/upload'
+      path: '/studio/upload'
+      fullPath: '/studio/upload'
+      preLoaderRoute: typeof AuthenticatedStudioUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/watch/$id/': {
-      id: '/_app/watch/$id/';
-      path: '/watch/$id';
-      fullPath: '/watch/$id/';
-      preLoaderRoute: typeof AppWatchIdIndexRouteImport;
-      parentRoute: typeof AppRouteRoute;
-    };
+      id: '/_app/watch/$id/'
+      path: '/watch/$id'
+      fullPath: '/watch/$id/'
+      preLoaderRoute: typeof AppWatchIdIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
   }
 }
 
 interface AppRouteRouteChildren {
-  AppIndexRoute: typeof AppIndexRoute;
-  AppChannelIndexRoute: typeof AppChannelIndexRoute;
-  AppResultsIndexRoute: typeof AppResultsIndexRoute;
-  AppTestIndexRoute: typeof AppTestIndexRoute;
-  AppWatchIdIndexRoute: typeof AppWatchIdIndexRoute;
+  AppIndexRoute: typeof AppIndexRoute
+  AppChannelIndexRoute: typeof AppChannelIndexRoute
+  AppResultsIndexRoute: typeof AppResultsIndexRoute
+  AppTestIndexRoute: typeof AppTestIndexRoute
+  AppWatchIdIndexRoute: typeof AppWatchIdIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
@@ -261,11 +261,11 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppResultsIndexRoute: AppResultsIndexRoute,
   AppTestIndexRoute: AppTestIndexRoute,
   AppWatchIdIndexRoute: AppWatchIdIndexRoute,
-};
+}
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
   AppRouteRouteChildren,
-);
+)
 
 const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
@@ -274,16 +274,16 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSplatRoute: ApiSplatRoute,
   AuthenticatedStudioUploadRoute: AuthenticatedStudioUploadRoute,
   AuthenticatedStudioIndexRoute: AuthenticatedStudioIndexRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
-import type { createStart } from '@tanstack/react-start';
-import type { getRouter } from './router.tsx';
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
 declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true;
-    router: Awaited<ReturnType<typeof getRouter>>;
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
   }
 }

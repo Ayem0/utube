@@ -6,18 +6,18 @@ import { createIsomorphicFn } from '@tanstack/react-start';
 export const Route = createFileRoute('/api/$')({
   server: {
     handlers: {
-      GET: ({ request }) => api.fetch(request),
-      POST: ({ request }) => api.fetch(request),
-      PUT: ({ request }) => api.fetch(request),
-      DELETE: ({ request }) => api.fetch(request),
-      PATCH: ({ request }) => api.fetch(request),
-      OPTIONS: ({ request }) => api.fetch(request),
-      HEAD: ({ request }) => api.fetch(request),
-      ANY: ({ request }) => api.fetch(request),
+      GET: async ({ request }) => await api.fetch(request),
+      POST: async ({ request }) => await api.fetch(request),
+      PUT: async ({ request }) => await api.fetch(request),
+      DELETE: async ({ request }) => await api.fetch(request),
+      PATCH: async ({ request }) => await api.fetch(request),
+      OPTIONS: async ({ request }) => await api.fetch(request),
+      HEAD: async ({ request }) => await api.fetch(request),
+      ANY: async ({ request }) => await api.fetch(request),
     },
   },
 });
 
 export const getApi = createIsomorphicFn()
   .server(() => treaty(api).api)
-  .client(() => treaty<typeof api>('http://127.0.0.1:8787').api);
+  .client(() => treaty<typeof api>('http://localhost:3000').api);

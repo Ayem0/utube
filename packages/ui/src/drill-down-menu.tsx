@@ -293,14 +293,16 @@ function DrillDownMenuContent({
   side = "bottom",
   sideOffset = 4,
   className,
+  container,
   ...props
 }: MenuPrimitive.Popup.Props &
   Pick<
     MenuPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset"
-  >) {
+  > &
+  Pick<MenuPrimitive.Portal.Props, "container">) {
   return (
-    <MenuPrimitive.Portal>
+    <MenuPrimitive.Portal container={container}>
       <MenuPrimitive.Positioner
         className="isolate z-50 outline-none"
         align={align}
@@ -531,7 +533,7 @@ function DrillDownMenuSubContent({
   return isOpen ? (
     <div
       className={cn(
-        "bg-popover rounded-lg outline-none ring-1 ring-foreground/10 shadow-md absolute left-0 top-0 min-w-32 z-10 flex flex-col overflow-y-auto p-1 duration-200 animate-in fade-in-0 slide-in-from-right-10",
+        "bg-popover rounded-lg outline-none ring-1 ring-foreground/10 shadow-md absolute left-0 bottom-0 min-w-32 z-10 flex flex-col overflow-y-auto p-1 duration-200 animate-in fade-in-0 slide-in-from-right-10",
         className,
       )}
       {...props}

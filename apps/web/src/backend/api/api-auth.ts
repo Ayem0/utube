@@ -1,11 +1,8 @@
-import { auth } from '@repo/shared/auth/auth';
+import { auth } from '@repo/shared/auth/index';
 import Elysia from 'elysia';
-import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker';
 
 const authPlugin = new Elysia({
   name: 'auth',
-  adapter: CloudflareAdapter,
-  aot: false,
 })
   .mount(auth.handler)
   .macro({
@@ -14,7 +11,9 @@ const authPlugin = new Elysia({
         const session = await auth.api.getSession({
           headers,
         });
-        if (!session) return status(401);
+        if (!session) {
+          return status(401);
+        }
         return {
           user: session.user,
           session: session.session,
@@ -22,5 +21,4 @@ const authPlugin = new Elysia({
       },
     },
   });
-
 export { authPlugin };

@@ -20,7 +20,7 @@ export function HomeFeed({ videos }: { videos: Array<FakeVideo> }) {
   return (
     <div className="w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
       {videos.map((video) => (
-        <HomeCard video={video} />
+        <HomeCard video={video} key={video.id} />
       ))}
     </div>
   );

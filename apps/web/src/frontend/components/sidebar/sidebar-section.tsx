@@ -5,11 +5,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@repo/ui/sidebar';
+import { cn } from '@repo/ui/utils';
 import { Link, useRouterState } from '@tanstack/react-router';
 import type { LucideIcon } from 'lucide-react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
-import { cn } from 'utils';
 
 interface SidebarItem {
   label: string;

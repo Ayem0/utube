@@ -33,12 +33,7 @@ export function VideoPlayer2({ src }: { src: string }) {
       muteButtonRef={muteButtonRef}
     >
       <VideoPlayerContainer videoContainerRef={videoContainerRef}>
-        <video
-          ref={videoRef}
-          src={src}
-          controls={false}
-          className="w-full h-full"
-        />
+        <video ref={videoRef} src={src} controls={false} />
         <VideoPlayerOverlay />
         <VideoPlayerControls
           sliderButtonRef={sliderButtonRef}
@@ -51,6 +46,7 @@ export function VideoPlayer2({ src }: { src: string }) {
           previewTimerRef={previewTimerRef}
           previewContainerRef={previewContainerRef}
           muteButtonRef={muteButtonRef}
+          videoContainerRef={videoContainerRef}
         />
       </VideoPlayerContainer>
     </VideoPlayerProvider2>

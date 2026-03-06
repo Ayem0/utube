@@ -20,7 +20,7 @@ interface VideoPlayerUIDesktopElements {
 export class VideoPlayerUIDesktop {
   public toggleFullscreen = () => {
     if (!this.elements) return;
-    if (document.fullscreenElement) {
+    if (document.fullscreenElement === this.elements.videoContainer) {
       document.exitFullscreen();
     } else {
       this.elements.videoContainer.requestFullscreen();
@@ -29,7 +29,8 @@ export class VideoPlayerUIDesktop {
 
   private videoPlayer: VideoPlayerController2 | null = null;
   private elements: VideoPlayerUIDesktopElements | null = null;
-  private resizeObserver: ResizeObserver | null = null;
+  private sliderObserver: ResizeObserver | null = null;
+  private containerObserver: ResizeObserver | null = null;
 
   private sliderWidth: number = 0;
   private invSliderWidth: number = 0;
@@ -70,7 +71,7 @@ export class VideoPlayerUIDesktop {
     this.sliderWidth = this.elements.sliderContainer.clientWidth;
     this.invSliderWidth = 1 / this.sliderWidth;
 
-    this.resizeObserver = new ResizeObserver((entries) => {
+    this.sliderObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         if (entry.target === this.elements?.sliderContainer) {
           this.sliderWidth = entry.contentRect.width;
@@ -85,7 +86,18 @@ export class VideoPlayerUIDesktop {
         }
       }
     });
-    this.resizeObserver.observe(this.elements.sliderContainer);
+    this.sliderObserver.observe(this.elements.sliderContainer);
+
+    this.containerObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === this.elements?.videoContainer) {
+          if (!this.videoPlayer?.video) return;
+          this.videoPlayer.video.style.height = `${this.elements.videoContainer.clientHeight}px`;
+          this.videoPlayer.video.style.width = `${this.elements.videoContainer.clientWidth}px`;
+        }
+      }
+    });
+    this.containerObserver.observe(this.elements.videoContainer);
 
     this.initListeners();
   };
@@ -130,7 +142,7 @@ export class VideoPlayerUIDesktop {
   };
 
   public destroy = () => {
-    if (!this.videoPlayer || !this.elements || !this.resizeObserver) return;
+    if (!this.videoPlayer || !this.elements) return;
     this.videoPlayer.off('volumeChange', this.updateVolumeState);
     // this.videoPlayer.off('playingStateChange', this.onPlayingStateChange);
     this.videoPlayer.off('timeChange', this.updateTimerContent);
@@ -141,6 +153,11 @@ export class VideoPlayerUIDesktop {
       'fullscreenchange',
       this.onFullscreenChange,
     );
+
+    this.containerObserver?.disconnect();
+    this.containerObserver = null;
+    this.sliderObserver?.disconnect();
+    this.sliderObserver = null;
   };
 
   /** Update timer content
@@ -186,6 +203,10 @@ export class VideoPlayerUIDesktop {
 
   private onFullscreenChange = () => {
     this.isFullscreen = document.fullscreenElement !== null;
+    if (!this.elements) return;
+    this.elements.videoContainer.dataset.fullscreen = this.isFullscreen
+      ? 'true'
+      : 'false';
     this.updateFullscreenButtonState();
   };
 

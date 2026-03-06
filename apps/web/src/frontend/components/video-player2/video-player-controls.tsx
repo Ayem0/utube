@@ -1,8 +1,8 @@
+import { RefObject } from 'react';
 import { VideoPlayerFullscreenButton } from './video-player-fullscreen-button';
 import { VideoPlayerPlayButton } from './video-player-play-button';
 import { VideoPlayerSettings } from './video-player-settings';
 import { VideoPlayerSlider } from './video-player-slider';
-import { VideoPlayerTest } from './video-player-test';
 import { VideoPlayerTimer } from './video-player-timer';
 import { VideoPlayerVolume } from './video-player-volume';
 
@@ -17,17 +17,19 @@ export function VideoPlayerControls({
   previewTimerRef,
   previewContainerRef,
   muteButtonRef,
+  videoContainerRef,
 }: {
-  sliderContainerRef: React.RefObject<HTMLDivElement | null>;
-  timerElRef: React.RefObject<HTMLSpanElement | null>;
-  durationElRef: React.RefObject<HTMLSpanElement | null>;
-  playButtonRef: React.RefObject<HTMLButtonElement | null>;
-  fullscreenButtonRef: React.RefObject<HTMLButtonElement | null>;
-  sliderFillRef: React.RefObject<HTMLDivElement | null>;
-  sliderButtonRef: React.RefObject<HTMLDivElement | null>;
-  previewTimerRef: React.RefObject<HTMLSpanElement | null>;
-  previewContainerRef: React.RefObject<HTMLDivElement | null>;
-  muteButtonRef: React.RefObject<HTMLButtonElement | null>;
+  sliderContainerRef: RefObject<HTMLDivElement | null>;
+  timerElRef: RefObject<HTMLSpanElement | null>;
+  durationElRef: RefObject<HTMLSpanElement | null>;
+  playButtonRef: RefObject<HTMLButtonElement | null>;
+  fullscreenButtonRef: RefObject<HTMLButtonElement | null>;
+  sliderFillRef: RefObject<HTMLDivElement | null>;
+  sliderButtonRef: RefObject<HTMLDivElement | null>;
+  previewTimerRef: RefObject<HTMLSpanElement | null>;
+  previewContainerRef: RefObject<HTMLDivElement | null>;
+  muteButtonRef: RefObject<HTMLButtonElement | null>;
+  videoContainerRef: RefObject<HTMLDivElement | null>;
 }) {
   return (
     <div
@@ -52,8 +54,7 @@ export function VideoPlayerControls({
             />
           </div>
           <div className="flex flex-row gap-2">
-            <VideoPlayerSettings />
-            <VideoPlayerTest />
+            <VideoPlayerSettings containerRef={videoContainerRef} />
             <VideoPlayerFullscreenButton
               fullscreenButtonRef={fullscreenButtonRef}
             />

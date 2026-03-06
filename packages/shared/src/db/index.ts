@@ -1,4 +1,5 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import * as schema from "./schema.ts";
+import { makeDrizzle } from "./factory";
 
-export const db = drizzle(process.env.DATABASE_URL!, { schema });
+export const db = makeDrizzle(process.env.DATABASE_URL!);
+
+export type DB = typeof db;

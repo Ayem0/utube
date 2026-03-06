@@ -1,5 +1,6 @@
 import { SignupForm } from '@/frontend/components/auth/signup-form';
 import { HomeLink } from '@/frontend/components/header/home-link';
+import { notAuthMiddleware } from '@/frontend/middleware/auth-middleware';
 import { createFileRoute } from '@tanstack/react-router';
 import z from 'zod';
 
@@ -10,6 +11,9 @@ const searchSchema = z.object({
 export const Route = createFileRoute('/_auth/signup')({
   component: RouteComponent,
   validateSearch: (search) => searchSchema.parse(search),
+  server: {
+    middleware: [notAuthMiddleware],
+  },
 });
 
 function RouteComponent() {

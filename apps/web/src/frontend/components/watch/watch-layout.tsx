@@ -1,3 +1,4 @@
+import { AspectRatio } from '@repo/ui/aspect-ratio';
 import { Skeleton } from '@repo/ui/skeleton';
 import { ClientOnly, Link } from '@tanstack/react-router';
 import { Image } from '@unpic/react';
@@ -8,7 +9,11 @@ export function WatchLayout({ video }: { video: FakeVideo }) {
   return (
     <div className="flex flex-col w-full">
       <ClientOnly
-        fallback={<Skeleton className="flex w-full h-[748px] max-h-[748px]" />}
+        fallback={
+          <AspectRatio ratio={16 / 9} className="w-full max-h-[748px]">
+            <Skeleton className="w-full h-full " />
+          </AspectRatio>
+        }
       >
         <VideoPlayer2 src={'/afriquedusud.mp4'} />
       </ClientOnly>

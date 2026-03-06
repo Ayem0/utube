@@ -21,6 +21,7 @@ export function UploadForm() {
       onSubmit: videoUploadSchema,
     },
     onSubmit: async ({ value }) => {
+      setError(null);
       try {
         const res = await getApi().video.post(value);
         if (res.status !== 201) {

@@ -1,5 +1,5 @@
-import { HeaderSearchInput } from './header-search-input';
+import { HeaderSearch } from './header-search';
 
 export function HeaderCenter() {
-  return <HeaderSearchInput />;
+  return <HeaderSearch />;
 }

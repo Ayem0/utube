@@ -19,7 +19,7 @@ export function AppSidebar({
     >
       {(isMobile || variant === 'over') && (
         <div className="py-2">
-          <HeaderStart />
+          <HeaderStart isSidebar />
         </div>
       )}
 

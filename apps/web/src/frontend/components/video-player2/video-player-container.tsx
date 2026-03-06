@@ -28,10 +28,13 @@ export function VideoPlayerContainer({
       onFocus={start}
       onBlur={UI.stopHoveringPlayer}
       onClick={start}
-      data-active
-      className="bg-black flex flex-1 w-full max-h-[748px] justify-center items-center relative data-[active=true]:**:data-controls:opacity-100 data-[active=false]:cursor-none data-[active=false]:**:data-controls:pointer-events-none"
+      data-active={false}
+      data-fullscreen={false}
+      className="bg-black flex w-full h-full data-[fullscreen=false]:max-h-[748px] max-h-full items-center justify-center relative data-[active=true]:**:data-controls:opacity-100 data-[active=false]:cursor-none data-[active=false]:**:data-controls:pointer-events-none group"
     >
-      {children}
+      <div className="w-full h-full group-data-[fullscreen=true]:aspect-auto aspect-video">
+        {children}
+      </div>
     </div>
   );
 }

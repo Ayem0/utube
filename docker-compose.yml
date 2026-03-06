@@ -2,6 +2,15 @@
 
 services:
 
+  redis:
+    image: redis
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis:/data
+
   db:
     image: postgres
     restart: always
@@ -33,6 +42,19 @@ services:
       - minio:/data/minio
     command: minio server /data/minio --console-address ":9001"
 
+  video-validation-worker:
+    build:
+      context: .
+      dockerfile: apps/video-validation-worker/Dockerfile
+    env_file:
+      - ./apps/video-validation-worker/.env
+    restart: always
+    depends_on:
+      - redis
+      - db
+      - minio
 volumes:
   minio:
+    driver: local
+  redis: 
     driver: local
