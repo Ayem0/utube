@@ -1,4 +1,5 @@
 import { FakeVideo, HomeFeed } from '@/frontend/components/home/home-feed';
+import { generateRandomNameFromEmail } from '@repo/shared/lib/utils/name-generator';
 import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_app/')({ component: App });
@@ -187,6 +188,10 @@ const videos: FakeVideo[] = [
 ];
 
 function App() {
+  console.log(
+    'generateRandomNameFromEmail',
+    generateRandomNameFromEmail('t@t.com'),
+  );
   return (
     <div className="flex flex-col w-full">
       <HomeFeed videos={videos} />

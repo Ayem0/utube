@@ -12,20 +12,22 @@ export function Layout({
   sidebarOpen: boolean;
 }) {
   const { location } = useRouterState();
-  const isVideo = location.pathname.startsWith('/watch');
+  const isOver =
+    location.pathname.startsWith('/watch') ||
+    location.pathname.startsWith('/settings');
 
   return (
     <SidebarProvider
-      isVideo={isVideo}
-      defaultOpen={sidebarOpen}
+      isOver={isOver}
+      defaultOpen={isOver ? false : sidebarOpen}
       className="flex-col"
     >
       <div className="flex flex-col">
         <Header />
         <div className="flex w-full">
           <AppSidebar
-            collapsible={isVideo ? 'offExamples' : 'icon'}
-            variant={isVideo ? 'over' : 'sidebar'}
+            collapsible={isOver ? 'offExamples' : 'icon'}
+            variant={isOver ? 'over' : 'sidebar'}
           />
           <SidebarInset>{children}</SidebarInset>
         </div>

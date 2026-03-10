@@ -11,16 +11,18 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
 import { Spinner } from '@repo/ui/spinner';
+import { useRouter } from '@tanstack/react-router';
 import type { User } from 'better-auth';
 import { LogOut, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 
 export function AuthUser({ user }: { user: User }) {
-  const { signOut } = authClient;
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const router = useRouter();
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    await signOut();
+    await authClient.signOut();
+    router.invalidate();
     setIsLoggingOut(false);
   };
   return (

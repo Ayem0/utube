@@ -1,3 +1,4 @@
+import { routeTree } from '@/frontend/routeTree.gen';
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -6,18 +7,21 @@ import {
   SidebarMenuItem,
 } from '@repo/ui/sidebar';
 import { cn } from '@repo/ui/utils';
-import { Link, useRouterState } from '@tanstack/react-router';
+import { Link, LinkProps, useRouterState } from '@tanstack/react-router';
 import type { LucideIcon } from 'lucide-react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 
-interface SidebarItem {
+type AppLink = LinkProps<typeof routeTree>;
+
+type SidebarItem = {
   label: string;
-  url: string;
-  icon: LucideIcon;
+  url: AppLink;
+  icon?: LucideIcon;
   iconClassName?: string;
   showWhenCollapsed?: boolean;
-}
+  notExactActive?: boolean;
+};
 
 export interface SidebarSectionProps {
   items: Array<SidebarItem>;
@@ -27,6 +31,7 @@ export interface SidebarSectionProps {
   label?: string;
   showWhenCollapsed?: boolean;
   classNames?: string;
+  labelClassName?: string;
 }
 export function SidebarSection({
   items,
@@ -34,6 +39,7 @@ export function SidebarSection({
   label,
   showWhenCollapsed = false,
   classNames,
+  labelClassName,
 }: SidebarSectionProps) {
   const router = useRouterState();
   const [expanded, setExpanded] = useState(false);
@@ -51,7 +57,12 @@ export function SidebarSection({
       )}
     >
       {label && (
-        <SidebarGroupLabel className="text-base h-8 pb-1 pl-3 text-sidebar-foreground">
+        <SidebarGroupLabel
+          className={cn(
+            'text-base h-8 pb-1 pl-3 text-sidebar-foreground',
+            labelClassName,
+          )}
+        >
           {label}
         </SidebarGroupLabel>
       )}
@@ -70,10 +81,14 @@ export function SidebarSection({
             <SidebarMenuButton
               tooltip={item.label}
               className="h-10"
-              isActive={router.location.pathname === item.url}
+              isActive={
+                item.notExactActive && item.url.to
+                  ? router.location.pathname.startsWith(item.url.to)
+                  : router.location.pathname === item.url.to
+              }
               render={
-                <Link to={item.url} className="[&>svg]:size-6 gap-6 px-3 py-2">
-                  <item.icon className={item.iconClassName} />
+                <Link {...item.url} className="[&>svg]:size-6 gap-6 px-3 py-2">
+                  {item.icon && <item.icon className={item.iconClassName} />}
                   <span>{item.label}</span>
                 </Link>
               }

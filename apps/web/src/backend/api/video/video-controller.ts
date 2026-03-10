@@ -1,10 +1,15 @@
 import { DBClientLive } from '@repo/shared/services/db/db-client';
-import { MediaValidator } from '@repo/shared/services/media/media-validator';
+import { FileSystemLive } from '@repo/shared/services/file-system/file-system';
+import { MediaValidatorLive } from '@repo/shared/services/media/media-validator';
+import { MediaValidatorConfigLive } from '@repo/shared/services/media/media-validator-config';
 import { QueueServiceLive } from '@repo/shared/services/queue/queue';
 import { S3ClientLive } from '@repo/shared/services/s3/s3-client';
-import { VideoPublisher } from '@repo/shared/services/video/video-publisher';
-import { VideoRepository } from '@repo/shared/services/video/video-repository';
-import { Effect } from 'effect';
+import {
+  VideoPublisher,
+  VideoPublisherLive,
+} from '@repo/shared/services/video/video-publisher';
+import { VideoReposistoryLive } from '@repo/shared/services/video/video-repository';
+import { Effect, Layer, ManagedRuntime } from 'effect';
 import Elysia, { fileType } from 'elysia';
 import { authPlugin } from '../api-auth';
 import type { VideoUploadSchema } from './video';
@@ -23,17 +28,22 @@ const program = (body: VideoUploadSchema, userId: string) =>
     return res;
   });
 
+const layer = VideoPublisherLive.pipe(
+  Layer.provide(MediaValidatorLive),
+  Layer.provide(MediaValidatorConfigLive),
+  Layer.provide(VideoReposistoryLive),
+  Layer.provide(DBClientLive),
+  Layer.provide(S3ClientLive),
+  Layer.provide(FileSystemLive),
+  Layer.provide(QueueServiceLive),
+);
+const runtime = ManagedRuntime.make(layer);
+
 const videoController = new Elysia().use(authPlugin).post(
   '/video',
   async ({ body, status, user }) => {
-    return await Effect.runPromise(
+    return await runtime.runPromise(
       program(body, user.id).pipe(
-        Effect.provide(VideoPublisher.Live),
-        Effect.provide(VideoRepository.Live),
-        Effect.provide(MediaValidator.Live),
-        Effect.provide(S3ClientLive),
-        Effect.provide(DBClientLive),
-        Effect.provide(QueueServiceLive),
         Effect.match({
           onSuccess: (res) => {
             return status(201, res);

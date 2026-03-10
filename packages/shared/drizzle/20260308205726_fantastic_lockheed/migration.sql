@@ -14,6 +14,15 @@ CREATE TABLE "account" (
 	"updated_at" timestamp NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "channel" (
+	"id" text PRIMARY KEY,
+	"user_id" text NOT NULL,
+	"name" text NOT NULL,
+	"thumbnail" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "session" (
 	"id" text PRIMARY KEY,
 	"expires_at" timestamp NOT NULL,
@@ -46,19 +55,22 @@ CREATE TABLE "verification" (
 --> statement-breakpoint
 CREATE TABLE "video" (
 	"id" text PRIMARY KEY,
-	"user_id" text NOT NULL,
+	"channel_id" text NOT NULL,
 	"title" text NOT NULL,
 	"description" text,
-	"url" text NOT NULL,
-	"thumbnail" text NOT NULL,
+	"temp_video_key" text NOT NULL,
+	"temp_thumbnail_key" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
+	"creation_status" smallint DEFAULT 1 NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE INDEX "account_userId_idx" ON "account" ("user_id");--> statement-breakpoint
+CREATE INDEX "channel_userId_idx" ON "channel" ("user_id");--> statement-breakpoint
 CREATE INDEX "session_userId_idx" ON "session" ("user_id");--> statement-breakpoint
 CREATE INDEX "verification_identifier_idx" ON "verification" ("identifier");--> statement-breakpoint
-CREATE INDEX "video_userId_idx" ON "video" ("user_id");--> statement-breakpoint
+CREATE INDEX "video_channelId_idx" ON "video" ("channel_id");--> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "channel" ADD CONSTRAINT "channel_user_id_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "user"("id");--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE;--> statement-breakpoint
-ALTER TABLE "video" ADD CONSTRAINT "video_user_id_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE;
+ALTER TABLE "video" ADD CONSTRAINT "video_channel_id_channel_id_fkey" FOREIGN KEY ("channel_id") REFERENCES "channel"("id");

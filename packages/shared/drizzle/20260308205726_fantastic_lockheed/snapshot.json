@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "cb1174be-2894-4ba1-b54e-b3376572f80f",
+  "id": "aba53c10-cf3e-4528-a143-310b4d447258",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -9,6 +9,12 @@
     {
       "isRlsEnabled": false,
       "name": "account",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "channel",
       "entityType": "tables",
       "schema": "public"
     },
@@ -204,6 +210,84 @@
       "entityType": "columns",
       "schema": "public",
       "table": "account"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "channel"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "channel"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "channel"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "thumbnail",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "channel"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "channel"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "channel"
     },
     {
       "type": "text",
@@ -499,7 +583,7 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "user_id",
+      "name": "channel_id",
       "entityType": "columns",
       "schema": "public",
       "table": "video"
@@ -538,7 +622,7 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "url",
+      "name": "temp_video_key",
       "entityType": "columns",
       "schema": "public",
       "table": "video"
@@ -551,7 +635,7 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "thumbnail",
+      "name": "temp_thumbnail_key",
       "entityType": "columns",
       "schema": "public",
       "table": "video"
@@ -565,6 +649,19 @@
       "generated": null,
       "identity": null,
       "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "video"
+    },
+    {
+      "type": "smallint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "1",
+      "generated": null,
+      "identity": null,
+      "name": "creation_status",
       "entityType": "columns",
       "schema": "public",
       "table": "video"
@@ -619,6 +716,27 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
+      "name": "channel_userId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "channel"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
       "name": "session_userId_idx",
       "entityType": "indexes",
       "schema": "public",
@@ -649,7 +767,7 @@
       "nameExplicit": true,
       "columns": [
         {
-          "value": "user_id",
+          "value": "channel_id",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,
@@ -661,7 +779,7 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
-      "name": "video_userId_idx",
+      "name": "video_channelId_idx",
       "entityType": "indexes",
       "schema": "public",
       "table": "video"
@@ -694,11 +812,11 @@
         "id"
       ],
       "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "name": "session_user_id_user_id_fkey",
+      "onDelete": "NO ACTION",
+      "name": "channel_user_id_user_id_fkey",
       "entityType": "fks",
       "schema": "public",
-      "table": "session"
+      "table": "channel"
     },
     {
       "nameExplicit": false,
@@ -712,7 +830,24 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "video_user_id_user_id_fkey",
+      "name": "session_user_id_user_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "session"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "channel_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "channel",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "video_channel_id_channel_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "video"
@@ -725,6 +860,16 @@
       "name": "account_pkey",
       "schema": "public",
       "table": "account",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "channel_pkey",
+      "schema": "public",
+      "table": "channel",
       "entityType": "pks"
     },
     {

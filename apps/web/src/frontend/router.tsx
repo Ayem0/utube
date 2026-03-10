@@ -1,7 +1,7 @@
+import * as TanstackQuery from '@/frontend/components/providers/query-provider';
 import { createRouter } from '@tanstack/react-router';
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query';
 import { routeTree } from './routeTree.gen';
-import * as TanstackQuery from '@/frontend/components/providers/query-provider';
 
 // Import the generated route tree
 
@@ -13,6 +13,7 @@ export const getRouter = () => {
     routeTree,
     context: {
       ...rqContext,
+      session: null,
     },
 
     defaultPreload: 'intent',

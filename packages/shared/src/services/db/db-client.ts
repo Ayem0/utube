@@ -5,7 +5,7 @@ import { makeDrizzle } from "../../db/factory";
 import { DBError } from "./db-errors";
 
 export interface DBClientService {
-  run: <T>(fn: (db: DB) => Promise<T>) => Effect.Effect<T, DBError, never>;
+  run: <T>(fn: (db: DB) => Promise<T>) => Effect.Effect<T, DBError>;
 }
 
 export class DBClient extends Context.Tag("DBClient")<
@@ -27,8 +27,7 @@ const makeLive = () =>
       run: <A>(f: (d: typeof db) => Promise<A>) =>
         Effect.tryPromise({
           try: () => f(db),
-          catch: (e) =>
-            new DBError({ message: typeof e === "string" ? e : "DBError" }),
+          catch: (e) => new DBError({ message: "DBError", cause: e }),
         }).pipe(Effect.retry({ times: 3 })),
     };
   });

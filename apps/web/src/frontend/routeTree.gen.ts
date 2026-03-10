@@ -14,11 +14,14 @@ import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as AppSettingsRouteRouteImport } from './routes/_app/settings/route'
 import { Route as AuthenticatedStudioIndexRouteImport } from './routes/_authenticated/studio/index'
-import { Route as AppTestIndexRouteImport } from './routes/_app/test/index'
+import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppResultsIndexRouteImport } from './routes/_app/results/index'
 import { Route as AppChannelIndexRouteImport } from './routes/_app/channel/index'
 import { Route as AuthenticatedStudioUploadRouteImport } from './routes/_authenticated/studio/upload'
+import { Route as AppSettingsNotificationsRouteImport } from './routes/_app/settings/notifications'
+import { Route as AppSettingsAccountRouteImport } from './routes/_app/settings/account'
 import { Route as AppWatchIdIndexRouteImport } from './routes/_app/watch/$id.index'
 
 const AppRouteRoute = AppRouteRouteImport.update({
@@ -45,16 +48,21 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AuthenticatedStudioIndexRoute =
   AuthenticatedStudioIndexRouteImport.update({
     id: '/_authenticated/studio/',
     path: '/studio/',
     getParentRoute: () => rootRouteImport,
   } as any)
-const AppTestIndexRoute = AppTestIndexRouteImport.update({
-  id: '/test/',
-  path: '/test/',
-  getParentRoute: () => AppRouteRoute,
+const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppSettingsRouteRoute,
 } as any)
 const AppResultsIndexRoute = AppResultsIndexRouteImport.update({
   id: '/results/',
@@ -72,6 +80,17 @@ const AuthenticatedStudioUploadRoute =
     path: '/studio/upload',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AppSettingsNotificationsRoute =
+  AppSettingsNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AppSettingsRouteRoute,
+  } as any)
+const AppSettingsAccountRoute = AppSettingsAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => AppSettingsRouteRoute,
+} as any)
 const AppWatchIdIndexRoute = AppWatchIdIndexRouteImport.update({
   id: '/watch/$id/',
   path: '/watch/$id/',
@@ -80,13 +99,16 @@ const AppWatchIdIndexRoute = AppWatchIdIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/settings': typeof AppSettingsRouteRouteWithChildren
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
   '/api/$': typeof ApiSplatRoute
+  '/settings/account': typeof AppSettingsAccountRoute
+  '/settings/notifications': typeof AppSettingsNotificationsRoute
   '/studio/upload': typeof AuthenticatedStudioUploadRoute
   '/channel/': typeof AppChannelIndexRoute
   '/results/': typeof AppResultsIndexRoute
-  '/test/': typeof AppTestIndexRoute
+  '/settings/': typeof AppSettingsIndexRoute
   '/studio/': typeof AuthenticatedStudioIndexRoute
   '/watch/$id/': typeof AppWatchIdIndexRoute
 }
@@ -95,24 +117,29 @@ export interface FileRoutesByTo {
   '/signup': typeof AuthSignupRoute
   '/api/$': typeof ApiSplatRoute
   '/': typeof AppIndexRoute
+  '/settings/account': typeof AppSettingsAccountRoute
+  '/settings/notifications': typeof AppSettingsNotificationsRoute
   '/studio/upload': typeof AuthenticatedStudioUploadRoute
   '/channel': typeof AppChannelIndexRoute
   '/results': typeof AppResultsIndexRoute
-  '/test': typeof AppTestIndexRoute
+  '/settings': typeof AppSettingsIndexRoute
   '/studio': typeof AuthenticatedStudioIndexRoute
   '/watch/$id': typeof AppWatchIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
+  '/_app/settings': typeof AppSettingsRouteRouteWithChildren
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/signup': typeof AuthSignupRoute
   '/api/$': typeof ApiSplatRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/settings/account': typeof AppSettingsAccountRoute
+  '/_app/settings/notifications': typeof AppSettingsNotificationsRoute
   '/_authenticated/studio/upload': typeof AuthenticatedStudioUploadRoute
   '/_app/channel/': typeof AppChannelIndexRoute
   '/_app/results/': typeof AppResultsIndexRoute
-  '/_app/test/': typeof AppTestIndexRoute
+  '/_app/settings/': typeof AppSettingsIndexRoute
   '/_authenticated/studio/': typeof AuthenticatedStudioIndexRoute
   '/_app/watch/$id/': typeof AppWatchIdIndexRoute
 }
@@ -120,13 +147,16 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/settings'
     | '/login'
     | '/signup'
     | '/api/$'
+    | '/settings/account'
+    | '/settings/notifications'
     | '/studio/upload'
     | '/channel/'
     | '/results/'
-    | '/test/'
+    | '/settings/'
     | '/studio/'
     | '/watch/$id/'
   fileRoutesByTo: FileRoutesByTo
@@ -135,23 +165,28 @@ export interface FileRouteTypes {
     | '/signup'
     | '/api/$'
     | '/'
+    | '/settings/account'
+    | '/settings/notifications'
     | '/studio/upload'
     | '/channel'
     | '/results'
-    | '/test'
+    | '/settings'
     | '/studio'
     | '/watch/$id'
   id:
     | '__root__'
     | '/_app'
+    | '/_app/settings'
     | '/_auth/login'
     | '/_auth/signup'
     | '/api/$'
     | '/_app/'
+    | '/_app/settings/account'
+    | '/_app/settings/notifications'
     | '/_authenticated/studio/upload'
     | '/_app/channel/'
     | '/_app/results/'
-    | '/_app/test/'
+    | '/_app/settings/'
     | '/_authenticated/studio/'
     | '/_app/watch/$id/'
   fileRoutesById: FileRoutesById
@@ -202,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_authenticated/studio/': {
       id: '/_authenticated/studio/'
       path: '/studio'
@@ -209,12 +251,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudioIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/test/': {
-      id: '/_app/test/'
-      path: '/test'
-      fullPath: '/test/'
-      preLoaderRoute: typeof AppTestIndexRouteImport
-      parentRoute: typeof AppRouteRoute
+    '/_app/settings/': {
+      id: '/_app/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AppSettingsIndexRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
     }
     '/_app/results/': {
       id: '/_app/results/'
@@ -237,6 +279,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudioUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/settings/notifications': {
+      id: '/_app/settings/notifications'
+      path: '/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof AppSettingsNotificationsRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
+    }
+    '/_app/settings/account': {
+      id: '/_app/settings/account'
+      path: '/account'
+      fullPath: '/settings/account'
+      preLoaderRoute: typeof AppSettingsAccountRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
+    }
     '/_app/watch/$id/': {
       id: '/_app/watch/$id/'
       path: '/watch/$id'
@@ -247,19 +303,34 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppSettingsRouteRouteChildren {
+  AppSettingsAccountRoute: typeof AppSettingsAccountRoute
+  AppSettingsNotificationsRoute: typeof AppSettingsNotificationsRoute
+  AppSettingsIndexRoute: typeof AppSettingsIndexRoute
+}
+
+const AppSettingsRouteRouteChildren: AppSettingsRouteRouteChildren = {
+  AppSettingsAccountRoute: AppSettingsAccountRoute,
+  AppSettingsNotificationsRoute: AppSettingsNotificationsRoute,
+  AppSettingsIndexRoute: AppSettingsIndexRoute,
+}
+
+const AppSettingsRouteRouteWithChildren =
+  AppSettingsRouteRoute._addFileChildren(AppSettingsRouteRouteChildren)
+
 interface AppRouteRouteChildren {
+  AppSettingsRouteRoute: typeof AppSettingsRouteRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
   AppChannelIndexRoute: typeof AppChannelIndexRoute
   AppResultsIndexRoute: typeof AppResultsIndexRoute
-  AppTestIndexRoute: typeof AppTestIndexRoute
   AppWatchIdIndexRoute: typeof AppWatchIdIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppSettingsRouteRoute: AppSettingsRouteRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
   AppChannelIndexRoute: AppChannelIndexRoute,
   AppResultsIndexRoute: AppResultsIndexRoute,
-  AppTestIndexRoute: AppTestIndexRoute,
   AppWatchIdIndexRoute: AppWatchIdIndexRoute,
 }
 

@@ -1,7 +1,6 @@
 import { LoginForm } from '@/frontend/components/auth/login-form';
 import { HomeLink } from '@/frontend/components/header/home-link';
-import { notAuthMiddleware } from '@/frontend/middleware/auth-middleware';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import z from 'zod';
 
 const searchSchema = z.object({
@@ -11,8 +10,8 @@ const searchSchema = z.object({
 export const Route = createFileRoute('/_auth/login')({
   component: RouteComponent,
   validateSearch: (search) => searchSchema.parse(search),
-  server: {
-    middleware: [notAuthMiddleware],
+  beforeLoad: ({ context, search }) => {
+    if (context.session) throw redirect({ to: search.redirectUrl });
   },
 });
 

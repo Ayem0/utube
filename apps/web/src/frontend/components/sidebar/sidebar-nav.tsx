@@ -1,4 +1,4 @@
-import { authClient } from '@/frontend/lib/auth-client';
+import { Route } from '@/frontend/routes/__root';
 import { SidebarSeparator } from '@repo/ui/sidebar';
 import {
   Baby,
@@ -33,13 +33,13 @@ const loggedInSidebarData: Array<SidebarSectionProps> = [
       {
         icon: Home,
         label: 'Home',
-        url: '/',
+        url: { to: '/' },
         showWhenCollapsed: true,
       },
       {
         icon: SquarePlay,
         label: 'Shorts',
-        url: '/shorts',
+        url: { to: undefined },
         showWhenCollapsed: true,
       },
     ],
@@ -52,47 +52,47 @@ const loggedInSidebarData: Array<SidebarSectionProps> = [
       {
         icon: Music,
         label: 'Music',
-        url: '/music',
+        url: { to: undefined },
       },
       {
         icon: Clapperboard,
         label: 'Movies and TV shows',
-        url: '/cinema',
+        url: { to: undefined },
       },
       {
         icon: Radio,
         label: 'Live',
-        url: '/live',
+        url: { to: undefined },
       },
       {
         icon: Gamepad2,
         label: 'Video games',
-        url: '/video-games',
+        url: { to: undefined },
       },
       {
         icon: Newspaper,
         label: 'News',
-        url: '/news',
+        url: { to: undefined },
       },
       {
         icon: Trophy,
         label: 'Sport',
-        url: '/sport',
+        url: { to: undefined },
       },
       {
         icon: Lightbulb,
         label: 'Knowledge & culture',
-        url: '/knowledge',
+        url: { to: undefined },
       },
       {
         icon: Handbag,
         label: 'Mode & beauty',
-        url: '/mode',
+        url: { to: undefined },
       },
       {
         icon: Mic,
         label: 'Podcasts',
-        url: '/podcasts',
+        url: { to: undefined },
       },
     ],
     label: 'Explorer',
@@ -106,22 +106,23 @@ const loggedInSidebarData: Array<SidebarSectionProps> = [
       {
         icon: Settings,
         label: 'Settings',
-        url: '/settings',
+        url: { to: '/settings' },
+        notExactActive: true,
       },
       {
         icon: Flag,
         label: 'Report history',
-        url: '/report-history',
+        url: { to: undefined },
       },
       {
         icon: HelpCircle,
         label: 'Help',
-        url: '/help',
+        url: { to: undefined },
       },
       {
         icon: MessageCircleWarning,
         label: 'Send comments',
-        url: '/comment',
+        url: { to: undefined },
       },
     ],
     label: undefined,
@@ -142,32 +143,32 @@ const loggedOutSidebarData: {
         icon: Home,
         label: 'Home',
         showWhenCollapsed: true,
-        url: '/',
+        url: { to: undefined },
       },
       {
         icon: SquarePlay,
         label: 'Shorts',
         showWhenCollapsed: true,
-        url: '/shorts',
+        url: { to: undefined },
       },
       {
         icon: TvMinimalPlay,
         iconClassName: 'rotate-x-180',
         showWhenCollapsed: true,
         label: 'Subscriptions',
-        url: '/feed/subscriptions',
+        url: { to: undefined },
       },
       {
         icon: UserCircle,
         label: 'You',
         showWhenCollapsed: true,
-        url: '/feed/you',
+        url: { to: undefined },
       },
       {
         icon: History,
         label: 'History',
         showWhenCollapsed: false,
-        url: '/feed/history',
+        url: { to: undefined },
       },
     ],
     label: undefined,
@@ -179,47 +180,47 @@ const loggedOutSidebarData: {
       {
         icon: Music,
         label: 'Music',
-        url: '/music',
+        url: { to: undefined },
       },
       {
         icon: Clapperboard,
         label: 'Movies & TV shows',
-        url: '/cinema',
+        url: { to: undefined },
       },
       {
         icon: Radio,
         label: 'Live',
-        url: '/live',
+        url: { to: undefined },
       },
       {
         icon: Gamepad2,
         label: 'Video games',
-        url: '/video-games',
+        url: { to: undefined },
       },
       {
         icon: Newspaper,
         label: 'News',
-        url: '/news',
+        url: { to: undefined },
       },
       {
         icon: Trophy,
         label: 'Sport',
-        url: '/sport',
+        url: { to: undefined },
       },
       {
         icon: Lightbulb,
         label: 'Knowledge & culture',
-        url: '/knowledge',
+        url: { to: undefined },
       },
       {
         icon: Handbag,
         label: 'Mode & beauty',
-        url: '/mode',
+        url: { to: undefined },
       },
       {
         icon: Mic,
         label: 'Podcasts',
-        url: '/podcasts',
+        url: { to: undefined },
       },
     ],
     label: 'Explorer',
@@ -233,17 +234,17 @@ const loggedOutSidebarData: {
       {
         icon: Gem,
         label: 'Premium',
-        url: '/premium',
+        url: { to: undefined },
       },
       {
         icon: Disc3,
         label: 'Music',
-        url: '/music',
+        url: { to: undefined },
       },
       {
         icon: Baby,
         label: 'Kids',
-        url: '/kids',
+        url: { to: undefined },
       },
     ],
     label: 'Other U-Tube contents',
@@ -255,22 +256,22 @@ const loggedOutSidebarData: {
       {
         icon: Settings,
         label: 'Settings',
-        url: '/settings',
+        url: { to: '/settings' },
       },
       {
         icon: Flag,
         label: 'Report history',
-        url: '/report-history',
+        url: { to: undefined },
       },
       {
         icon: HelpCircle,
         label: 'Help',
-        url: '/help',
+        url: { to: undefined },
       },
       {
         icon: MessageCircleWarning,
         label: 'Send comments',
-        url: '/comment',
+        url: { to: undefined },
       },
     ],
     label: undefined,
@@ -280,13 +281,9 @@ const loggedOutSidebarData: {
 };
 
 export function SidebarNav() {
-  const { isPending, data: authData } = authClient.useSession();
-  if (isPending) {
-    // TODO skeleton
-    return <></>;
-  }
+  const { session } = Route.useRouteContext();
 
-  if (authData === null) {
+  if (session === null) {
     return (
       <>
         <SidebarSection

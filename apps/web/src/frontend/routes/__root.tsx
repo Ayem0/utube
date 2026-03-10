@@ -1,4 +1,7 @@
+import { NotFoundComponent } from '@/frontend/components/not-found/not-found';
+import appCss from '@/frontend/styles/styles.css?url';
 import { TanStackDevtools } from '@tanstack/react-devtools';
+import type { QueryClient } from '@tanstack/react-query';
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools';
 import {
   HeadContent,
@@ -6,15 +9,38 @@ import {
   createRootRouteWithContext,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
-import type { QueryClient } from '@tanstack/react-query';
-import appCss from '@/frontend/styles/styles.css?url';
-import { NotFoundComponent } from '@/frontend/components/not-found/not-found';
+import { getSession } from '../middleware/auth-middleware';
 
 interface MyRouterContext {
   queryClient: QueryClient;
+  session: {
+    session: {
+      id: string;
+      createdAt: Date;
+      updatedAt: Date;
+      userId: string;
+      expiresAt: Date;
+      token: string;
+      ipAddress?: string | null | undefined;
+      userAgent?: string | null | undefined;
+    };
+    user: {
+      id: string;
+      createdAt: Date;
+      updatedAt: Date;
+      email: string;
+      emailVerified: boolean;
+      name: string;
+      image?: string | null | undefined;
+    };
+  } | null;
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
+  beforeLoad: async () => {
+    const session = await getSession();
+    return { session: session };
+  },
   head: () => ({
     meta: [
       {

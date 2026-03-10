@@ -35,8 +35,8 @@ type SidebarContextProps = {
   setOpen: (open: boolean) => void;
   openMobile: boolean;
   setOpenMobile: (open: boolean) => void;
-  openVideo: boolean;
-  setOpenVideo: (open: boolean) => void;
+  openOver: boolean;
+  setOpenOver: (open: boolean) => void;
   isMobile: boolean;
 
   toggleSidebar: () => void;
@@ -60,17 +60,17 @@ function SidebarProvider({
   className,
   style,
   children,
-  isVideo,
+  isOver,
   ...props
 }: React.ComponentProps<"div"> & {
   defaultOpen?: boolean;
   open?: boolean;
-  isVideo: boolean;
+  isOver: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
-  const [openVideo, setOpenVideo] = React.useState(false);
+  const [openOver, setOpenOver] = React.useState(false);
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -95,10 +95,15 @@ function SidebarProvider({
   const toggleSidebar = React.useCallback(() => {
     return isMobile
       ? setOpenMobile((open) => !open)
-      : isVideo
-        ? setOpenVideo((open) => !open)
+      : isOver
+        ? setOpenOver((open) => !open)
         : setOpen((open) => !open);
-  }, [isMobile, setOpen, setOpenMobile, isVideo]);
+  }, [isMobile, setOpen, setOpenMobile, isOver]);
+
+  // Always close the over sidebar when isOver change
+  React.useEffect(() => {
+    setOpenOver(false);
+  }, [isOver]);
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
@@ -129,8 +134,8 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
-      openVideo,
-      setOpenVideo,
+      openOver,
+      setOpenOver,
     }),
     [
       state,
@@ -140,9 +145,9 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
-      isVideo,
-      openVideo,
-      setOpenVideo,
+      isOver,
+      openOver,
+      setOpenOver,
     ],
   );
 
@@ -181,14 +186,8 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset" | "over";
   collapsible?: "offExamples" | "icon" | "none";
 }) {
-  const {
-    isMobile,
-    state,
-    openMobile,
-    setOpenMobile,
-    openVideo,
-    setOpenVideo,
-  } = useSidebar();
+  const { isMobile, state, openMobile, setOpenMobile, openOver, setOpenOver } =
+    useSidebar();
 
   if (collapsible === "none") {
     return (
@@ -232,7 +231,7 @@ function Sidebar({
 
   if (variant === "over") {
     return (
-      <Sheet open={openVideo} onOpenChange={setOpenVideo} {...props}>
+      <Sheet open={openOver} onOpenChange={setOpenOver} {...props}>
         <SheetContent
           overLayClassName="bg-black/50"
           data-sidebar="sidebar"
