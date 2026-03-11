@@ -2,6 +2,9 @@ import { WatchLayout } from '@/frontend/components/watch/watch-layout';
 import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_app/watch/$id/')({
+  staticData: {
+    sidebar: 'over',
+  },
   loader: (ctx) => {
     const id = ctx.params.id;
     if (!id)

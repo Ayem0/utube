@@ -11,22 +11,22 @@ export function Layout({
   children: ReactNode;
   sidebarOpen: boolean;
 }) {
-  const { location } = useRouterState();
-  const isOver =
-    location.pathname.startsWith('/watch') ||
-    location.pathname.startsWith('/settings');
+  const matches = useRouterState({
+    select: (state) => state.matches,
+  });
+  const isOver = matches.some((match) => match.staticData.sidebar === 'over');
 
   return (
     <SidebarProvider
       isOver={isOver}
-      defaultOpen={isOver ? false : sidebarOpen}
+      defaultOpen={sidebarOpen}
       className="flex-col"
     >
       <div className="flex flex-col">
         <Header />
         <div className="flex w-full">
           <AppSidebar
-            collapsible={isOver ? 'offExamples' : 'icon'}
+            collapsible={isOver ? 'off' : 'icon'}
             variant={isOver ? 'over' : 'sidebar'}
           />
           <SidebarInset>{children}</SidebarInset>

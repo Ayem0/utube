@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
 import { Spinner } from '@repo/ui/spinner';
-import { useRouter } from '@tanstack/react-router';
+import { Link, useRouter } from '@tanstack/react-router';
 import type { User } from 'better-auth';
 import { LogOut, Settings2 } from 'lucide-react';
 import { useState } from 'react';
@@ -22,7 +22,7 @@ export function AuthUser({ user }: { user: User }) {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     await authClient.signOut();
-    router.invalidate();
+    router.invalidate({ forcePending: true });
     setIsLoggingOut(false);
   };
   return (
@@ -43,13 +43,12 @@ export function AuthUser({ user }: { user: User }) {
         }
       />
       <DropdownMenuContent
-        className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+        className="min-w-56 rounded-lg"
         side="bottom"
-        align="end"
-        sideOffset={4}
+        align="center"
       >
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="p-0 font-normal">
+          <DropdownMenuLabel className="p-0 font-normal text-primary">
             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage
@@ -71,15 +70,27 @@ export function AuthUser({ user }: { user: User }) {
           {/* <ThemeMenu isSubMenu={true} /> */}
         </DropdownMenuGroup>
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            <Settings2 />
-            Settings
-          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="gap-2 px-3"
+            render={
+              <Link
+                to="/settings/account"
+                className="flex size-full items-center gap-2"
+              >
+                <Settings2 className="size-6" />
+                Settings
+              </Link>
+            }
+          />
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
-          <LogOut />
+        <DropdownMenuItem
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="gap-2 px-3"
+        >
+          <LogOut className="size-6" />
           {isLoggingOut ? <Spinner className="mx-auto size-5" /> : 'Log out'}
         </DropdownMenuItem>
       </DropdownMenuContent>

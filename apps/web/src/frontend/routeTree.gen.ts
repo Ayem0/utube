@@ -14,15 +14,14 @@ import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
-import { Route as AppSettingsRouteRouteImport } from './routes/_app/settings/route'
+import { Route as AppSettingsRouteRouteImport } from './routes/_app/_settings/route'
 import { Route as AuthenticatedStudioIndexRouteImport } from './routes/_authenticated/studio/index'
-import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppResultsIndexRouteImport } from './routes/_app/results/index'
-import { Route as AppChannelIndexRouteImport } from './routes/_app/channel/index'
 import { Route as AuthenticatedStudioUploadRouteImport } from './routes/_authenticated/studio/upload'
-import { Route as AppSettingsNotificationsRouteImport } from './routes/_app/settings/notifications'
-import { Route as AppSettingsAccountRouteImport } from './routes/_app/settings/account'
 import { Route as AppWatchIdIndexRouteImport } from './routes/_app/watch/$id.index'
+import { Route as AppChannelAtChar123idChar125IndexRouteImport } from './routes/_app/_channel/@{$id}.index'
+import { Route as AppSettingsSettingsNotificationsRouteImport } from './routes/_app/_settings/settings/notifications'
+import { Route as AppSettingsSettingsAccountRouteImport } from './routes/_app/_settings/settings/account'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
@@ -49,8 +48,7 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+  id: '/_settings',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AuthenticatedStudioIndexRoute =
@@ -59,19 +57,9 @@ const AuthenticatedStudioIndexRoute =
     path: '/studio/',
     getParentRoute: () => rootRouteImport,
   } as any)
-const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppSettingsRouteRoute,
-} as any)
 const AppResultsIndexRoute = AppResultsIndexRouteImport.update({
   id: '/results/',
   path: '/results/',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-const AppChannelIndexRoute = AppChannelIndexRouteImport.update({
-  id: '/channel/',
-  path: '/channel/',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AuthenticatedStudioUploadRoute =
@@ -80,114 +68,113 @@ const AuthenticatedStudioUploadRoute =
     path: '/studio/upload',
     getParentRoute: () => rootRouteImport,
   } as any)
-const AppSettingsNotificationsRoute =
-  AppSettingsNotificationsRouteImport.update({
-    id: '/notifications',
-    path: '/notifications',
-    getParentRoute: () => AppSettingsRouteRoute,
-  } as any)
-const AppSettingsAccountRoute = AppSettingsAccountRouteImport.update({
-  id: '/account',
-  path: '/account',
-  getParentRoute: () => AppSettingsRouteRoute,
-} as any)
 const AppWatchIdIndexRoute = AppWatchIdIndexRouteImport.update({
   id: '/watch/$id/',
   path: '/watch/$id/',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppChannelAtChar123idChar125IndexRoute =
+  AppChannelAtChar123idChar125IndexRouteImport.update({
+    id: '/_channel/@{$id}/',
+    path: '/@{$id}/',
+    getParentRoute: () => AppRouteRoute,
+  } as any)
+const AppSettingsSettingsNotificationsRoute =
+  AppSettingsSettingsNotificationsRouteImport.update({
+    id: '/settings/notifications',
+    path: '/settings/notifications',
+    getParentRoute: () => AppSettingsRouteRoute,
+  } as any)
+const AppSettingsSettingsAccountRoute =
+  AppSettingsSettingsAccountRouteImport.update({
+    id: '/settings/account',
+    path: '/settings/account',
+    getParentRoute: () => AppSettingsRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
-  '/settings': typeof AppSettingsRouteRouteWithChildren
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
   '/api/$': typeof ApiSplatRoute
-  '/settings/account': typeof AppSettingsAccountRoute
-  '/settings/notifications': typeof AppSettingsNotificationsRoute
   '/studio/upload': typeof AuthenticatedStudioUploadRoute
-  '/channel/': typeof AppChannelIndexRoute
   '/results/': typeof AppResultsIndexRoute
-  '/settings/': typeof AppSettingsIndexRoute
   '/studio/': typeof AuthenticatedStudioIndexRoute
+  '/settings/account': typeof AppSettingsSettingsAccountRoute
+  '/settings/notifications': typeof AppSettingsSettingsNotificationsRoute
+  '/@{$id}/': typeof AppChannelAtChar123idChar125IndexRoute
   '/watch/$id/': typeof AppWatchIdIndexRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof AppIndexRoute
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
   '/api/$': typeof ApiSplatRoute
-  '/': typeof AppIndexRoute
-  '/settings/account': typeof AppSettingsAccountRoute
-  '/settings/notifications': typeof AppSettingsNotificationsRoute
   '/studio/upload': typeof AuthenticatedStudioUploadRoute
-  '/channel': typeof AppChannelIndexRoute
   '/results': typeof AppResultsIndexRoute
-  '/settings': typeof AppSettingsIndexRoute
   '/studio': typeof AuthenticatedStudioIndexRoute
+  '/settings/account': typeof AppSettingsSettingsAccountRoute
+  '/settings/notifications': typeof AppSettingsSettingsNotificationsRoute
+  '/@{$id}': typeof AppChannelAtChar123idChar125IndexRoute
   '/watch/$id': typeof AppWatchIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
-  '/_app/settings': typeof AppSettingsRouteRouteWithChildren
+  '/_app/_settings': typeof AppSettingsRouteRouteWithChildren
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/signup': typeof AuthSignupRoute
   '/api/$': typeof ApiSplatRoute
   '/_app/': typeof AppIndexRoute
-  '/_app/settings/account': typeof AppSettingsAccountRoute
-  '/_app/settings/notifications': typeof AppSettingsNotificationsRoute
   '/_authenticated/studio/upload': typeof AuthenticatedStudioUploadRoute
-  '/_app/channel/': typeof AppChannelIndexRoute
   '/_app/results/': typeof AppResultsIndexRoute
-  '/_app/settings/': typeof AppSettingsIndexRoute
   '/_authenticated/studio/': typeof AuthenticatedStudioIndexRoute
+  '/_app/_settings/settings/account': typeof AppSettingsSettingsAccountRoute
+  '/_app/_settings/settings/notifications': typeof AppSettingsSettingsNotificationsRoute
+  '/_app/_channel/@{$id}/': typeof AppChannelAtChar123idChar125IndexRoute
   '/_app/watch/$id/': typeof AppWatchIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/settings'
     | '/login'
     | '/signup'
     | '/api/$'
+    | '/studio/upload'
+    | '/results/'
+    | '/studio/'
     | '/settings/account'
     | '/settings/notifications'
-    | '/studio/upload'
-    | '/channel/'
-    | '/results/'
-    | '/settings/'
-    | '/studio/'
+    | '/@{$id}/'
     | '/watch/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/login'
     | '/signup'
     | '/api/$'
-    | '/'
+    | '/studio/upload'
+    | '/results'
+    | '/studio'
     | '/settings/account'
     | '/settings/notifications'
-    | '/studio/upload'
-    | '/channel'
-    | '/results'
-    | '/settings'
-    | '/studio'
+    | '/@{$id}'
     | '/watch/$id'
   id:
     | '__root__'
     | '/_app'
-    | '/_app/settings'
+    | '/_app/_settings'
     | '/_auth/login'
     | '/_auth/signup'
     | '/api/$'
     | '/_app/'
-    | '/_app/settings/account'
-    | '/_app/settings/notifications'
     | '/_authenticated/studio/upload'
-    | '/_app/channel/'
     | '/_app/results/'
-    | '/_app/settings/'
     | '/_authenticated/studio/'
+    | '/_app/_settings/settings/account'
+    | '/_app/_settings/settings/notifications'
+    | '/_app/_channel/@{$id}/'
     | '/_app/watch/$id/'
   fileRoutesById: FileRoutesById
 }
@@ -237,10 +224,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/settings': {
-      id: '/_app/settings'
-      path: '/settings'
-      fullPath: '/settings'
+    '/_app/_settings': {
+      id: '/_app/_settings'
+      path: ''
+      fullPath: '/'
       preLoaderRoute: typeof AppSettingsRouteRouteImport
       parentRoute: typeof AppRouteRoute
     }
@@ -251,25 +238,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudioIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/settings/': {
-      id: '/_app/settings/'
-      path: '/'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof AppSettingsIndexRouteImport
-      parentRoute: typeof AppSettingsRouteRoute
-    }
     '/_app/results/': {
       id: '/_app/results/'
       path: '/results'
       fullPath: '/results/'
       preLoaderRoute: typeof AppResultsIndexRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
-    '/_app/channel/': {
-      id: '/_app/channel/'
-      path: '/channel'
-      fullPath: '/channel/'
-      preLoaderRoute: typeof AppChannelIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/_authenticated/studio/upload': {
@@ -279,20 +252,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudioUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/settings/notifications': {
-      id: '/_app/settings/notifications'
-      path: '/notifications'
-      fullPath: '/settings/notifications'
-      preLoaderRoute: typeof AppSettingsNotificationsRouteImport
-      parentRoute: typeof AppSettingsRouteRoute
-    }
-    '/_app/settings/account': {
-      id: '/_app/settings/account'
-      path: '/account'
-      fullPath: '/settings/account'
-      preLoaderRoute: typeof AppSettingsAccountRouteImport
-      parentRoute: typeof AppSettingsRouteRoute
-    }
     '/_app/watch/$id/': {
       id: '/_app/watch/$id/'
       path: '/watch/$id'
@@ -300,19 +259,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWatchIdIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/_channel/@{$id}/': {
+      id: '/_app/_channel/@{$id}/'
+      path: '/@{$id}'
+      fullPath: '/@{$id}/'
+      preLoaderRoute: typeof AppChannelAtChar123idChar125IndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/_settings/settings/notifications': {
+      id: '/_app/_settings/settings/notifications'
+      path: '/settings/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof AppSettingsSettingsNotificationsRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
+    }
+    '/_app/_settings/settings/account': {
+      id: '/_app/_settings/settings/account'
+      path: '/settings/account'
+      fullPath: '/settings/account'
+      preLoaderRoute: typeof AppSettingsSettingsAccountRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
+    }
   }
 }
 
 interface AppSettingsRouteRouteChildren {
-  AppSettingsAccountRoute: typeof AppSettingsAccountRoute
-  AppSettingsNotificationsRoute: typeof AppSettingsNotificationsRoute
-  AppSettingsIndexRoute: typeof AppSettingsIndexRoute
+  AppSettingsSettingsAccountRoute: typeof AppSettingsSettingsAccountRoute
+  AppSettingsSettingsNotificationsRoute: typeof AppSettingsSettingsNotificationsRoute
 }
 
 const AppSettingsRouteRouteChildren: AppSettingsRouteRouteChildren = {
-  AppSettingsAccountRoute: AppSettingsAccountRoute,
-  AppSettingsNotificationsRoute: AppSettingsNotificationsRoute,
-  AppSettingsIndexRoute: AppSettingsIndexRoute,
+  AppSettingsSettingsAccountRoute: AppSettingsSettingsAccountRoute,
+  AppSettingsSettingsNotificationsRoute: AppSettingsSettingsNotificationsRoute,
 }
 
 const AppSettingsRouteRouteWithChildren =
@@ -321,16 +299,17 @@ const AppSettingsRouteRouteWithChildren =
 interface AppRouteRouteChildren {
   AppSettingsRouteRoute: typeof AppSettingsRouteRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
-  AppChannelIndexRoute: typeof AppChannelIndexRoute
   AppResultsIndexRoute: typeof AppResultsIndexRoute
+  AppChannelAtChar123idChar125IndexRoute: typeof AppChannelAtChar123idChar125IndexRoute
   AppWatchIdIndexRoute: typeof AppWatchIdIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppSettingsRouteRoute: AppSettingsRouteRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
-  AppChannelIndexRoute: AppChannelIndexRoute,
   AppResultsIndexRoute: AppResultsIndexRoute,
+  AppChannelAtChar123idChar125IndexRoute:
+    AppChannelAtChar123idChar125IndexRoute,
   AppWatchIdIndexRoute: AppWatchIdIndexRoute,
 }
 

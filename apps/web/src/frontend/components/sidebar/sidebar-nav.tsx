@@ -23,6 +23,7 @@ import {
   TvMinimalPlay,
   UserCircle,
 } from 'lucide-react';
+import { Fragment } from 'react/jsx-runtime';
 import { SidebarLogin } from './sidebar-login';
 import type { SidebarSectionProps } from './sidebar-section';
 import { SidebarSection } from './sidebar-section';
@@ -106,7 +107,7 @@ const loggedInSidebarData: Array<SidebarSectionProps> = [
       {
         icon: Settings,
         label: 'Settings',
-        url: { to: '/settings' },
+        url: { to: '/settings/account' },
         notExactActive: true,
       },
       {
@@ -256,7 +257,7 @@ const loggedOutSidebarData: {
       {
         icon: Settings,
         label: 'Settings',
-        url: { to: '/settings' },
+        url: { to: '/settings/account' },
       },
       {
         icon: Flag,
@@ -321,8 +322,8 @@ export function SidebarNav() {
     );
   }
 
-  return loggedInSidebarData.map((data) => (
-    <>
+  return loggedInSidebarData.map((data, i) => (
+    <Fragment key={`sidebar-nav-section-${i}`}>
       <SidebarSection
         items={data.items}
         expandable={data.expandable}
@@ -331,6 +332,6 @@ export function SidebarNav() {
         classNames="group-data-[collapsible=icon]:pt-2"
       />
       <SidebarSeparator className="group-data-[collapsible=icon]:hidden m-0" />
-    </>
+    </Fragment>
   ));
 }

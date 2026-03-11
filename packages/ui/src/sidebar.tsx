@@ -177,14 +177,14 @@ function SidebarProvider({
 function Sidebar({
   side = "left",
   variant = "sidebar",
-  collapsible = "offExamples",
+  collapsible = "off",
   className,
   children,
   ...props
 }: React.ComponentProps<"div"> & {
   side?: "left" | "right";
   variant?: "sidebar" | "floating" | "inset" | "over";
-  collapsible?: "offExamples" | "icon" | "none";
+  collapsible?: "off" | "icon" | "none";
 }) {
   const { isMobile, state, openMobile, setOpenMobile, openOver, setOpenOver } =
     useSidebar();

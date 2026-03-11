@@ -1,5 +1,4 @@
-// import { relations } from 'drizzle-orm';
-import { relations } from "drizzle-orm/_relations";
+import { relations } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -10,7 +9,6 @@ import {
 } from "drizzle-orm/pg-core";
 import { VideoCreationStatus } from "../lib/video/video-status";
 
-// #region BetterAuth
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -83,6 +81,14 @@ export const verification = pgTable(
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
+export const jwks = pgTable("jwks", {
+  id: text("id").primaryKey(),
+  publicKey: text("public_key").notNull(),
+  privateKey: text("private_key").notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  expiresAt: timestamp("expires_at"),
+});
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
@@ -101,7 +107,6 @@ export const accountRelations = relations(account, ({ one }) => ({
     references: [user.id],
   }),
 }));
-//  #endregion
 
 // #region Custom tables
 export const video = pgTable(
@@ -141,8 +146,9 @@ export const channel = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "no action" }),
-    name: text("name").notNull().unique(),
-    thumbnail: text("thumbnail").notNull(),
+    name: text("name").notNull(),
+    alias: text("alias").notNull().unique(),
+    image: text("image"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

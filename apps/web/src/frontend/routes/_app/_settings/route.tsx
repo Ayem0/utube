@@ -1,8 +1,11 @@
 import { SettingsNav } from '@/frontend/components/settings/settings-nav';
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 
-export const Route = createFileRoute('/_app/settings')({
+export const Route = createFileRoute('/_app/_settings')({
   component: RouteComponent,
+  staticData: {
+    sidebar: 'over',
+  },
 
   beforeLoad: async ({ context, location }) => {
     if (!context.session)

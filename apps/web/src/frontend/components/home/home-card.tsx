@@ -66,7 +66,11 @@ export function HomeCard({ video }: { video: FakeVideo }) {
 
       <div className="flex flex-row w-full">
         <div className="flex flex-row px-2 pb-2 w-full">
-          <Link to="/channel" onClick={(e) => e.stopPropagation()}>
+          <Link
+            to="/@{$id}"
+            params={{ id: video.channel.id }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <Image
               src={video.channel.img}
               layout="fixed"
@@ -77,9 +81,17 @@ export function HomeCard({ video }: { video: FakeVideo }) {
           </Link>
 
           <div className="flex flex-col pl-2">
-            <span className="align-text-top">{video.title}</span>
+            <h3>
+              <Link to="/watch/$id" params={{ id: video.id }}>
+                <span className="align-text-top">{video.title}</span>
+              </Link>
+            </h3>
             <div className="text-muted-foreground">
-              <Link to="/channel" onClick={(e) => e.stopPropagation()}>
+              <Link
+                to="/@{$id}"
+                params={{ id: video.channel.id }}
+                onClick={(e) => e.stopPropagation()}
+              >
                 <span className="text-muted-foreground hover:text-white">
                   {video.channel.name}
                 </span>
@@ -99,7 +111,12 @@ export function HomeCard({ video }: { video: FakeVideo }) {
             onClick={(e) => {
               e.stopPropagation();
             }}
-            render={<Button variant="ghost" className="rounded-full size-9" />}
+            render={
+              <Button
+                variant="ghost"
+                className="rounded-full size-9 hover:bg-(--fac-color)/50! aria-expanded:bg-transparent"
+              />
+            }
           >
             <EllipsisVertical className="size-7" />
           </DropdownMenuTrigger>

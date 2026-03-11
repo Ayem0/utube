@@ -9,7 +9,7 @@ import {
   createRootRouteWithContext,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
-import { getSession } from '../middleware/auth-middleware';
+import { getAuthSession } from '../middleware/auth-middleware';
 
 interface MyRouterContext {
   queryClient: QueryClient;
@@ -38,7 +38,7 @@ interface MyRouterContext {
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   beforeLoad: async () => {
-    const session = await getSession();
+    const session = await getAuthSession();
     return { session: session };
   },
   head: () => ({

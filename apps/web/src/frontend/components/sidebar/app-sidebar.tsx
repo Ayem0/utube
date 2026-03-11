@@ -7,7 +7,7 @@ export function AppSidebar({
   collapsible,
   variant,
 }: {
-  collapsible: 'icon' | 'offExamples';
+  collapsible: 'icon' | 'off';
   variant: 'sidebar' | 'over';
 }) {
   const { isMobile } = useSidebar();

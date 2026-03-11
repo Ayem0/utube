@@ -6,7 +6,7 @@ export const getSidebarCookie = createServerFn({
 }).handler(() => {
   const cookies = getRequestHeader('Cookie');
   const sidebarState = getCookie('sidebar_state', cookies);
-  return sidebarState ? sidebarState === 'true' : false;
+  return sidebarState ? sidebarState !== 'false' : true;
 });
 
 function getCookie(name: string, cookieHeader: string | undefined) {

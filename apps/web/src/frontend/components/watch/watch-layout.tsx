@@ -21,7 +21,7 @@ export function WatchLayout({ video }: { video: FakeVideo }) {
       <div className="flex flex-col w-full p-3 gap-2 pl-2">
         <span className="text-lg">{video.title}</span>
         <div className="flex flex-row">
-          <Link to="/channel">
+          <Link to="/@{$id}" params={{ id: video.channel.id }}>
             <Image
               src={video.channel.img}
               layout="fixed"
@@ -31,7 +31,7 @@ export function WatchLayout({ video }: { video: FakeVideo }) {
             />
           </Link>
           <div className="flex flex-col gap-2">
-            <Link to="/channel">
+            <Link to="/@{$id}" params={{ id: video.channel.id }}>
               <span className="text-muted-foreground hover:text-white">
                 {video.channel.name}
               </span>

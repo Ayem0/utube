@@ -14,16 +14,16 @@ export function generateRandomNameFromEmail(email: string) {
   return base + suffix;
 }
 
+const alphabet =
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" as const;
+
 function randomSuffix(length: number = 6) {
   const buffer = new Uint8Array(length);
   const num = crypto.getRandomValues(buffer);
 
   let out = "";
   for (const n of num) {
-    console.log("random num", n);
-    out += n.toString(36);
-    console.log("out", out);
+    out += alphabet[n % alphabet.length];
   }
-  console.log("out final", out);
   return out;
 }
