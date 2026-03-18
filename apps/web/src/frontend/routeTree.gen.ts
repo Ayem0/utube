@@ -15,13 +15,16 @@ import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AppSettingsRouteRouteImport } from './routes/_app/_settings/route'
-import { Route as AuthenticatedStudioIndexRouteImport } from './routes/_authenticated/studio/index'
 import { Route as AppResultsIndexRouteImport } from './routes/_app/results/index'
-import { Route as AuthenticatedStudioUploadRouteImport } from './routes/_authenticated/studio/upload'
+import { Route as StudioStudioChannelIdRouteRouteImport } from './routes/_studio/studio/$channelId/route'
+import { Route as StudioStudioChannelIdIndexRouteImport } from './routes/_studio/studio/$channelId/index'
 import { Route as AppWatchIdIndexRouteImport } from './routes/_app/watch/$id.index'
 import { Route as AppChannelAtChar123idChar125IndexRouteImport } from './routes/_app/_channel/@{$id}.index'
 import { Route as AppSettingsSettingsNotificationsRouteImport } from './routes/_app/_settings/settings/notifications'
 import { Route as AppSettingsSettingsAccountRouteImport } from './routes/_app/_settings/settings/account'
+import { Route as StudioStudioChannelIdContentRouteRouteImport } from './routes/_studio/studio/$channelId/_content/route'
+import { Route as StudioStudioChannelIdContentContentVideosRouteImport } from './routes/_studio/studio/$channelId/_content/content/videos'
+import { Route as StudioStudioChannelIdContentContentPlaylistsRouteImport } from './routes/_studio/studio/$channelId/_content/content/playlists'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
@@ -51,22 +54,22 @@ const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
   id: '/_settings',
   getParentRoute: () => AppRouteRoute,
 } as any)
-const AuthenticatedStudioIndexRoute =
-  AuthenticatedStudioIndexRouteImport.update({
-    id: '/_authenticated/studio/',
-    path: '/studio/',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const AppResultsIndexRoute = AppResultsIndexRouteImport.update({
   id: '/results/',
   path: '/results/',
   getParentRoute: () => AppRouteRoute,
 } as any)
-const AuthenticatedStudioUploadRoute =
-  AuthenticatedStudioUploadRouteImport.update({
-    id: '/_authenticated/studio/upload',
-    path: '/studio/upload',
+const StudioStudioChannelIdRouteRoute =
+  StudioStudioChannelIdRouteRouteImport.update({
+    id: '/_studio/studio/$channelId',
+    path: '/studio/$channelId',
     getParentRoute: () => rootRouteImport,
+  } as any)
+const StudioStudioChannelIdIndexRoute =
+  StudioStudioChannelIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => StudioStudioChannelIdRouteRoute,
   } as any)
 const AppWatchIdIndexRoute = AppWatchIdIndexRouteImport.update({
   id: '/watch/$id/',
@@ -91,32 +94,52 @@ const AppSettingsSettingsAccountRoute =
     path: '/settings/account',
     getParentRoute: () => AppSettingsRouteRoute,
   } as any)
+const StudioStudioChannelIdContentRouteRoute =
+  StudioStudioChannelIdContentRouteRouteImport.update({
+    id: '/_content',
+    getParentRoute: () => StudioStudioChannelIdRouteRoute,
+  } as any)
+const StudioStudioChannelIdContentContentVideosRoute =
+  StudioStudioChannelIdContentContentVideosRouteImport.update({
+    id: '/content/videos',
+    path: '/content/videos',
+    getParentRoute: () => StudioStudioChannelIdContentRouteRoute,
+  } as any)
+const StudioStudioChannelIdContentContentPlaylistsRoute =
+  StudioStudioChannelIdContentContentPlaylistsRouteImport.update({
+    id: '/content/playlists',
+    path: '/content/playlists',
+    getParentRoute: () => StudioStudioChannelIdContentRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
   '/api/$': typeof ApiSplatRoute
-  '/studio/upload': typeof AuthenticatedStudioUploadRoute
+  '/studio/$channelId': typeof StudioStudioChannelIdContentRouteRouteWithChildren
   '/results/': typeof AppResultsIndexRoute
-  '/studio/': typeof AuthenticatedStudioIndexRoute
   '/settings/account': typeof AppSettingsSettingsAccountRoute
   '/settings/notifications': typeof AppSettingsSettingsNotificationsRoute
   '/@{$id}/': typeof AppChannelAtChar123idChar125IndexRoute
   '/watch/$id/': typeof AppWatchIdIndexRoute
+  '/studio/$channelId/': typeof StudioStudioChannelIdIndexRoute
+  '/studio/$channelId/content/playlists': typeof StudioStudioChannelIdContentContentPlaylistsRoute
+  '/studio/$channelId/content/videos': typeof StudioStudioChannelIdContentContentVideosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
   '/api/$': typeof ApiSplatRoute
-  '/studio/upload': typeof AuthenticatedStudioUploadRoute
   '/results': typeof AppResultsIndexRoute
-  '/studio': typeof AuthenticatedStudioIndexRoute
+  '/studio/$channelId': typeof StudioStudioChannelIdIndexRoute
   '/settings/account': typeof AppSettingsSettingsAccountRoute
   '/settings/notifications': typeof AppSettingsSettingsNotificationsRoute
   '/@{$id}': typeof AppChannelAtChar123idChar125IndexRoute
   '/watch/$id': typeof AppWatchIdIndexRoute
+  '/studio/$channelId/content/playlists': typeof StudioStudioChannelIdContentContentPlaylistsRoute
+  '/studio/$channelId/content/videos': typeof StudioStudioChannelIdContentContentVideosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -126,13 +149,16 @@ export interface FileRoutesById {
   '/_auth/signup': typeof AuthSignupRoute
   '/api/$': typeof ApiSplatRoute
   '/_app/': typeof AppIndexRoute
-  '/_authenticated/studio/upload': typeof AuthenticatedStudioUploadRoute
+  '/_studio/studio/$channelId': typeof StudioStudioChannelIdRouteRouteWithChildren
   '/_app/results/': typeof AppResultsIndexRoute
-  '/_authenticated/studio/': typeof AuthenticatedStudioIndexRoute
+  '/_studio/studio/$channelId/_content': typeof StudioStudioChannelIdContentRouteRouteWithChildren
   '/_app/_settings/settings/account': typeof AppSettingsSettingsAccountRoute
   '/_app/_settings/settings/notifications': typeof AppSettingsSettingsNotificationsRoute
   '/_app/_channel/@{$id}/': typeof AppChannelAtChar123idChar125IndexRoute
   '/_app/watch/$id/': typeof AppWatchIdIndexRoute
+  '/_studio/studio/$channelId/': typeof StudioStudioChannelIdIndexRoute
+  '/_studio/studio/$channelId/_content/content/playlists': typeof StudioStudioChannelIdContentContentPlaylistsRoute
+  '/_studio/studio/$channelId/_content/content/videos': typeof StudioStudioChannelIdContentContentVideosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,26 +167,29 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/api/$'
-    | '/studio/upload'
+    | '/studio/$channelId'
     | '/results/'
-    | '/studio/'
     | '/settings/account'
     | '/settings/notifications'
     | '/@{$id}/'
     | '/watch/$id/'
+    | '/studio/$channelId/'
+    | '/studio/$channelId/content/playlists'
+    | '/studio/$channelId/content/videos'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/signup'
     | '/api/$'
-    | '/studio/upload'
     | '/results'
-    | '/studio'
+    | '/studio/$channelId'
     | '/settings/account'
     | '/settings/notifications'
     | '/@{$id}'
     | '/watch/$id'
+    | '/studio/$channelId/content/playlists'
+    | '/studio/$channelId/content/videos'
   id:
     | '__root__'
     | '/_app'
@@ -169,13 +198,16 @@ export interface FileRouteTypes {
     | '/_auth/signup'
     | '/api/$'
     | '/_app/'
-    | '/_authenticated/studio/upload'
+    | '/_studio/studio/$channelId'
     | '/_app/results/'
-    | '/_authenticated/studio/'
+    | '/_studio/studio/$channelId/_content'
     | '/_app/_settings/settings/account'
     | '/_app/_settings/settings/notifications'
     | '/_app/_channel/@{$id}/'
     | '/_app/watch/$id/'
+    | '/_studio/studio/$channelId/'
+    | '/_studio/studio/$channelId/_content/content/playlists'
+    | '/_studio/studio/$channelId/_content/content/videos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -183,8 +215,7 @@ export interface RootRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthSignupRoute: typeof AuthSignupRoute
   ApiSplatRoute: typeof ApiSplatRoute
-  AuthenticatedStudioUploadRoute: typeof AuthenticatedStudioUploadRoute
-  AuthenticatedStudioIndexRoute: typeof AuthenticatedStudioIndexRoute
+  StudioStudioChannelIdRouteRoute: typeof StudioStudioChannelIdRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -231,13 +262,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/_authenticated/studio/': {
-      id: '/_authenticated/studio/'
-      path: '/studio'
-      fullPath: '/studio/'
-      preLoaderRoute: typeof AuthenticatedStudioIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_app/results/': {
       id: '/_app/results/'
       path: '/results'
@@ -245,12 +269,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppResultsIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/_authenticated/studio/upload': {
-      id: '/_authenticated/studio/upload'
-      path: '/studio/upload'
-      fullPath: '/studio/upload'
-      preLoaderRoute: typeof AuthenticatedStudioUploadRouteImport
+    '/_studio/studio/$channelId': {
+      id: '/_studio/studio/$channelId'
+      path: '/studio/$channelId'
+      fullPath: '/studio/$channelId'
+      preLoaderRoute: typeof StudioStudioChannelIdRouteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_studio/studio/$channelId/': {
+      id: '/_studio/studio/$channelId/'
+      path: '/'
+      fullPath: '/studio/$channelId/'
+      preLoaderRoute: typeof StudioStudioChannelIdIndexRouteImport
+      parentRoute: typeof StudioStudioChannelIdRouteRoute
     }
     '/_app/watch/$id/': {
       id: '/_app/watch/$id/'
@@ -279,6 +310,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings/account'
       preLoaderRoute: typeof AppSettingsSettingsAccountRouteImport
       parentRoute: typeof AppSettingsRouteRoute
+    }
+    '/_studio/studio/$channelId/_content': {
+      id: '/_studio/studio/$channelId/_content'
+      path: ''
+      fullPath: '/studio/$channelId'
+      preLoaderRoute: typeof StudioStudioChannelIdContentRouteRouteImport
+      parentRoute: typeof StudioStudioChannelIdRouteRoute
+    }
+    '/_studio/studio/$channelId/_content/content/videos': {
+      id: '/_studio/studio/$channelId/_content/content/videos'
+      path: '/content/videos'
+      fullPath: '/studio/$channelId/content/videos'
+      preLoaderRoute: typeof StudioStudioChannelIdContentContentVideosRouteImport
+      parentRoute: typeof StudioStudioChannelIdContentRouteRoute
+    }
+    '/_studio/studio/$channelId/_content/content/playlists': {
+      id: '/_studio/studio/$channelId/_content/content/playlists'
+      path: '/content/playlists'
+      fullPath: '/studio/$channelId/content/playlists'
+      preLoaderRoute: typeof StudioStudioChannelIdContentContentPlaylistsRouteImport
+      parentRoute: typeof StudioStudioChannelIdContentRouteRoute
     }
   }
 }
@@ -317,13 +369,47 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
   AppRouteRouteChildren,
 )
 
+interface StudioStudioChannelIdContentRouteRouteChildren {
+  StudioStudioChannelIdContentContentPlaylistsRoute: typeof StudioStudioChannelIdContentContentPlaylistsRoute
+  StudioStudioChannelIdContentContentVideosRoute: typeof StudioStudioChannelIdContentContentVideosRoute
+}
+
+const StudioStudioChannelIdContentRouteRouteChildren: StudioStudioChannelIdContentRouteRouteChildren =
+  {
+    StudioStudioChannelIdContentContentPlaylistsRoute:
+      StudioStudioChannelIdContentContentPlaylistsRoute,
+    StudioStudioChannelIdContentContentVideosRoute:
+      StudioStudioChannelIdContentContentVideosRoute,
+  }
+
+const StudioStudioChannelIdContentRouteRouteWithChildren =
+  StudioStudioChannelIdContentRouteRoute._addFileChildren(
+    StudioStudioChannelIdContentRouteRouteChildren,
+  )
+
+interface StudioStudioChannelIdRouteRouteChildren {
+  StudioStudioChannelIdContentRouteRoute: typeof StudioStudioChannelIdContentRouteRouteWithChildren
+  StudioStudioChannelIdIndexRoute: typeof StudioStudioChannelIdIndexRoute
+}
+
+const StudioStudioChannelIdRouteRouteChildren: StudioStudioChannelIdRouteRouteChildren =
+  {
+    StudioStudioChannelIdContentRouteRoute:
+      StudioStudioChannelIdContentRouteRouteWithChildren,
+    StudioStudioChannelIdIndexRoute: StudioStudioChannelIdIndexRoute,
+  }
+
+const StudioStudioChannelIdRouteRouteWithChildren =
+  StudioStudioChannelIdRouteRoute._addFileChildren(
+    StudioStudioChannelIdRouteRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
   AuthLoginRoute: AuthLoginRoute,
   AuthSignupRoute: AuthSignupRoute,
   ApiSplatRoute: ApiSplatRoute,
-  AuthenticatedStudioUploadRoute: AuthenticatedStudioUploadRoute,
-  AuthenticatedStudioIndexRoute: AuthenticatedStudioIndexRoute,
+  StudioStudioChannelIdRouteRoute: StudioStudioChannelIdRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

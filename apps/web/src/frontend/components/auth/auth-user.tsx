@@ -1,4 +1,4 @@
-import { authClient } from '@/frontend/lib/auth-client';
+import { authClient } from '@/frontend/lib/auth/auth-client';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/avatar';
 import { Button } from '@repo/ui/button';
 import {
@@ -15,6 +15,7 @@ import { Link, useRouter } from '@tanstack/react-router';
 import type { User } from 'better-auth';
 import { LogOut, Settings2 } from 'lucide-react';
 import { useState } from 'react';
+import { ChannelSwitcher } from '../header/channel-switcher';
 
 export function AuthUser({ user }: { user: User }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -22,7 +23,7 @@ export function AuthUser({ user }: { user: User }) {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     await authClient.signOut();
-    router.invalidate({ forcePending: true });
+    router.invalidate();
     setIsLoggingOut(false);
   };
   return (
@@ -67,7 +68,7 @@ export function AuthUser({ user }: { user: User }) {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          {/* <ThemeMenu isSubMenu={true} /> */}
+          <ChannelSwitcher />
         </DropdownMenuGroup>
         <DropdownMenuGroup>
           <DropdownMenuItem

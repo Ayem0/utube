@@ -25,7 +25,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@/frontend/*": ["./src/frontend/*"],
-      "@/backend/*": ["./src/backend/*"]
+      "@/backend/*": ["./src/backend/*"],
+      "@workspace/ui/*": ["../../packages/ui/src/*"]
     }
   }
 }

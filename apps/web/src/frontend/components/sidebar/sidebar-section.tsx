@@ -7,7 +7,7 @@ import {
   SidebarMenuItem,
 } from '@repo/ui/sidebar';
 import { cn } from '@repo/ui/utils';
-import { Link, LinkProps, useRouterState } from '@tanstack/react-router';
+import { Link, LinkProps } from '@tanstack/react-router';
 import type { LucideIcon } from 'lucide-react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
@@ -20,7 +20,6 @@ type SidebarItem = {
   icon?: LucideIcon;
   iconClassName?: string;
   showWhenCollapsed?: boolean;
-  notExactActive?: boolean;
 };
 
 export interface SidebarSectionProps {
@@ -41,7 +40,6 @@ export function SidebarSection({
   classNames,
   labelClassName,
 }: SidebarSectionProps) {
-  const router = useRouterState();
   const [expanded, setExpanded] = useState(false);
   const itemsToShow = expandable
     ? expanded
@@ -67,12 +65,12 @@ export function SidebarSection({
         </SidebarGroupLabel>
       )}
 
-      <SidebarMenu className="group-data-[collapsible=icon]:gap-2">
+      <SidebarMenu>
         {itemsToShow.map((item) => (
           <SidebarMenuItem
             key={item.label}
             className={cn(
-              'h-10',
+              'h-10 group-data-[collapsible=icon]:h-12',
               showWhenCollapsed &&
                 !item.showWhenCollapsed &&
                 'group-data-[collapsible=icon]:hidden',
@@ -81,13 +79,11 @@ export function SidebarSection({
             <SidebarMenuButton
               tooltip={item.label}
               className="h-10"
-              isActive={
-                item.notExactActive && item.url.to
-                  ? router.location.pathname.startsWith(item.url.to)
-                  : router.location.pathname === item.url.to
-              }
               render={
-                <Link {...item.url} className="[&>svg]:size-6 gap-6 px-3 py-2">
+                <Link
+                  {...item.url}
+                  className="data-[status=active]:bg-sidebar-accent [&>svg]:size-6 gap-6 px-3 py-2"
+                >
                   {item.icon && <item.icon className={item.iconClassName} />}
                   <span>{item.label}</span>
                 </Link>

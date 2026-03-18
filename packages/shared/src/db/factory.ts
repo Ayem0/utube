@@ -6,6 +6,7 @@ export const makeDrizzle = (connectionString: string) => {
   const sql = new SQL({
     adapter: "postgres",
     url: connectionString,
+    max: 10,
   });
   return drizzle({
     client: sql,

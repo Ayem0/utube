@@ -7,8 +7,8 @@ export const Route = createFileRoute('/_app/_settings')({
     sidebar: 'over',
   },
 
-  beforeLoad: async ({ context, location }) => {
-    if (!context.session)
+  beforeLoad: ({ context, location }) => {
+    if (!context.user)
       throw redirect({ to: '/login', search: { redirectUrl: location.href } });
   },
 });

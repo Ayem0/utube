@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeader } from '@tanstack/react-start/server';
+import { getCookie } from '../utils/get-cookie';
 
 export const getSidebarCookie = createServerFn({
   method: 'GET',
@@ -8,11 +9,3 @@ export const getSidebarCookie = createServerFn({
   const sidebarState = getCookie('sidebar_state', cookies);
   return sidebarState ? sidebarState !== 'false' : true;
 });
-
-function getCookie(name: string, cookieHeader: string | undefined) {
-  if (!cookieHeader) return undefined;
-  return cookieHeader
-    .split('; ')
-    .find((row) => row.startsWith(name + '='))
-    ?.split('=')[1];
-}

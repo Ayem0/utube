@@ -10,8 +10,8 @@ const searchSchema = z.object({
 export const Route = createFileRoute('/_auth/signup')({
   component: RouteComponent,
   validateSearch: (search) => searchSchema.parse(search),
-  beforeLoad: ({ context, search }) => {
-    if (context.session) throw redirect({ to: search.redirectUrl });
+  beforeLoad: async ({ context, search }) => {
+    if (context.user) throw redirect({ to: search.redirectUrl });
   },
 });
 

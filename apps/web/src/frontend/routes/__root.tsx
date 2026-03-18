@@ -9,37 +9,23 @@ import {
   createRootRouteWithContext,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
-import { getAuthSession } from '../middleware/auth-middleware';
+import { User } from 'better-auth';
+import { authQueryOptions } from '../lib/auth/auth-query-options';
 
 interface MyRouterContext {
   queryClient: QueryClient;
-  session: {
-    session: {
-      id: string;
-      createdAt: Date;
-      updatedAt: Date;
-      userId: string;
-      expiresAt: Date;
-      token: string;
-      ipAddress?: string | null | undefined;
-      userAgent?: string | null | undefined;
-    };
-    user: {
-      id: string;
-      createdAt: Date;
-      updatedAt: Date;
-      email: string;
-      emailVerified: boolean;
-      name: string;
-      image?: string | null | undefined;
-    };
-  } | null;
+  user: User | undefined;
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-  beforeLoad: async () => {
-    const session = await getAuthSession();
-    return { session: session };
+  beforeLoad: async ({ context }) => {
+    const session = await context.queryClient.ensureQueryData({
+      ...authQueryOptions(),
+      revalidateIfStale: true,
+    });
+    return {
+      user: session?.user,
+    };
   },
   head: () => ({
     meta: [
@@ -51,7 +37,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'U-Tube',
       },
     ],
     links: [

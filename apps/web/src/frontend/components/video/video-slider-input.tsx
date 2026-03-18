@@ -91,7 +91,7 @@ export function VideoSliderInput({
       step={0.001}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
-      onInput={onPointerMove}
+      onPointerMove={onPointerMove}
     />
   );
 }

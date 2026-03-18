@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 import { Context, Effect, Layer } from "effect";
 import { video as videoTable } from "../../db/schema";
 import { UndefinedError } from "../../lib/utils/undefined-error";
-import { VideoCreationStatus } from "../../lib/video/video-status";
 import { DBClient } from "../db/db-client";
 import { DBError } from "../db/db-errors";
 
@@ -16,7 +15,7 @@ type Video = typeof videoTable.$inferSelect;
 export interface VideoRepositoryService {
   update: (data: {
     id: string;
-    status: VideoCreationStatus;
+    data: Partial<Video>;
   }) => Effect.Effect<Video, UndefinedError | DBError>;
   create: (data: {
     id: string;
@@ -33,13 +32,13 @@ const makeLive = () =>
   Effect.gen(function* () {
     const db = yield* DBClient;
     return {
-      update: (data: { id: string; status: VideoCreationStatus }) =>
+      update: (data: { id: string; data: Partial<Video> }) =>
         Effect.gen(function* () {
           const [res] = yield* db.run((db) =>
             db
               .update(videoTable)
               .set({
-                creationStatus: data.status,
+                ...data.data,
               })
               .where(eq(videoTable.id, data.id))
               .returning(),
@@ -50,6 +49,7 @@ const makeLive = () =>
 
           return res;
         }),
+
       create: (data: {
         id: string;
         channelId: string;

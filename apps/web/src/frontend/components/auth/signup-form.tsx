@@ -1,3 +1,6 @@
+import { useAppForm } from '@/frontend/hooks/use-form';
+import { authClient } from '@/frontend/lib/auth/auth-client';
+import { authQueryOptions } from '@/frontend/lib/auth/auth-query-options';
 import { Alert, AlertDescription } from '@repo/ui/alert';
 import { Button } from '@repo/ui/button';
 import {
@@ -7,12 +10,11 @@ import {
   FieldSeparator,
 } from '@repo/ui/field';
 import { formOptions } from '@tanstack/react-form';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useRouter, useSearch } from '@tanstack/react-router';
 import { AlertCircleIcon } from 'lucide-react';
 import { useState } from 'react';
 import * as z from 'zod';
-import { authClient } from '@/frontend/lib/auth-client';
-import { useAppForm } from '@/frontend/hooks/use-form';
 
 const majRegex = /[A-Z]/;
 const minRegex = /[a-z]/;
@@ -62,20 +64,39 @@ const signupFormOptions = formOptions({
 export function SignupForm() {
   const [error, setError] = useState<string | null>(null);
   const { redirectUrl } = useSearch({ from: '/_auth/signup' });
+  const queryClient = useQueryClient();
   const router = useRouter();
   const form = useAppForm({
     ...signupFormOptions,
     onSubmit: async ({ value }) => {
-      const res = await authClient.signUp.email({
-        name: value.email,
-        email: value.email,
-        password: value.password,
-      });
-      if (res.error) {
-        setError(res.error.message ?? 'Unkown error occured please try again.');
-      } else if (res.data.user) {
-        router.navigate({ to: redirectUrl, replace: true });
-      }
+      await authClient.signUp.email(
+        {
+          name: value.email,
+          email: value.email,
+          password: value.password,
+          callbackURL: redirectUrl,
+        },
+        {
+          onSuccess: async () => {
+            // invalidate the auth query
+            queryClient.removeQueries({
+              queryKey: authQueryOptions().queryKey,
+            });
+            // invalidate the router
+            // await router.invalidate();
+            // navigate to the redirect url
+            await router.navigate({ to: redirectUrl, replace: true });
+          },
+          onError: ({ error }) => {
+            setError(error.message ?? 'Unkown error occured please try again.');
+          },
+        },
+      );
+      // if (res.error) {
+      //   setError(res.error.message ?? 'Unkown error occured please try again.');
+      // } else if (res.data.user) {
+      //   router.navigate({ to: redirectUrl, replace: true });
+      // }
     },
   });
   return (

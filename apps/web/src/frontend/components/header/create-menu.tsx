@@ -5,10 +5,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
-import { Link } from '@tanstack/react-router';
+import { Link, useRouteContext } from '@tanstack/react-router';
 import { Plus, Radio, Upload } from 'lucide-react';
 
 export function CreateMenu() {
+  const { selectedChannel } = useRouteContext({ from: '/_app' });
+  if (!selectedChannel) return null;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -25,7 +27,8 @@ export function CreateMenu() {
       <DropdownMenuContent className="min-w-56" side="bottom" align="center">
         <DropdownMenuItem className="px-3 gap-2">
           <Link
-            to="/studio/upload"
+            to="/studio/$channelId"
+            params={{ channelId: selectedChannel.id }}
             className="flex w-full items-center gap-2 text-nowrap"
           >
             <Upload className="size-6" />
@@ -34,7 +37,8 @@ export function CreateMenu() {
         </DropdownMenuItem>
         <DropdownMenuItem className="px-3 gap-2">
           <Link
-            to="/studio/upload"
+            to="/studio/$channelId"
+            params={{ channelId: selectedChannel.id }}
             className="flex w-full items-center gap-2 text-nowrap"
           >
             <Radio className="size-6" />

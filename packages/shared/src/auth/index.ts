@@ -46,6 +46,7 @@ export const auth = betterAuth({
           const generatedName = generateRandomNameFromEmail(user.email);
           await db.insert(channel).values({
             id: crypto.randomUUID(),
+            default: true,
             name: generatedName,
             alias: generatedName,
             image: user.image,

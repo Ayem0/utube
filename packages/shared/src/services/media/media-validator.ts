@@ -8,18 +8,16 @@ import { FSError } from "../file-system/file-system-errors";
 import { S3Client } from "../s3/s3-client";
 import { S3Error } from "../s3/s3-errors";
 import {
-  VideoRepository,
-  VideoRepositoryService,
-} from "../video/video-repository";
-import {
   InvalidMediaSizeError,
   InvalidMediaTypeError,
   InvalidVideoError,
 } from "./media-errors";
+import { withTempVideoFile } from "./media-utils";
 import {
   MediaValidatorConfig,
   MediaValidatorConfigService,
 } from "./media-validator-config";
+import { VideoRepository, VideoRepositoryService } from "./video-repository";
 
 export class MediaValidator extends Context.Tag("MediaValidator")<
   MediaValidator,
@@ -42,7 +40,7 @@ export interface MediaValidatorService {
   readonly validateVideo: (
     data: VideoValidationJob,
   ) => Effect.Effect<
-    void,
+    any,
     InvalidVideoError | FSError | S3Error | UndefinedError | DBError
   >;
 }
@@ -93,10 +91,11 @@ export const MediaValidatorLive = Layer.effect(
       validateVideo: (data: VideoValidationJob) =>
         Effect.scoped(
           Effect.gen(function* () {
-            yield* videoRepo.update({
-              id: data.payload.id,
-              status: VideoCreationStatus.VALIDATING,
-            });
+            yield* updateDbStatus(
+              data.payload.id,
+              VideoCreationStatus.VALIDATING,
+              videoRepo,
+            );
 
             const video = yield* s3.getFile(data.payload.videoId, "temp-video");
 
@@ -130,7 +129,9 @@ const updateDbStatus = (
   Effect.gen(function* () {
     yield* videoRepo.update({
       id: id,
-      status: status,
+      data: {
+        creationStatus: status,
+      },
     });
   });
 
@@ -150,8 +151,8 @@ const validateVideoMetadata = (
       });
     }
 
-    const width = videoStream.width;
-    const height = videoStream.height;
+    const width = Number(videoStream.width);
+    const height = Number(videoStream.height);
 
     const [num, den] = videoStream.r_frame_rate.split("/");
     const fps = Number(num) / Number(den);
@@ -178,17 +179,9 @@ const validateVideoMetadata = (
         message: `${duration}`,
       });
     }
-    return;
+    console.log("Video metadata validated", metadata);
+    return metadata;
   });
-
-const withTempVideoFile = (
-  fs: FileSystemService,
-  videoId: string,
-  buffer: Bun.S3File,
-) =>
-  Effect.acquireRelease(fs.writeFile(`/tmp/${videoId}`, buffer), (path) =>
-    fs.deleteFile(path).pipe(Effect.catchAll(() => Effect.void)),
-  );
 
 const probeVideo = (path: string) =>
   Effect.tryPromise({

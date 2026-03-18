@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
   boolean,
   index,
+  jsonb,
   pgTable,
   smallint,
   text,
@@ -120,6 +121,7 @@ export const video = pgTable(
     description: text("description"),
     tempVideoKey: text("temp_video_key").notNull(),
     tempThumbnailKey: text("temp_thumbnail_key").notNull(),
+    metadata: jsonb("metadata"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     creationStatus: smallint("creation_status")
       .notNull()
@@ -149,6 +151,7 @@ export const channel = pgTable(
     name: text("name").notNull(),
     alias: text("alias").notNull().unique(),
     image: text("image"),
+    default: boolean().default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

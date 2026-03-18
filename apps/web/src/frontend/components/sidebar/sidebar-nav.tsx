@@ -1,5 +1,5 @@
-import { Route } from '@/frontend/routes/__root';
 import { SidebarSeparator } from '@repo/ui/sidebar';
+import { useRouteContext } from '@tanstack/react-router';
 import {
   Baby,
   Clapperboard,
@@ -34,13 +34,13 @@ const loggedInSidebarData: Array<SidebarSectionProps> = [
       {
         icon: Home,
         label: 'Home',
-        url: { to: '/' },
+        url: { to: '/', activeOptions: { exact: true } },
         showWhenCollapsed: true,
       },
       {
         icon: SquarePlay,
         label: 'Shorts',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
         showWhenCollapsed: true,
       },
     ],
@@ -53,47 +53,47 @@ const loggedInSidebarData: Array<SidebarSectionProps> = [
       {
         icon: Music,
         label: 'Music',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Clapperboard,
         label: 'Movies and TV shows',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Radio,
         label: 'Live',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Gamepad2,
         label: 'Video games',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Newspaper,
         label: 'News',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Trophy,
         label: 'Sport',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Lightbulb,
         label: 'Knowledge & culture',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Handbag,
         label: 'Mode & beauty',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Mic,
         label: 'Podcasts',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
     ],
     label: 'Explorer',
@@ -107,23 +107,22 @@ const loggedInSidebarData: Array<SidebarSectionProps> = [
       {
         icon: Settings,
         label: 'Settings',
-        url: { to: '/settings/account' },
-        notExactActive: true,
+        url: { to: '/settings/account', activeOptions: { exact: false } },
       },
       {
         icon: Flag,
         label: 'Report history',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: HelpCircle,
         label: 'Help',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: MessageCircleWarning,
         label: 'Send comments',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
     ],
     label: undefined,
@@ -144,32 +143,32 @@ const loggedOutSidebarData: {
         icon: Home,
         label: 'Home',
         showWhenCollapsed: true,
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: SquarePlay,
         label: 'Shorts',
         showWhenCollapsed: true,
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: TvMinimalPlay,
         iconClassName: 'rotate-x-180',
         showWhenCollapsed: true,
         label: 'Subscriptions',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: UserCircle,
         label: 'You',
         showWhenCollapsed: true,
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: History,
         label: 'History',
         showWhenCollapsed: false,
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
     ],
     label: undefined,
@@ -181,47 +180,47 @@ const loggedOutSidebarData: {
       {
         icon: Music,
         label: 'Music',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Clapperboard,
         label: 'Movies & TV shows',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Radio,
         label: 'Live',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Gamepad2,
         label: 'Video games',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Newspaper,
         label: 'News',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Trophy,
         label: 'Sport',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Lightbulb,
         label: 'Knowledge & culture',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Handbag,
         label: 'Mode & beauty',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Mic,
         label: 'Podcasts',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
     ],
     label: 'Explorer',
@@ -235,17 +234,17 @@ const loggedOutSidebarData: {
       {
         icon: Gem,
         label: 'Premium',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Disc3,
         label: 'Music',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: Baby,
         label: 'Kids',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
     ],
     label: 'Other U-Tube contents',
@@ -262,17 +261,17 @@ const loggedOutSidebarData: {
       {
         icon: Flag,
         label: 'Report history',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: HelpCircle,
         label: 'Help',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
       {
         icon: MessageCircleWarning,
         label: 'Send comments',
-        url: { to: undefined },
+        url: { to: undefined, activeOptions: { exact: true } },
       },
     ],
     label: undefined,
@@ -282,9 +281,9 @@ const loggedOutSidebarData: {
 };
 
 export function SidebarNav() {
-  const { session } = Route.useRouteContext();
+  const { user } = useRouteContext({ from: '/_app' });
 
-  if (session === null) {
+  if (!user) {
     return (
       <>
         <SidebarSection

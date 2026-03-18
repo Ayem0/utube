@@ -1,5 +1,5 @@
 import { useAppForm } from '@/frontend/hooks/use-form';
-import { authClient } from '@/frontend/lib/auth-client';
+import { authClient } from '@/frontend/lib/auth/auth-client';
 import { Alert, AlertDescription } from '@repo/ui/alert';
 import { Button } from '@repo/ui/button';
 import {
@@ -9,7 +9,7 @@ import {
   FieldSeparator,
 } from '@repo/ui/field';
 import { formOptions } from '@tanstack/react-form';
-import { Link, useRouter, useSearch } from '@tanstack/react-router';
+import { Link, useSearch } from '@tanstack/react-router';
 import { AlertCircleIcon } from 'lucide-react';
 import { useState } from 'react';
 import * as z from 'zod';
@@ -55,20 +55,30 @@ const loginFormOptions = formOptions({
 export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const { redirectUrl } = useSearch({ from: '/_auth/login' });
-  const router = useRouter();
   const form = useAppForm({
     ...loginFormOptions,
     onSubmit: async ({ value }) => {
       setError(null);
-      const res = await authClient.signIn.email({
-        email: value.email,
-        password: value.password,
-      });
-      if (res.error) {
-        setError(res.error.message ?? 'Unkown error occured please try again.');
-      } else if (res.data.user) {
-        router.navigate({ to: redirectUrl, replace: true });
-      }
+      await authClient.signIn.email(
+        {
+          email: value.email,
+          password: value.password,
+          callbackURL: redirectUrl,
+        },
+        {
+          onError: ({ error }) => {
+            setError(error.message ?? 'Unkown error occured please try again.');
+          },
+        },
+      );
+      // if (res.error) {
+      //   setError(res.error.message ?? 'Unkown error occured please try again.');
+      // } else if (res.data.user) {
+      //   await queryClient.invalidateQueries({ queryKey: ['auth-session'] });
+      //   await router.invalidate();
+      //   console.log('before navigation');
+      //   router.navigate({ to: redirectUrl, replace: true });
+      // }
     },
   });
   return (

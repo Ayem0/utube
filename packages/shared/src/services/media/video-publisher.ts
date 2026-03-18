@@ -4,15 +4,12 @@ import { VideoValidationJob } from "../../lib/queues/video-validation-job";
 import { UndefinedError } from "../../lib/utils/undefined-error";
 import { videoValidationQueue } from "../../queues/video-validation-queue";
 import { DBError } from "../db/db-errors";
-import {
-  InvalidMediaSizeError,
-  InvalidMediaTypeError,
-} from "../media/media-errors";
-import { MediaValidator } from "../media/media-validator";
 import { QueueClient } from "../queue/queue";
 import { QueueError } from "../queue/queue-errors";
 import { S3Client } from "../s3/s3-client";
 import { S3Error } from "../s3/s3-errors";
+import { InvalidMediaSizeError, InvalidMediaTypeError } from "./media-errors";
+import { MediaValidator } from "./media-validator";
 import { VideoRepository } from "./video-repository";
 
 export class VideoPublisher extends Context.Tag("VideoPublisher")<

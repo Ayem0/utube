@@ -2,13 +2,13 @@ import { DBClientLive } from '@repo/shared/services/db/db-client';
 import { FileSystemLive } from '@repo/shared/services/file-system/file-system';
 import { MediaValidatorLive } from '@repo/shared/services/media/media-validator';
 import { MediaValidatorConfigLive } from '@repo/shared/services/media/media-validator-config';
-import { QueueServiceLive } from '@repo/shared/services/queue/queue';
-import { S3ClientLive } from '@repo/shared/services/s3/s3-client';
 import {
   VideoPublisher,
   VideoPublisherLive,
-} from '@repo/shared/services/video/video-publisher';
-import { VideoReposistoryLive } from '@repo/shared/services/video/video-repository';
+} from '@repo/shared/services/media/video-publisher';
+import { VideoReposistoryLive } from '@repo/shared/services/media/video-repository';
+import { QueueServiceLive } from '@repo/shared/services/queue/queue';
+import { S3ClientLive } from '@repo/shared/services/s3/s3-client';
 import { Effect, Layer, ManagedRuntime } from 'effect';
 import Elysia, { fileType } from 'elysia';
 import { authPlugin } from '../api-auth';
