@@ -9,6 +9,7 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import { VideoCreationStatus } from "../lib/video/video-status";
+import { VideoVisibility } from "../lib/video/video-visibility";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -119,6 +120,9 @@ export const video = pgTable(
       .references(() => channel.id, { onDelete: "no action" }),
     title: text("title").notNull(),
     description: text("description"),
+    visibility: smallint("visibility")
+      .notNull()
+      .default(VideoVisibility.PUBLIC),
     tempVideoKey: text("temp_video_key").notNull(),
     tempThumbnailKey: text("temp_thumbnail_key").notNull(),
     metadata: jsonb("metadata"),

@@ -13,7 +13,8 @@ export class DBClient extends Context.Tag("DBClient")<
   DBClientService
 >() {}
 
-const makeLive = () =>
+export const DBClientLive = Layer.scoped(
+  DBClient,
   Effect.gen(function* () {
     const db = yield* Effect.acquireRelease(
       Effect.sync(() => makeDrizzle(process.env.DATABASE_URL!)),
@@ -30,6 +31,5 @@ const makeLive = () =>
           catch: (e) => new DBError({ message: "DBError", cause: e }),
         }).pipe(Effect.retry({ times: 3 })),
     };
-  });
-
-export const DBClientLive = Layer.scoped(DBClient, makeLive());
+  }),
+);

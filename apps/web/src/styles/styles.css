@@ -1,0 +1,21 @@
+
+
+
+/* CUSTOM CSS */
+html {
+  scrollbar-color: #aaa transparent;
+  overflow-y: scroll;
+}
+
+.scrollbar-hover {
+  scrollbar-color: transparent transparent !important;
+}
+.scrollbar-hover:hover {
+  scrollbar-color: #aaa transparent !important;
+}
+
+/* END CUSTOM CSS */
+
+.dark {
+  --frosted-glass: rgba(15, 15, 15, 0.8);
+}

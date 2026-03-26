@@ -42,7 +42,7 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        after: async (user, ctx) => {
+        after: async (user) => {
           const generatedName = generateRandomNameFromEmail(user.email);
           await db.insert(channel).values({
             id: crypto.randomUUID(),

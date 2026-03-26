@@ -15,7 +15,7 @@ export class QueueClient extends Context.Tag("Queue")<
   QueueService
 >() {}
 
-const makeLive: () => QueueService = () => ({
+export const QueueServiceLive = Layer.succeed(QueueClient, {
   send: (queue, job, data) =>
     Effect.gen(function* () {
       yield* Effect.tryPromise({
@@ -24,5 +24,3 @@ const makeLive: () => QueueService = () => ({
       }).pipe(Effect.retry({ times: 3 }));
     }),
 });
-
-export const QueueServiceLive = Layer.succeed(QueueClient, makeLive());

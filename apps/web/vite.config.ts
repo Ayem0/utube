@@ -17,9 +17,7 @@ const plugins: Array<PluginOption> =
           projects: ['./tsconfig.json'],
         }),
         tailwindcss(),
-        tanstackStart({
-          srcDirectory: './src/frontend',
-        }),
+        tanstackStart(),
         viteReact({
           babel: {
             plugins: ['babel-plugin-react-compiler'],
@@ -34,9 +32,7 @@ const plugins: Array<PluginOption> =
           projects: ['./tsconfig.json'],
         }),
         tailwindcss(),
-        tanstackStart({
-          srcDirectory: './src/frontend',
-        }),
+        tanstackStart(),
         viteReact({
           babel: {
             plugins: ['babel-plugin-react-compiler'],

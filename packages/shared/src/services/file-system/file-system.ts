@@ -14,7 +14,7 @@ export class FileSystem extends Context.Tag("FileSystem")<
   FileSystemService
 >() {}
 
-const makeLive: () => FileSystemService = () => ({
+export const FileSystemLive = Layer.succeed(FileSystem, {
   writeFile: (path, file) =>
     Effect.tryPromise({
       try: async () => {
@@ -29,5 +29,3 @@ const makeLive: () => FileSystemService = () => ({
       catch: (e) => new FSError({ cause: e, message: "FSError" }),
     }),
 });
-
-export const FileSystemLive = Layer.succeed(FileSystem, makeLive());

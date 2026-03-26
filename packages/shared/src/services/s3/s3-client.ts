@@ -23,7 +23,7 @@ export class S3Client extends Context.Tag("S3Client")<
   S3ClientService
 >() {}
 
-export const makeLive: () => S3ClientService = () => ({
+export const S3ClientLive = Layer.succeed(S3Client, {
   getFile: (path, bucket) =>
     Effect.gen(function* () {
       return yield* Effect.tryPromise({
@@ -82,5 +82,3 @@ export const makeLive: () => S3ClientService = () => ({
       }),
     ),
 });
-
-export const S3ClientLive = Layer.succeed(S3Client, makeLive());

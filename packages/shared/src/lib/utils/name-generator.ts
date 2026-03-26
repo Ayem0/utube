@@ -1,13 +1,10 @@
 export function generateRandomNameFromEmail(email: string) {
-  const p1 = email.split("@")[0];
+  const p1 = email.split("@")[0] ?? "user";
 
-  if (!p1) throw new Error("Invalid email");
-
-  const base =
-    p1
-      .replace(/[^\p{L}\p{N}]+/gu, "") // extract only letters and numbers
-      .toLowerCase()
-      .slice(0, 20) ?? "user";
+  const base = p1
+    .replace(/[^\p{L}\p{N}]+/gu, "") // extract only letters and numbers
+    .toLowerCase()
+    .slice(0, 20);
 
   const suffix = randomSuffix();
 

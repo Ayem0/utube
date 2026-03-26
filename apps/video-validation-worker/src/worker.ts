@@ -52,8 +52,7 @@ const program = (data: VideoValidationJob) =>
       }),
       Effect.match({
         onFailure: (e) => {
-          console.log("FAILURE");
-          console.log(e);
+          console.log("FAILURE", e);
         },
         onSuccess: () => {
           console.log("Success");

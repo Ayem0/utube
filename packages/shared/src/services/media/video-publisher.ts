@@ -36,7 +36,8 @@ export interface VideoPublisherService {
   >;
 }
 
-const makeLive = () =>
+export const VideoPublisherLive = Layer.effect(
+  VideoPublisher,
   Effect.gen(function* () {
     const videoRepo = yield* VideoRepository;
     const fileStorage = yield* S3Client;
@@ -129,6 +130,5 @@ const makeLive = () =>
           }),
         ),
     };
-  });
-
-export const VideoPublisherLive = Layer.effect(VideoPublisher, makeLive());
+  }),
+);
