@@ -1,4 +1,4 @@
-import { auth } from '@repo/shared/auth/index';
+import { auth } from '@repo/auth/auth';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
 

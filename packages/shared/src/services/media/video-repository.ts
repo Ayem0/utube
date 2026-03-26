@@ -85,7 +85,7 @@ export const VideoReposistoryLive = Layer.effect(
               pageSize: size,
               totalResults: count,
               items: res,
-              maxPages: totalPages,
+              maxPageIndex: totalPages,
             };
           }
           const res = yield* db.run((db) =>
@@ -102,7 +102,7 @@ export const VideoReposistoryLive = Layer.effect(
             pageSize: size,
             totalResults: count,
             items: res,
-            maxPages: totalPages,
+            maxPageIndex: totalPages,
           };
         }),
       update: (data: { id: string; data: Partial<Video> }) =>
