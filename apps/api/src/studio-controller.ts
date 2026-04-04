@@ -1,6 +1,6 @@
-import { paginationQuerySchema } from "@repo/shared/lib/schemas/pagination-schema";
-import { ChannelRepository } from "@repo/shared/services/channel/channel-repository";
-import { VideoRepository } from "@repo/shared/services/media/video-repository";
+import { ChannelRepository } from "@repo/services/channel/channel-repository";
+import { VideoRepository } from "@repo/services/video/video-repository";
+import { paginationSchema } from "@repo/types/schemas/pagination";
 import { Effect } from "effect";
 import Elysia from "elysia";
 import { authPlugin } from "./auth";
@@ -54,7 +54,7 @@ export const studioController = new Elysia()
       );
     },
     {
-      query: paginationQuerySchema,
+      query: paginationSchema,
       auth: true,
     },
   );

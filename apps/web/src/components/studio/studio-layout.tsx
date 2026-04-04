@@ -4,7 +4,6 @@ import { StudioHeader } from './studio-header';
 import { StudioSidebar } from './studio-sidebar';
 
 export function StudioLayout({ children }: { children: ReactNode }) {
-  console.log('here studio layout 2');
   return (
     <SidebarProvider defaultOpen={true} className="flex-col">
       <div className="flex flex-col">

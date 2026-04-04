@@ -17,10 +17,7 @@ export function DataTableColumnHeader<TData, TValue>({
         'flex items-center space-x-2 px-2',
         column.getCanSort() && 'cursor-pointer select-none',
       )}
-      onClick={() => {
-        console.log('here');
-        column.toggleSorting(column.getIsSorted() === 'asc');
-      }}
+      onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
     >
       <div className="flex-1 text-left font-medium">{title}</div>
       {column.getIsSorted() === 'asc' ? (

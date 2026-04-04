@@ -1,4 +1,4 @@
-import { Video } from '@repo/shared/lib/types/channel';
+import type { Video } from '@repo/db/types';
 import { ColumnDef } from '@tanstack/react-table';
 import { DataTableColumnHeader } from '../../data-table/data-table-column-header';
 

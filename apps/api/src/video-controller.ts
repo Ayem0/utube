@@ -1,12 +1,12 @@
-import { VideoPublisher } from "@repo/shared/services/media/video-publisher";
-import type { VideoUploadSchema } from "@repo/shared/types/video/video-upload-schema";
-import { videoUploadSchema } from "@repo/shared/types/video/video-upload-schema";
+import { VideoPublisher } from "@repo/services/video/video-publisher";
+import { videoUploadSchema } from "@repo/types/schemas/video-upload";
+import type { VideoUpload } from "@repo/types/types/video-upload";
 import { Effect } from "effect";
 import Elysia, { fileType } from "elysia";
 import { authPlugin } from "./auth";
 import { apiRuntime } from "./runtime";
 
-const program = (body: VideoUploadSchema) =>
+const program = (body: VideoUpload) =>
   Effect.gen(function* () {
     const videoPublisher = yield* VideoPublisher;
     const res = yield* videoPublisher.publishVideo(

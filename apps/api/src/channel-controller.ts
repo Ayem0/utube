@@ -1,8 +1,8 @@
 import {
   ChannelRepository,
   ChannelRepositoryLive,
-} from "@repo/shared/services/channel/channel-repository";
-import { DBClientLive } from "@repo/shared/services/db/db-client";
+} from "@repo/services/channel/channel-repository";
+import { DBClientLive } from "@repo/services/db/db-client";
 import { Effect, Layer, ManagedRuntime } from "effect";
 import Elysia from "elysia";
 import { authPlugin } from "./auth";

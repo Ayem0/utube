@@ -1,0 +1,5 @@
+{
+  "extends": "@repo/typescript-config/base.json",
+  "include": ["src", "../services/src/services", "../services/src/channel", "../services/src/db", "../services/src/fs", "../services/src/s3", "../services/src/video"],
+  "exclude": ["node_modules", "dist"]
+}

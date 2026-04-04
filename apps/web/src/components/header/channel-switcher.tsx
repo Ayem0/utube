@@ -1,5 +1,5 @@
 import { setSelectedChannelCookie } from '@/lib/serverFn/set-selected-channel-cookie';
-import { Channel } from '@repo/shared/lib/types/channel';
+import type { Channel } from '@repo/db/types';
 import {
   Avatar,
   AvatarFallback,

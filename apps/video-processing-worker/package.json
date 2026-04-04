@@ -5,15 +5,16 @@
     "build": "bun --bun vite build"
   },
   "dependencies": {
-    "@repo/eslint-config": "*",
-    "@repo/shared": "workspace:*",
-    "@repo/typescript-config": "*",
-    "bullmq": "^5.70.1",
-    "effect": "^3.19.19",
-    "zod": "^4.3.6",
+    "@repo/services": "workspace:*",
+    "@repo/types": "workspace:*",
+    "bullmq": "catalog:",
+    "effect": "catalog:",
+    "zod": "catalog:",
     "vite-tsconfig-paths": "^6.1.1"
   },
   "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
     "@types/bun": "^1.3.9",
     "vite": "^7.3.1"
   }

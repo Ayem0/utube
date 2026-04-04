@@ -1,0 +1,26 @@
+{
+  "name": "@repo/services",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {},
+  "devDependencies": {
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "@types/bun": "^1.3.10"
+  },
+  "dependencies": {
+    "@repo/db": "workspace:*",
+    "@repo/queues": "workspace:*",
+    "@repo/redis": "workspace:*",
+    "@repo/s3": "workspace:*",
+    "@repo/types": "workspace:*",
+    "bullmq": "catalog:",
+    "drizzle-kit": "catalog:",
+    "drizzle-orm": "catalog:",
+    "effect": "catalog:",
+    "fast-xml-parser": "^5.5.10"
+  }
+}

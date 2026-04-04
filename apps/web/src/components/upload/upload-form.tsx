@@ -1,7 +1,7 @@
 import { useAppForm } from '@/hooks/use-form';
 import { getApi } from '@/lib/api/api';
-import type { VideoUploadSchema } from '@repo/shared/types/video/video-upload-schema';
-import { videoUploadSchema } from '@repo/shared/types/video/video-upload-schema';
+import { videoUploadSchema } from '@repo/types/schemas/video-upload';
+import type { VideoUpload } from '@repo/types/types/video-upload';
 import { Alert, AlertDescription } from '@repo/ui/components/alert';
 import { FieldGroup } from '@repo/ui/components/field';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -23,8 +23,7 @@ export function UploadForm({
   const queryClient = useQueryClient();
 
   const videoMutation = useMutation({
-    mutationFn: async (value: VideoUploadSchema) =>
-      await getApi().video.post(value),
+    mutationFn: async (value: VideoUpload) => await getApi().video.post(value),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         predicate: (query) =>
@@ -45,7 +44,7 @@ export function UploadForm({
       description: '',
       image: undefined,
       video: undefined,
-    } as unknown as VideoUploadSchema,
+    } as unknown as VideoUpload,
     validators: {
       onChange: videoUploadSchema,
       onSubmit: videoUploadSchema,

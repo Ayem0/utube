@@ -49,7 +49,6 @@ export function VideoSliderInput({
   }, [videoRef]);
 
   const onPointerUp = () => {
-    console.log('up', isPlaying.current);
     if (!videoRef.current || !isPlaying.current) return;
 
     videoRef.current.play();

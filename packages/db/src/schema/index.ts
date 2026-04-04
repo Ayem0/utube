@@ -1,10 +1,9 @@
-import { VideoCreationStatus } from "@repo/shared/lib/video/video-status";
-import { VideoVisibility } from "@repo/shared/lib/video/video-visibility";
+import { VideoCreationStatus } from "@repo/types/enums/video/video-status";
+import { VideoVisibility } from "@repo/types/enums/video/video-visibility";
 import { relations } from "drizzle-orm";
 import {
   boolean,
   index,
-  jsonb,
   pgTable,
   smallint,
   text,
@@ -125,7 +124,8 @@ export const video = pgTable(
       .default(VideoVisibility.PUBLIC),
     tempVideoKey: text("temp_video_key").notNull(),
     tempThumbnailKey: text("temp_thumbnail_key").notNull(),
-    metadata: jsonb("metadata"),
+    hls: text("hls"),
+    dash: text("dash"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     creationStatus: smallint("creation_status")
       .notNull()

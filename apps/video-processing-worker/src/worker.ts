@@ -1,24 +1,25 @@
+import { DBClientLive } from "@repo/services/db/db-client";
+import { FileSystemLive } from "@repo/services/file-system/file-system";
+import { InvalidVideoError } from "@repo/services/media/media-errors";
+import { MediaValidatorConfigLive } from "@repo/services/media/media-validator-config";
+import { S3ClientLive } from "@repo/services/s3/s3-client";
 import {
-  VideoValidationJob,
-  videoValidationJob,
-} from "@repo/shared/lib/queues/video-validation-job";
-import { DBClientLive } from "@repo/shared/services/db/db-client";
-import { FileSystemLive } from "@repo/shared/services/file-system/file-system";
-import { InvalidVideoError } from "@repo/shared/services/media/media-errors";
-import {
-  MediaValidator,
-  MediaValidatorLive,
-} from "@repo/shared/services/media/media-validator";
-import { MediaValidatorConfigLive } from "@repo/shared/services/media/media-validator-config";
-import { VideoReposistoryLive } from "@repo/shared/services/media/video-repository";
-import { S3ClientLive } from "@repo/shared/services/s3/s3-client";
+  VideoPipeline,
+  VideoPipelineLive,
+} from "@repo/services/video/video-pipeline";
+import { VideoProcessorLive } from "@repo/services/video/video-processor";
+import { VideoReposistoryLive } from "@repo/services/video/video-repository";
+import { VideoValidatorLive } from "@repo/services/video/video-validator";
+import { videoProcessingJobSchema } from "@repo/types/schemas/video-processing-job";
+import { VideoProcessingJob } from "@repo/types/types/video-processing-job";
 import { Worker } from "bullmq";
 import { Effect, Layer, ManagedRuntime, Schedule } from "effect";
 
 new Worker(
-  "videoValidationQueue",
+  "videoProcessingQueue",
   async (job) => {
-    const payload = videoValidationJob.parse(job.data);
+    console.log("Processing job...");
+    const payload = videoProcessingJobSchema.parse(job.data);
     await runtime.runPromise(program(payload));
   },
   {
@@ -27,13 +28,16 @@ new Worker(
     },
   },
 );
-
-const layer = MediaValidatorLive.pipe(
-  Layer.provide(MediaValidatorConfigLive),
+console.log("WORKER RUNNING");
+const layer = VideoPipelineLive.pipe(
+  Layer.provide(FileSystemLive),
   Layer.provide(VideoReposistoryLive),
   Layer.provide(DBClientLive),
   Layer.provide(S3ClientLive),
   Layer.provide(FileSystemLive),
+  Layer.provide(VideoProcessorLive),
+  Layer.provide(VideoValidatorLive),
+  Layer.provide(MediaValidatorConfigLive),
 );
 
 const runtime = ManagedRuntime.make(layer);
@@ -42,10 +46,11 @@ const retryPolicy = Schedule.exponential("500 millis").pipe(
   Schedule.intersect(Schedule.recurs(3)),
 );
 
-const program = (data: VideoValidationJob) =>
+const program = (data: VideoProcessingJob) =>
   Effect.gen(function* () {
-    const mediaValidator = yield* MediaValidator;
-    yield* mediaValidator.validateVideo(data).pipe(
+    const videoPipeline = yield* VideoPipeline;
+    console.log("Processing video...");
+    yield* videoPipeline.processVideo(data).pipe(
       Effect.retry({
         schedule: retryPolicy,
         while: (e) => !(e instanceof InvalidVideoError),

@@ -11,9 +11,10 @@
   },
   "dependencies": {
     "elysia": "catalog:",
-    "@repo/shared": "workspace:*",
+    "effect": "catalog:",
+    "@repo/services": "workspace:*",
+    "@repo/types": "workspace:*",
     "@repo/auth": "workspace:*",
-    "effect": "^3.21.0",
     "@elysiajs/cors": "^1.4.1"
   },
   "devDependencies": {

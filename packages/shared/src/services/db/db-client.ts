@@ -1,4 +1,3 @@
-// db/layer.ts
 import { Context, Effect, Layer } from "effect";
 import { DB } from "../../db";
 import { makeDrizzle } from "../../db/factory";
@@ -25,7 +24,7 @@ export const DBClientLive = Layer.scoped(
     );
 
     return {
-      run: <A>(f: (d: typeof db) => Promise<A>) =>
+      run: <T>(f: (d: typeof db) => Promise<T>) =>
         Effect.tryPromise({
           try: () => f(db),
           catch: (e) => new DBError({ message: "DBError", cause: e }),

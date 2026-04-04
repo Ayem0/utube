@@ -17,7 +17,6 @@ import { VideoTableDialog } from './video-table-dialog';
 import { VideoTableEmpty } from './video-table-empty';
 
 export function VideoTable() {
-  console.log('in the video table');
   const { channel } = useRouteContext({
     from: '/_studio/studio/$channelId/_content/content/videos',
   });

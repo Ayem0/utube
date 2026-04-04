@@ -5,7 +5,6 @@ import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 export const Route = createFileRoute('/_studio/studio/$channelId')({
   component: RouteComponent,
   beforeLoad: async ({ context, location, params }) => {
-    console.log('here studio route');
     if (!context.user) {
       console.log('no session');
       throw redirect({
