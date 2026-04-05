@@ -80,8 +80,9 @@ export const VideoPipelineLive = Layer.effect(
                   */
                   yield* s3.uploadFiles(entries, "videos");
                   yield* videoRepo.update(data.rowId, {
-                    hls: `http://localhost:8080/videos/${data.rowId}/master.m3u8`,
-                    dash: `http://localhost:8080/videos/${data.rowId}/manifest.mpd`,
+                    hlsUrl: `http://localhost:8080/videos/${data.rowId}/master.m3u8`, // TODO replace with cdn url env variable
+                    dashUrl: `http://localhost:8080/videos/${data.rowId}/manifest.mpd`, // TODO replace with cdn url env variable
+                    duration: rawMetadata.format?.duration,
                   });
                   // 10. Delete temp files,
                   yield* fs.deleteDirectory(`/tmp/${data.rowId}`);

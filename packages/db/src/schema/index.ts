@@ -4,6 +4,7 @@ import { relations } from "drizzle-orm";
 import {
   boolean,
   index,
+  numeric,
   pgTable,
   smallint,
   text,
@@ -124,8 +125,10 @@ export const video = pgTable(
       .default(VideoVisibility.PUBLIC),
     tempVideoKey: text("temp_video_key").notNull(),
     tempThumbnailKey: text("temp_thumbnail_key").notNull(),
-    hls: text("hls"),
-    dash: text("dash"),
+    hlsUrl: text("hls_url"),
+    dashUrl: text("dash_url"),
+    thumbnailUrl: text("thumbnail_url"),
+    duration: numeric("duration", { mode: "number" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     creationStatus: smallint("creation_status")
       .notNull()
@@ -154,7 +157,7 @@ export const channel = pgTable(
       .references(() => user.id, { onDelete: "no action" }),
     name: text("name").notNull(),
     alias: text("alias").notNull().unique(),
-    image: text("image"),
+    avatarUrl: text("avatar_url"),
     default: boolean().default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")

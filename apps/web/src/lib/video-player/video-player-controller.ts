@@ -39,9 +39,11 @@ export class VideoPlayerController2 extends EventEmitter<VideoPlayerControllerEv
    * @param restoreVolume Function to restore volume state
    * @param storeVolume Function to store volume state
    */
-  constructor() {
+  constructor(hlsUrl: string, dashUrl: string) {
     super();
     this._id = crypto.randomUUID();
+    this.hlsUrl = hlsUrl;
+    this.dashUrl = dashUrl;
   }
   private _id;
   private _video: HTMLVideoElement | null = null;
@@ -51,6 +53,9 @@ export class VideoPlayerController2 extends EventEmitter<VideoPlayerControllerEv
   private _playRate = 1;
   private isLive = false;
   private _currentTime = 0;
+
+  private hlsUrl: string;
+  private dashUrl: string;
 
   private _volume = 1;
   private muted = false;

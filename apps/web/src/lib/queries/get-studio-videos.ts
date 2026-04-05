@@ -13,7 +13,6 @@ export const getStudioVideosQueryOptions = (
       pagination.pageSize,
     ],
     placeholderData: keepPreviousData,
-    refetchOnWindowFocus: false,
     queryFn: async () =>
       (
         await getApi()

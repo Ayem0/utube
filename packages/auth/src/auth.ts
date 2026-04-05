@@ -51,7 +51,7 @@ export const auth = betterAuth({
             default: true,
             name: generatedName,
             alias: generatedName,
-            image: user.image,
+            avatarUrl: user.image,
             userId: user.id,
           });
         },

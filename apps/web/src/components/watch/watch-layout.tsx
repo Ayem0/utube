@@ -1,11 +1,11 @@
+import type { WatchVideo } from '@/lib/queries/get-watch-video';
 import { AspectRatio } from '@repo/ui/components/aspect-ratio';
 import { Skeleton } from '@repo/ui/components/skeleton';
 import { ClientOnly, Link } from '@tanstack/react-router';
 import { Image } from '@unpic/react';
-import type { FakeVideo } from '../home/home-feed';
 import { VideoPlayer2 } from '../video-player2/video-player2';
 
-export function WatchLayout({ video }: { video: FakeVideo }) {
+export function WatchLayout({ video }: { video: WatchVideo }) {
   return (
     <div className="flex flex-col w-full">
       <ClientOnly
@@ -15,15 +15,15 @@ export function WatchLayout({ video }: { video: FakeVideo }) {
           </AspectRatio>
         }
       >
-        <VideoPlayer2 src={'/afriquedusud.mp4'} />
+        <VideoPlayer2 hlsUrl={video.hlsUrl} dashUrl={video.dashUrl} />
       </ClientOnly>
 
       <div className="flex flex-col w-full p-3 gap-2 pl-2">
         <span className="text-lg">{video.title}</span>
         <div className="flex flex-row">
-          <Link to="/@{$id}" params={{ id: video.channel.id }}>
+          <Link to="/@{$alias}" params={{ alias: video.channel.alias }}>
             <Image
-              src={video.channel.img}
+              src={video.channel.avatarUrl ?? ''}
               layout="fixed"
               className="rounded-full pt-1"
               width={32}
@@ -31,13 +31,14 @@ export function WatchLayout({ video }: { video: FakeVideo }) {
             />
           </Link>
           <div className="flex flex-col gap-2">
-            <Link to="/@{$id}" params={{ id: video.channel.id }}>
+            <Link to="/@{$alias}" params={{ alias: video.channel.alias }}>
               <span className="text-muted-foreground hover:text-white">
                 {video.channel.name}
               </span>
             </Link>
             <span className="text-muted-foreground">
-              {formatSubscribers(video.channel.subscribers)} subscribers
+              {formatSubscribers(0)} subscribers
+              {/* TODO add subscribers */}
             </span>
           </div>
         </div>

@@ -18,7 +18,7 @@ import { Route as AppResultsIndexRouteImport } from './routes/_app/results/index
 import { Route as StudioStudioChannelIdRouteRouteImport } from './routes/_studio/studio/$channelId/route'
 import { Route as StudioStudioChannelIdIndexRouteImport } from './routes/_studio/studio/$channelId/index'
 import { Route as AppWatchIdIndexRouteImport } from './routes/_app/watch/$id.index'
-import { Route as AppChannelAtChar123idChar125IndexRouteImport } from './routes/_app/_channel/@{$id}.index'
+import { Route as AppChannelAtChar123aliasChar125IndexRouteImport } from './routes/_app/_channel/@{$alias}.index'
 import { Route as AppSettingsSettingsNotificationsRouteImport } from './routes/_app/_settings/settings/notifications'
 import { Route as AppSettingsSettingsAccountRouteImport } from './routes/_app/_settings/settings/account'
 import { Route as StudioStudioChannelIdContentRouteRouteImport } from './routes/_studio/studio/$channelId/_content/route'
@@ -70,10 +70,10 @@ const AppWatchIdIndexRoute = AppWatchIdIndexRouteImport.update({
   path: '/watch/$id/',
   getParentRoute: () => AppRouteRoute,
 } as any)
-const AppChannelAtChar123idChar125IndexRoute =
-  AppChannelAtChar123idChar125IndexRouteImport.update({
-    id: '/_channel/@{$id}/',
-    path: '/@{$id}/',
+const AppChannelAtChar123aliasChar125IndexRoute =
+  AppChannelAtChar123aliasChar125IndexRouteImport.update({
+    id: '/_channel/@{$alias}/',
+    path: '/@{$alias}/',
     getParentRoute: () => AppRouteRoute,
   } as any)
 const AppSettingsSettingsNotificationsRoute =
@@ -114,7 +114,7 @@ export interface FileRoutesByFullPath {
   '/results/': typeof AppResultsIndexRoute
   '/settings/account': typeof AppSettingsSettingsAccountRoute
   '/settings/notifications': typeof AppSettingsSettingsNotificationsRoute
-  '/@{$id}/': typeof AppChannelAtChar123idChar125IndexRoute
+  '/@{$alias}/': typeof AppChannelAtChar123aliasChar125IndexRoute
   '/watch/$id/': typeof AppWatchIdIndexRoute
   '/studio/$channelId/': typeof StudioStudioChannelIdIndexRoute
   '/studio/$channelId/content/playlists': typeof StudioStudioChannelIdContentContentPlaylistsRoute
@@ -128,7 +128,7 @@ export interface FileRoutesByTo {
   '/studio/$channelId': typeof StudioStudioChannelIdIndexRoute
   '/settings/account': typeof AppSettingsSettingsAccountRoute
   '/settings/notifications': typeof AppSettingsSettingsNotificationsRoute
-  '/@{$id}': typeof AppChannelAtChar123idChar125IndexRoute
+  '/@{$alias}': typeof AppChannelAtChar123aliasChar125IndexRoute
   '/watch/$id': typeof AppWatchIdIndexRoute
   '/studio/$channelId/content/playlists': typeof StudioStudioChannelIdContentContentPlaylistsRoute
   '/studio/$channelId/content/videos': typeof StudioStudioChannelIdContentContentVideosRoute
@@ -145,7 +145,7 @@ export interface FileRoutesById {
   '/_studio/studio/$channelId/_content': typeof StudioStudioChannelIdContentRouteRouteWithChildren
   '/_app/_settings/settings/account': typeof AppSettingsSettingsAccountRoute
   '/_app/_settings/settings/notifications': typeof AppSettingsSettingsNotificationsRoute
-  '/_app/_channel/@{$id}/': typeof AppChannelAtChar123idChar125IndexRoute
+  '/_app/_channel/@{$alias}/': typeof AppChannelAtChar123aliasChar125IndexRoute
   '/_app/watch/$id/': typeof AppWatchIdIndexRoute
   '/_studio/studio/$channelId/': typeof StudioStudioChannelIdIndexRoute
   '/_studio/studio/$channelId/_content/content/playlists': typeof StudioStudioChannelIdContentContentPlaylistsRoute
@@ -161,7 +161,7 @@ export interface FileRouteTypes {
     | '/results/'
     | '/settings/account'
     | '/settings/notifications'
-    | '/@{$id}/'
+    | '/@{$alias}/'
     | '/watch/$id/'
     | '/studio/$channelId/'
     | '/studio/$channelId/content/playlists'
@@ -175,7 +175,7 @@ export interface FileRouteTypes {
     | '/studio/$channelId'
     | '/settings/account'
     | '/settings/notifications'
-    | '/@{$id}'
+    | '/@{$alias}'
     | '/watch/$id'
     | '/studio/$channelId/content/playlists'
     | '/studio/$channelId/content/videos'
@@ -191,7 +191,7 @@ export interface FileRouteTypes {
     | '/_studio/studio/$channelId/_content'
     | '/_app/_settings/settings/account'
     | '/_app/_settings/settings/notifications'
-    | '/_app/_channel/@{$id}/'
+    | '/_app/_channel/@{$alias}/'
     | '/_app/watch/$id/'
     | '/_studio/studio/$channelId/'
     | '/_studio/studio/$channelId/_content/content/playlists'
@@ -270,11 +270,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWatchIdIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/_app/_channel/@{$id}/': {
-      id: '/_app/_channel/@{$id}/'
-      path: '/@{$id}'
-      fullPath: '/@{$id}/'
-      preLoaderRoute: typeof AppChannelAtChar123idChar125IndexRouteImport
+    '/_app/_channel/@{$alias}/': {
+      id: '/_app/_channel/@{$alias}/'
+      path: '/@{$alias}'
+      fullPath: '/@{$alias}/'
+      preLoaderRoute: typeof AppChannelAtChar123aliasChar125IndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/_app/_settings/settings/notifications': {
@@ -332,7 +332,7 @@ interface AppRouteRouteChildren {
   AppSettingsRouteRoute: typeof AppSettingsRouteRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
   AppResultsIndexRoute: typeof AppResultsIndexRoute
-  AppChannelAtChar123idChar125IndexRoute: typeof AppChannelAtChar123idChar125IndexRoute
+  AppChannelAtChar123aliasChar125IndexRoute: typeof AppChannelAtChar123aliasChar125IndexRoute
   AppWatchIdIndexRoute: typeof AppWatchIdIndexRoute
 }
 
@@ -340,8 +340,8 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppSettingsRouteRoute: AppSettingsRouteRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
   AppResultsIndexRoute: AppResultsIndexRoute,
-  AppChannelAtChar123idChar125IndexRoute:
-    AppChannelAtChar123idChar125IndexRoute,
+  AppChannelAtChar123aliasChar125IndexRoute:
+    AppChannelAtChar123aliasChar125IndexRoute,
   AppWatchIdIndexRoute: AppWatchIdIndexRoute,
 }
 

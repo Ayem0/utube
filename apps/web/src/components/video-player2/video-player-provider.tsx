@@ -8,6 +8,8 @@ import { VideoPlayerUIDesktop } from '@/lib/video-player/video-player-ui-desktop
 import { useEffect, useMemo } from 'react';
 
 export function VideoPlayerProvider2({
+  hlsUrl,
+  dashUrl,
   videoRef,
   videoContainerRef,
   sliderContainerRef,
@@ -22,6 +24,8 @@ export function VideoPlayerProvider2({
   muteButtonRef,
   children,
 }: {
+  hlsUrl: string;
+  dashUrl: string;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   videoContainerRef: React.RefObject<HTMLDivElement | null>;
   sliderContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -36,7 +40,10 @@ export function VideoPlayerProvider2({
   muteButtonRef: React.RefObject<HTMLButtonElement | null>;
   children: React.ReactNode;
 }) {
-  const controller = useMemo(() => new VideoPlayerController2(), []);
+  const controller = useMemo(
+    () => new VideoPlayerController2(hlsUrl, dashUrl),
+    [],
+  );
   const ui = useMemo(() => new VideoPlayerUIDesktop(), []);
 
   useEffect(() => {

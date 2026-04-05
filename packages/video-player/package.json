@@ -1,0 +1,18 @@
+{
+    "name": "@repo/video-player",
+    "version": "0.0.0",
+    "private": true,
+    "exports": {
+        "./*": "./src/*.ts"
+    },
+    "scripts": {},
+    "devDependencies": {
+        "@repo/eslint-config": "workspace:*",
+        "@repo/typescript-config": "workspace:*",
+        "@types/bun": "^1.3.10",
+        "@types/node": "^25.1.0"
+    },
+    "dependencies": {
+        "hls.js": "^1.6.15"
+    }
+}

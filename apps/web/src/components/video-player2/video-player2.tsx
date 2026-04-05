@@ -4,7 +4,13 @@ import { VideoPlayerControls } from './video-player-controls';
 import { VideoPlayerOverlay } from './video-player-overlay';
 import { VideoPlayerProvider2 } from './video-player-provider';
 
-export function VideoPlayer2({ src }: { src: string }) {
+export function VideoPlayer2({
+  hlsUrl,
+  dashUrl,
+}: {
+  hlsUrl: string;
+  dashUrl: string;
+}) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
   const sliderContainerRef = useRef<HTMLDivElement | null>(null);
@@ -19,6 +25,8 @@ export function VideoPlayer2({ src }: { src: string }) {
   const muteButtonRef = useRef<HTMLButtonElement | null>(null);
   return (
     <VideoPlayerProvider2
+      hlsUrl={hlsUrl}
+      dashUrl={dashUrl}
       videoRef={videoRef}
       videoContainerRef={videoContainerRef}
       sliderContainerRef={sliderContainerRef}
@@ -33,7 +41,7 @@ export function VideoPlayer2({ src }: { src: string }) {
       muteButtonRef={muteButtonRef}
     >
       <VideoPlayerContainer videoContainerRef={videoContainerRef}>
-        <video ref={videoRef} src={src} controls={false} />
+        <video ref={videoRef} controls={false} />
         <VideoPlayerOverlay />
         <VideoPlayerControls
           sliderButtonRef={sliderButtonRef}
