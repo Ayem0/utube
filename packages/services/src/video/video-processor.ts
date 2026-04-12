@@ -26,6 +26,7 @@ type LadderEntry = {
   maxrate: string;
   bufsize: string;
   name: string;
+  level: string;
 };
 
 const SEGMENT_DURATION = 4;
@@ -34,82 +35,92 @@ const ABR_LADDER: LadderEntry[] = [
   {
     height: 2160,
     fps: 60,
-    bitrate: "12M",
-    maxrate: "14M",
-    bufsize: "24M",
+    bitrate: "48M",
+    maxrate: "72M",
+    bufsize: "96M",
     name: "2160p60",
+    level: "5.2",
   },
   {
     height: 2160,
     fps: 30,
-    bitrate: "8M",
-    maxrate: "10M",
-    bufsize: "16M",
+    bitrate: "32M",
+    maxrate: "48M",
+    bufsize: "64M",
     name: "2160p30",
+    level: "5.1",
   },
   {
     height: 1440,
+    fps: 60,
+    bitrate: "24M",
+    maxrate: "32M",
+    bufsize: "48M",
+    name: "1440p60",
+    level: "5.1",
+  },
+  {
+    height: 1440,
+    fps: 30,
+    bitrate: "16M",
+    maxrate: "24M",
+    bufsize: "32M",
+    name: "1440p30",
+    level: "5.0",
+  },
+  {
+    height: 1080,
+    fps: 60,
+    bitrate: "12M",
+    maxrate: "18M",
+    bufsize: "24M",
+    name: "1080p60",
+    level: "4.2",
+  },
+  {
+    height: 1080,
+    fps: 30,
+    bitrate: "8M",
+    maxrate: "12M",
+    bufsize: "16M",
+    name: "1080p30",
+    level: "4.1",
+  },
+  {
+    height: 720,
     fps: 60,
     bitrate: "8M",
-    maxrate: "10M",
+    maxrate: "12M",
     bufsize: "16M",
-    name: "1440p60",
-  },
-  {
-    height: 1440,
-    fps: 30,
-    bitrate: "6M",
-    maxrate: "8M",
-    bufsize: "12M",
-    name: "1440p30",
-  },
-  {
-    height: 1080,
-    fps: 60,
-    bitrate: "6M",
-    maxrate: "8M",
-    bufsize: "12M",
-    name: "1080p60",
-  },
-  {
-    height: 1080,
-    fps: 30,
-    bitrate: "4M",
-    maxrate: "6M",
-    bufsize: "8M",
-    name: "1080p30",
-  },
-  {
-    height: 720,
-    fps: 60,
-    bitrate: "4M",
-    maxrate: "6M",
-    bufsize: "8M",
     name: "720p60",
+    level: "4.0",
   },
   {
     height: 720,
     fps: 30,
-    bitrate: "2.5M",
-    maxrate: "4M",
-    bufsize: "6M",
+    bitrate: "5M",
+    maxrate: "8M",
+    bufsize: "10M",
     name: "720p30",
+    level: "3.1",
   },
   {
     height: 480,
     fps: 30,
-    bitrate: "1.2M",
-    maxrate: "2M",
-    bufsize: "3M",
+    bitrate: "2.5M",
+    maxrate: "4M",
+    bufsize: "5M",
     name: "480p30",
+    level: "3.0",
   },
   {
     height: 360,
     fps: 30,
-    bitrate: "800k",
-    maxrate: "1M",
+    bitrate: "1M",
+    maxrate: "1.5M",
     bufsize: "2M",
     name: "360p30",
+    level: "3.0",
   },
   {
     height: 240,
@@ -118,6 +129,7 @@ const ABR_LADDER: LadderEntry[] = [
     maxrate: "500k",
     bufsize: "1M",
     name: "240p30",
+    level: "3.0",
   },
   {
     height: 144,
@@ -126,12 +138,16 @@ const ABR_LADDER: LadderEntry[] = [
     maxrate: "300k",
     bufsize: "500k",
     name: "144p30",
+    level: "3.0",
   },
-];
+] as const;
 
 function buildLadder(inputHeight: number, inputFPS: number): LadderEntry[] {
   const maxFPS: 30 | 60 = inputFPS > 50 ? 60 : 30;
-  return ABR_LADDER.filter((r) => r.height <= inputHeight && r.fps <= maxFPS);
+
+  return ABR_LADDER.filter(
+    (r) => inputHeight >= r.height && (maxFPS === r.fps || r.height <= 480),
+  );
 }
 
 function getVideoStream(metadata: VideoMetadata) {
@@ -167,7 +183,8 @@ function getEffectiveDimensions(metadata: VideoMetadata): {
 }
 
 function buildNormalizationFilters(metadata: VideoMetadata): string {
-  const vfArr: string[] = ["yadif"];
+  // const vfArr: string[] = ["yadif"];
+  const vfArr: string[] = [];
 
   const rotation = getRotation(metadata);
   switch (rotation) {
@@ -230,6 +247,7 @@ function buildFfmpegArgs(params: {
 
   const videoArgs = ladder.flatMap((row, i) => {
     const gop = row.fps * SEGMENT_DURATION;
+    const profile = row.height >= 720 ? "high" : "main";
 
     return [
       "-map",
@@ -247,9 +265,13 @@ function buildFfmpegArgs(params: {
       `-keyint_min:v:${i}`,
       String(gop),
       `-profile:v:${i}`,
-      "high",
+      profile,
+      `-level:v:${i}`,
+      row.level,
       `-pix_fmt:v:${i}`,
       "yuv420p",
+      `-x264-params:v:${i}`,
+      "ref=2:bframes=2:b-pyramid=none:weightp=1:rc-lookahead=40:force-cfr=1",
     ];
   });
 
@@ -275,8 +297,14 @@ function buildFfmpegArgs(params: {
     ...audioArgs,
     "-preset",
     "veryfast",
+    "-tune",
+    "fastdecode",
     "-sc_threshold",
     "0",
+    // "-movflags",
+    // "+faststart",
+    "-flags",
+    "+cgop",
     "-force_key_frames",
     `expr:gte(t,n_forced*${SEGMENT_DURATION})`,
     "-adaptation_sets",
@@ -289,12 +317,12 @@ function buildFfmpegArgs(params: {
     "1",
     "-use_timeline",
     "1",
-    "-streaming",
-    "1",
-    "-window_size",
-    "5",
-    "-extra_window_size",
-    "5",
+    // "-streaming",
+    // "1",
+    // "-window_size",
+    // "5",
+    // "-extra_window_size",
+    // "5",
     "-remove_at_exit",
     "0",
     "-init_seg_name",
@@ -342,44 +370,16 @@ export const VideoProcessorLive = Layer.effect(
               const stderr = await new Response(proc.stderr).text();
               throw new Error(`ffmpeg exited with code ${exitCode}: ${stderr}`);
             }
+
+            await addFrameRateToMasterM3u8(outputDir, ladder);
+
             const paths = await Array.fromAsync(
               new Bun.Glob("**/*").scan(outputDir),
             );
-
-            // const manifestPath = paths.find((p) => p.endsWith(".mpd"));
-            // if (!manifestPath) {
-            //   throw new Error("No manifest file found");
-            // }
-
-            // const manifestFile = Bun.file(`${outputDir}/${manifestPath}`);
-            // const manifestText = await manifestFile.text();
-
-            // const parser = new XMLParser({
-            //   ignoreAttributes: false,
-            //   attributeNamePrefix: "",
-            //   allowBooleanAttributes: true,
-            //   parseAttributeValue: true,
-            //   trimValues: true,
-            // });
-
-            // const manifest: Manifest = parser.parse(manifestText);
-
-            // const representation = buildRepresentation(manifest);
-
-            const entries = paths.map((path) => {
-              // const filename = path.split(".")[0] ?? "";
-              // const parts = filename.split("_");
-              // const index = parts.length === 1 ? -1 : Number(parts[1]);
-              // const keySubfolder =
-              //   index >= 0 ? representation.get(index)?.name : undefined;
-              // const key = keySubfolder
-              //   ? .split("/").pop()}`
-              //   : `${rowId}/${path.split("/").pop()}`;
-              return {
-                key: `${rowId}/${path.split("/").pop()}`,
-                file: Bun.file(`${outputDir}/${path}`),
-              };
-            });
+            const entries = paths.map((path) => ({
+              key: `${rowId}/${path.split("/").pop()}`,
+              file: Bun.file(`${outputDir}/${path}`),
+            }));
             return { entries, ladder };
           },
           catch: (e) =>
@@ -457,3 +457,31 @@ export const VideoProcessorLive = Layer.effect(
 //   //   initialization: string;
 //   // };
 // };
+
+async function addFrameRateToMasterM3u8(
+  outputDir: string,
+  ladder: LadderEntry[],
+) {
+  const masterPath = `${outputDir}/master.m3u8`;
+  const text = await Bun.file(masterPath).text();
+
+  const lines = text.split("\n");
+  let mediaIndex = 0;
+
+  const patched = lines.map((line) => {
+    if (line.startsWith("#EXT-X-STREAM-INF:")) {
+      const fps = ladder[mediaIndex]?.fps;
+      mediaIndex += 1;
+
+      if (!fps) return line;
+      if (line.includes("FRAME-RATE=")) return line;
+
+      const frameRateValue = fps === 60 ? "60.000" : "30.000";
+      return `${line},FRAME-RATE=${frameRateValue}`;
+    }
+
+    return line;
+  });
+
+  await Bun.write(masterPath, patched.join("\n"));
+}

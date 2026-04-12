@@ -1,4 +1,4 @@
-import { useVideoPlayerUiDesktop } from '@/lib/video-player/video-player-context';
+import { useVideoPlayerUiDesktop } from '@/components/providers/video-player-provider';
 import { Button } from '@repo/ui/components/button';
 import {
   DrillDownMenu,
@@ -19,7 +19,7 @@ export function VideoPlayerSettings({
 }: {
   containerRef: RefObject<HTMLDivElement | null>;
 }) {
-  const { UI } = useVideoPlayerUiDesktop();
+  const UI = useVideoPlayerUiDesktop();
 
   return (
     <DrillDownMenu

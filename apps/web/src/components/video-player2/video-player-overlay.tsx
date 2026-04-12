@@ -1,12 +1,12 @@
-import { useVideoPlayerUiDesktop } from '@/lib/video-player/video-player-context';
+import { useVideoPlayerUiDesktop } from '@/components/providers/video-player-provider';
 
 export function VideoPlayerOverlay() {
-  const { controller, UI } = useVideoPlayerUiDesktop();
+  const UI = useVideoPlayerUiDesktop();
   return (
     <div
       className="absolute inset-0 bg-transparent"
       onClick={() => {
-        controller.togglePlay();
+        UI.togglePlay();
       }}
       onDoubleClick={() => UI.toggleFullscreen()}
     ></div>

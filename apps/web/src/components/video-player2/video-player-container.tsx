@@ -1,4 +1,4 @@
-import { useVideoPlayerUiDesktop } from '@/lib/video-player/video-player-context';
+import { useVideoPlayerUiDesktop } from '@/components/providers/video-player-provider';
 import { useDebouncedCallback } from '@tanstack/react-pacer';
 
 export function VideoPlayerContainer({
@@ -8,7 +8,7 @@ export function VideoPlayerContainer({
   videoContainerRef: React.RefObject<HTMLDivElement | null>;
   children: React.ReactNode;
 }) {
-  const { UI } = useVideoPlayerUiDesktop();
+  const UI = useVideoPlayerUiDesktop();
 
   const debouncedAutoHide = useDebouncedCallback(UI.stopHoveringPlayer, {
     wait: 2000,

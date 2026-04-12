@@ -1,37 +1,22 @@
-import { useVideoPlayerUiDesktop } from '@/lib/video-player/video-player-context';
+import { useVideoPlayerUiDesktop } from '@/components/providers/video-player-provider';
 import { Button } from '@repo/ui/components/button';
 import { Slider } from '@repo/ui/components/slider';
 import { Volume1, Volume2, VolumeX } from 'lucide-react';
 import type { RefObject } from 'react';
-import { useEffect, useState } from 'react';
 
 export function VideoPlayerVolume({
   muteButtonRef,
 }: {
   muteButtonRef: RefObject<HTMLButtonElement | null>;
 }) {
-  const { controller } = useVideoPlayerUiDesktop();
-
-  const [volume, setVolume] = useState(controller.volume);
-
-  useEffect(() => {
-    const handleVolumeChange = (newVolume: number) => {
-      setVolume(newVolume);
-    };
-
-    controller.on('volumeChange', handleVolumeChange);
-
-    return () => {
-      controller.off('volumeChange', handleVolumeChange);
-    };
-  }, [controller]);
+  const UI = useVideoPlayerUiDesktop();
 
   return (
     <div className="group/volume flex flex-row items-center w-full rounded-full hover:bg-muted hover:text-foreground dark:hover:bg-muted/50">
       <Button
         variant="ghost"
         className="size-9 rounded-full group dark:hover:bg-transparent"
-        onClick={() => controller.toggleMute()}
+        onClick={() => UI.toggleMute()}
         ref={muteButtonRef}
       >
         <Volume1 className="size-6 group-data-[state=low]:block hidden" />
@@ -53,12 +38,10 @@ export function VideoPlayerVolume({
               min={0}
               max={1}
               step={0.01}
-              onPointerDown={controller.startSettingVolume}
-              onKeyDown={controller.startSettingVolume}
-              onValueChange={(v) =>
-                controller.setVolume(Array.isArray(v) ? v[0] : v)
-              }
-              value={volume}
+              onPointerDown={UI.startSettingVolume}
+              onKeyDown={UI.startSettingVolume}
+              onValueChange={(v) => UI.setVolume(Array.isArray(v) ? v[0] : v)}
+              value={1}
             />
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useVideoPlayerUiDesktop } from '@/lib/video-player/video-player-context';
+import { useVideoPlayerUiDesktop } from '@/components/providers/video-player-provider';
 import { Button } from '@repo/ui/components/button';
 import { Maximize2, Minimize2 } from 'lucide-react';
 
@@ -7,7 +7,7 @@ export function VideoPlayerFullscreenButton({
 }: {
   fullscreenButtonRef: React.RefObject<HTMLButtonElement | null>;
 }) {
-  const { UI } = useVideoPlayerUiDesktop();
+  const UI = useVideoPlayerUiDesktop();
 
   return (
     <Button

@@ -1,8 +1,6 @@
 import { useRef } from 'react';
-import { VideoPlayerContainer } from './video-player-container';
-import { VideoPlayerControls } from './video-player-controls';
-import { VideoPlayerOverlay } from './video-player-overlay';
-import { VideoPlayerProvider2 } from './video-player-provider';
+import { VideoPlayerProvider } from '../providers/video-player-provider';
+import { VideoPlayerQualitySwitcher } from './video-player-quality-switcher';
 
 export function VideoPlayer2({
   hlsUrl,
@@ -24,25 +22,11 @@ export function VideoPlayer2({
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
   const muteButtonRef = useRef<HTMLButtonElement | null>(null);
   return (
-    <VideoPlayerProvider2
-      hlsUrl={hlsUrl}
-      dashUrl={dashUrl}
-      videoRef={videoRef}
-      videoContainerRef={videoContainerRef}
-      sliderContainerRef={sliderContainerRef}
-      timerElRef={timerElRef}
-      durationElRef={durationElRef}
-      playButtonRef={playButtonRef}
-      fullscreenButtonRef={fullscreenButtonRef}
-      sliderFillRef={sliderFillRef}
-      sliderButtonRef={sliderButtonRef}
-      previewTimerRef={previewTimerRef}
-      previewContainerRef={previewContainerRef}
-      muteButtonRef={muteButtonRef}
-    >
-      <VideoPlayerContainer videoContainerRef={videoContainerRef}>
-        <video ref={videoRef} controls={false} />
-        <VideoPlayerOverlay />
+    <VideoPlayerProvider hlsUrl={hlsUrl} dashUrl={dashUrl} videoRef={videoRef}>
+      <video ref={videoRef} controls={true} autoPlay playsInline />
+      <VideoPlayerQualitySwitcher />
+      {/*<VideoPlayerContainer videoContainerRef={videoContainerRef}>
+         <VideoPlayerOverlay />
         <VideoPlayerControls
           sliderButtonRef={sliderButtonRef}
           sliderContainerRef={sliderContainerRef}
@@ -56,7 +40,7 @@ export function VideoPlayer2({
           muteButtonRef={muteButtonRef}
           videoContainerRef={videoContainerRef}
         />
-      </VideoPlayerContainer>
-    </VideoPlayerProvider2>
+      </VideoPlayerContainer> */}
+    </VideoPlayerProvider>
   );
 }

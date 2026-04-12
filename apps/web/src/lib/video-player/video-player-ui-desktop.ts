@@ -1,7 +1,5 @@
-import {
-  PlayingState,
-  VideoPlayerController2,
-} from './video-player-controller';
+import { VideoPlayer } from '@repo/video-player/video-player';
+import { PlayingState } from './video-player-controller';
 import { formatCt } from './video-player-utils';
 
 interface VideoPlayerUIDesktopElements {
@@ -26,17 +24,40 @@ export class VideoPlayerUIDesktop {
       this.elements.videoContainer.requestFullscreen();
     }
   };
+  private lastVolume = 0;
+  public startSettingVolume = () => {
+    this.lastVolume = this.videoPlayer.video.volume;
+  };
+  public setVolume = (v: number) => {
+    this.videoPlayer.setVolume(v);
+  };
+  public toggleMute = () => {
+    this.videoPlayer.setVolume(
+      this.videoPlayer.video.volume === 0 ? this.lastVolume : 0,
+    );
+  };
 
-  private videoPlayer: VideoPlayerController2 | null = null;
-  private elements: VideoPlayerUIDesktopElements | null = null;
-  private sliderObserver: ResizeObserver | null = null;
-  private containerObserver: ResizeObserver | null = null;
+  public togglePlay = () => {
+    if (!this.videoPlayer) return;
+    if (this.isPlaying) {
+      this.videoPlayer.pause();
+    } else {
+      this.videoPlayer.play();
+    }
+  };
+
+  private videoPlayer: VideoPlayer;
+  private elements: VideoPlayerUIDesktopElements;
+  private sliderObserver: ResizeObserver;
+  private containerObserver: ResizeObserver;
 
   private sliderWidth: number = 0;
   private invSliderWidth: number = 0;
   private sliderOffsetLeft: number = 0;
 
   private isFullscreen = false;
+  private isPlaying = false;
+  private isEnded = false;
 
   private _isMenuOpen = false;
 
@@ -59,11 +80,13 @@ export class VideoPlayerUIDesktop {
 
   private duration = 0;
   private invDuration: number = 0;
-
-  public init = (
-    videoPlayer: VideoPlayerController2,
+  /**
+   *
+   */
+  constructor(
+    videoPlayer: VideoPlayer,
     elements: VideoPlayerUIDesktopElements,
-  ) => {
+  ) {
     this.videoPlayer = videoPlayer;
     this.elements = elements;
 
@@ -100,19 +123,22 @@ export class VideoPlayerUIDesktop {
     this.containerObserver.observe(this.elements.videoContainer);
 
     this.initListeners();
-  };
+  }
+
+  // public init =
 
   private initListeners = () => {
     if (!this.videoPlayer || !this.elements) return;
-    this.videoPlayer.on('volumeChange', this.updateVolumeState);
+    this.videoPlayer.on('timeChange', this.updateTimerContent);
+    this.videoPlayer.on('ended', this.onEnded);
     this.videoPlayer.on('pause', this.onPause);
     this.videoPlayer.on('play', this.onPlay);
-    this.videoPlayer.on('ended', this.onEnded);
+    this.videoPlayer.on('volumeChange', this.updateVolumeState);
+    this.videoPlayer.on('qualitiesLoaded', this.updateQualities);
 
     // this.videoPlayer.on('playingStateChange', this.onPlayingStateChange);
-    this.videoPlayer.on('timeChange', this.updateTimerContent);
-    this.videoPlayer.on('previewTimeChange', this.updatePreviewTimerContent);
-    this.videoPlayer.on('durationChange', this.updateDurationContent);
+    // this.videoPlayer.on('previewTimeChange', this.updatePreviewTimerContent);
+    // this.videoPlayer.on('durationChange', this.updateDurationContent);
 
     this.elements.videoContainer.addEventListener(
       'fullscreenchange',
@@ -122,12 +148,16 @@ export class VideoPlayerUIDesktop {
 
   private onPause = () => {
     if (!this.elements || !this.videoPlayer?.video) return;
+    this.isPlaying = false;
+    this.isEnded = false;
     this.updatePlayButtonState(PlayingState.Paused);
     this.stopVfrc();
   };
 
   private onPlay = () => {
     if (!this.elements || !this.videoPlayer?.video) return;
+    this.isEnded = false;
+    this.isPlaying = true;
     this.updatePlayButtonState(PlayingState.Playing);
     if (this.isHoveringPlayer) {
       this.startVfrc();
@@ -136,6 +166,8 @@ export class VideoPlayerUIDesktop {
 
   private onEnded = () => {
     if (!this.videoPlayer?.video) return;
+    this.isPlaying = false;
+    this.isEnded = true;
     this.updatePlayButtonState(PlayingState.Ended);
     this.updateSliderPosition(this.videoPlayer.video.duration);
     this.stopVfrc();
@@ -143,21 +175,24 @@ export class VideoPlayerUIDesktop {
 
   public destroy = () => {
     if (!this.videoPlayer || !this.elements) return;
-    this.videoPlayer.off('volumeChange', this.updateVolumeState);
     // this.videoPlayer.off('playingStateChange', this.onPlayingStateChange);
     this.videoPlayer.off('timeChange', this.updateTimerContent);
-    this.videoPlayer.off('previewTimeChange', this.updatePreviewTimerContent);
-    this.videoPlayer.off('durationChange', this.updateDurationContent);
+    this.videoPlayer.off('volumeChange', this.updateVolumeState);
+    this.videoPlayer.off('qualitiesLoaded', this.updateQualities);
+    this.videoPlayer.off('ended', this.onEnded);
+    this.videoPlayer.off('pause', this.onPause);
+    this.videoPlayer.off('play', this.onPlay);
+    // this.videoPlayer.off('previewTimeChange', this.updatePreviewTimerContent);
+    // this.videoPlayer.off('durationChange', this.updateDurationContent);
 
     this.elements.videoContainer.removeEventListener(
       'fullscreenchange',
       this.onFullscreenChange,
     );
 
-    this.containerObserver?.disconnect();
-    this.containerObserver = null;
-    this.sliderObserver?.disconnect();
-    this.sliderObserver = null;
+    this.containerObserver.disconnect();
+    this.sliderObserver.disconnect();
+    this.videoPlayer.destroy();
   };
 
   /** Update timer content
@@ -214,11 +249,7 @@ export class VideoPlayerUIDesktop {
     // check for this.vfrcId to prevent ghost callbacks (not cancelled for some dark reason)
     if (!this.videoPlayer?.video || !this.vfrcId) return;
     this.updateSliderPosition(metadata.mediaTime);
-    if (
-      this.isHoveringPlayer &&
-      !this.videoPlayer.paused &&
-      !this.videoPlayer.ended
-    ) {
+    if (this.isHoveringPlayer && this.isPlaying) {
       this.vfrcId = this.videoPlayer.video.requestVideoFrameCallback(this.vfrc);
     }
   };
@@ -258,7 +289,7 @@ export class VideoPlayerUIDesktop {
     this.isHoveringPlayer = true;
     this.updateContainerActive();
     if (!this.videoPlayer) return;
-    if (!this.videoPlayer.paused && !this.videoPlayer.ended) {
+    if (this.isPlaying) {
       this.startVfrc();
     }
   };
@@ -282,7 +313,7 @@ export class VideoPlayerUIDesktop {
     if (!this.videoPlayer) return;
     this.isScrubbing = true;
     this.stopVfrc();
-    this.videoPlayer.startScrubbing();
+    // this.videoPlayer.startScrubbing();
     this.startRafLoop();
   };
 
@@ -292,7 +323,7 @@ export class VideoPlayerUIDesktop {
     this.isScrubbing = false;
     this.stopRafLoop();
     const ratio = this.previewX * this.invSliderWidth;
-    this.videoPlayer.stopScrubbing(ratio);
+    this.videoPlayer.seek(ratio);
   };
 
   private startVfrc = () => {
@@ -348,5 +379,12 @@ export class VideoPlayerUIDesktop {
 
   private canLoop = () => {
     return (this.isScrubbing || this._isHoveringPreview) && this.duration > 0;
+  };
+
+  private updateQualities = (
+    qualities: Array<{ index: number; height: number; frameRate: number }>,
+  ) => {
+    if (!this.elements) return;
+    console.log('qualities', qualities);
   };
 }

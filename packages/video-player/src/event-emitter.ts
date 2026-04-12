@@ -25,4 +25,7 @@ export abstract class EventEmitter<
     this.listeners[event] = this.listeners[event]?.filter((l) => l !== handler);
     return this;
   }
+  protected clearListeners() {
+    this.listeners = {};
+  }
 }

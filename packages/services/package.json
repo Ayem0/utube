@@ -20,7 +20,6 @@
     "bullmq": "catalog:",
     "drizzle-kit": "catalog:",
     "drizzle-orm": "catalog:",
-    "effect": "catalog:",
-    "fast-xml-parser": "^5.5.10"
+    "effect": "catalog:"
   }
 }

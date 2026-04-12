@@ -1,4 +1,4 @@
-import { useVideoPlayerUiDesktop } from '@/lib/video-player/video-player-context';
+import { useVideoPlayerUiDesktop } from '@/components/providers/video-player-provider';
 import { Image } from '@unpic/react';
 import { RefObject } from 'react';
 
@@ -15,7 +15,7 @@ export function VideoPlayerSlider({
   previewTimerRef: RefObject<HTMLSpanElement | null>;
   previewContainerRef: RefObject<HTMLDivElement | null>;
 }) {
-  const { UI } = useVideoPlayerUiDesktop();
+  const UI = useVideoPlayerUiDesktop();
   return (
     <div
       className="w-full hover:**:data-preview:opacity-100 group/slider"
