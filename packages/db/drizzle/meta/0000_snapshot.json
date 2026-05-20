@@ -1,5 +1,5 @@
 {
-  "id": "84db9ce2-358e-4e4f-9213-f521e2ffb112",
+  "id": "e5e5dd78-e60f-4d60-a2b9-18c0244580b3",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -565,6 +565,12 @@
         },
         "thumbnail_url": {
           "name": "thumbnail_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "storyboard_url": {
+          "name": "storyboard_url",
           "type": "text",
           "primaryKey": false,
           "notNull": false

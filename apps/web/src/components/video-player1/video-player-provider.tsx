@@ -1,6 +1,6 @@
-import { VideoPlayer } from '@/lib/video-player/video-player';
-import { VideoPlayerControllerContext } from '@/lib/video-player/video-player-context';
-import { VideoPlayerController } from '@/lib/video-player/video-player-controller';
+import { VideoPlayer } from '@/lib/video-player1/video-player';
+import { VideoPlayerControllerContext } from '@/lib/video-player1/video-player-context';
+import { VideoPlayerController } from '@/lib/video-player1/video-player-controller';
 import { useEffect, useMemo } from 'react';
 export function VideoPlayerProvider({
   videoRef,

@@ -1,6 +1,10 @@
 import { Context, Effect, Layer } from "effect";
 import { VideoMetadata } from "./video";
 import { VideoProcessingError } from "./video-errors";
+import {
+  VideoProcessorConfig,
+  VideoProcessorConfigService,
+} from "./video-processor-config";
 
 interface VideoProcessorService {
   transcode: (
@@ -8,8 +12,9 @@ interface VideoProcessorService {
     rowId: string,
     rawMetadata: VideoMetadata,
     parsedFPS: number,
+    duration: number,
   ) => Effect.Effect<
-    { entries: { key: string; file: Bun.BunFile }[]; ladder: LadderEntry[] },
+    { key: string; file: Bun.BunFile }[],
     VideoProcessingError
   >;
 }
@@ -28,8 +33,6 @@ type LadderEntry = {
   name: string;
   level: string;
 };
-
-const SEGMENT_DURATION = 4;
 
 const ABR_LADDER: LadderEntry[] = [
   {
@@ -154,7 +157,7 @@ function getVideoStream(metadata: VideoMetadata) {
   return metadata.streams?.find((s) => s.codec_type === "video");
 }
 
-function getRotation(metadata: VideoMetadata): number {
+function getRotation(metadata: VideoMetadata) {
   const videoStream = getVideoStream(metadata);
   const rotation =
     videoStream?.tags?.rotate ??
@@ -164,10 +167,7 @@ function getRotation(metadata: VideoMetadata): number {
   return typeof rotation === "string" ? Number(rotation) : rotation;
 }
 
-function getEffectiveDimensions(metadata: VideoMetadata): {
-  width: number;
-  height: number;
-} {
+function getEffectiveDimensions(metadata: VideoMetadata) {
   const videoStream = getVideoStream(metadata);
   const width = videoStream?.width;
   const height = videoStream?.height;
@@ -182,7 +182,7 @@ function getEffectiveDimensions(metadata: VideoMetadata): {
   return isRotated ? { width: height, height: width } : { width, height };
 }
 
-function buildNormalizationFilters(metadata: VideoMetadata): string {
+function buildNormalizationFilters(metadata: VideoMetadata) {
   // const vfArr: string[] = ["yadif"];
   const vfArr: string[] = [];
 
@@ -222,8 +222,9 @@ function buildFfmpegArgs(params: {
   outputDir: string;
   metadata: VideoMetadata;
   parsedFPS: number;
+  config: VideoProcessorConfigService;
 }) {
-  const { inputPath, outputDir, metadata, parsedFPS } = params;
+  const { inputPath, outputDir, metadata, parsedFPS, config } = params;
 
   const { height, width } = getEffectiveDimensions(metadata);
   const ladder = buildLadder(height, parsedFPS);
@@ -246,7 +247,7 @@ function buildFfmpegArgs(params: {
   const filterComplex = filterComplexParts.join(";");
 
   const videoArgs = ladder.flatMap((row, i) => {
-    const gop = row.fps * SEGMENT_DURATION;
+    const gop = row.fps * config.SEGMENT_DURATION_SECONDS;
     const profile = row.height >= 720 ? "high" : "main";
 
     return [
@@ -306,13 +307,13 @@ function buildFfmpegArgs(params: {
     "-flags",
     "+cgop",
     "-force_key_frames",
-    `expr:gte(t,n_forced*${SEGMENT_DURATION})`,
+    `expr:gte(t,n_forced*${config.SEGMENT_DURATION_SECONDS})`,
     "-adaptation_sets",
     hasAudio ? "id=0,streams=v id=1,streams=a" : "id=0,streams=v",
     "-f",
     "dash",
     "-seg_duration",
-    String(SEGMENT_DURATION),
+    String(config.SEGMENT_DURATION_SECONDS),
     "-use_template",
     "1",
     "-use_timeline",
@@ -334,6 +335,18 @@ function buildFfmpegArgs(params: {
     "-hls_master_name",
     "master.m3u8",
     `${outputDir}/manifest.mpd`,
+    // storyboard map
+    // "-map",
+    // "[storyboard]",
+    // "-vsync",
+    // "0",
+    // "-f",
+    // "image2",
+    // "-c:v",
+    // "mjpeg",
+    // "-q:v",
+    // "3",
+    // `${outputDir}/storyboard_%03d.jpg`,
   ];
 
   return { args: args, ladder: ladder };
@@ -342,8 +355,9 @@ function buildFfmpegArgs(params: {
 export const VideoProcessorLive = Layer.effect(
   VideoProcessor,
   Effect.gen(function* () {
+    const config = yield* VideoProcessorConfig;
     return {
-      transcode: (originalPath, rowId, rawMetadata, parsedFPS) =>
+      transcode: (originalPath, rowId, rawMetadata, parsedFPS, duration) =>
         Effect.tryPromise({
           try: async () => {
             const outputDir = `/tmp/${rowId}`;
@@ -354,11 +368,12 @@ export const VideoProcessorLive = Layer.effect(
               outputDir,
               metadata: rawMetadata,
               parsedFPS,
+              config,
             });
 
-            for (const entry of ladder) {
-              await Bun.$`mkdir -p ${outputDir}/${entry.name}`;
-            }
+            // for (const entry of ladder) {
+            //   await Bun.$`mkdir -p ${outputDir}/${entry.name}`;
+            // }
 
             const proc = Bun.spawn(args, {
               stdout: "pipe",
@@ -380,7 +395,7 @@ export const VideoProcessorLive = Layer.effect(
               key: `${rowId}/${path.split("/").pop()}`,
               file: Bun.file(`${outputDir}/${path}`),
             }));
-            return { entries, ladder };
+            return entries;
           },
           catch: (e) =>
             new VideoProcessingError({
@@ -391,72 +406,6 @@ export const VideoProcessorLive = Layer.effect(
     };
   }),
 );
-
-// type ManifestRepresentation = Map<
-//   number,
-//   {
-//     id: number;
-//     name: string;
-//   }
-// >;
-
-// const buildRepresentation = (manifest: Manifest) => {
-//   const map: ManifestRepresentation = new Map();
-//   const adaptationSet = Array.isArray(manifest.MPD.Period.AdaptationSet)
-//     ? manifest.MPD.Period.AdaptationSet
-//     : [manifest.MPD.Period.AdaptationSet];
-//   adaptationSet.forEach((set) => {
-//     const representation = Array.isArray(set.Representation)
-//       ? set.Representation
-//       : [set.Representation];
-//     representation.forEach((r) => {
-//       const fr = r.frameRate
-//         ? r.frameRate.split("/")[0]
-//         : set.frameRate?.split("/")[0];
-//       map.set(r.id, {
-//         id: r.id,
-//         name: set.contentType === "video" ? `${r.height}p${fr}` : "audio",
-//       });
-//     });
-//   });
-//   return map;
-// };
-
-// type Manifest = {
-//   MPD: MPD;
-// };
-
-// type MPD = {
-//   Period: {
-//     AdaptationSet: AdaptationSet[] | AdaptationSet;
-//   };
-// };
-
-// type AdaptationSet = {
-//   Representation: Representation[] | Representation;
-//   frameRate?: string;
-//   maxFrameRate?: string;
-//   width?: number;
-//   height?: number;
-//   maxWidth?: number;
-//   maxHeight?: number;
-//   contentType: string;
-// };
-
-// type Representation = {
-//   id: number;
-//   mimeType: string;
-//   bandwidth: number;
-//   codecs: string;
-//   width: number;
-//   height: number;
-//   sar: string;
-//   frameRate?: string;
-//   // SegmentTemplate: {
-//   //   media: string;
-//   //   initialization: string;
-//   // };
-// };
 
 async function addFrameRateToMasterM3u8(
   outputDir: string,

@@ -10,6 +10,7 @@ import { S3Error } from "../s3/s3-errors";
 import { VideoProcessingError, VideoValidationError } from "./video-errors";
 import { VideoProcessor } from "./video-processor";
 import { VideoRepository } from "./video-repository";
+import { VideoStoryboardGenerator } from "./video-storyboard-generator";
 import { VideoValidator } from "./video-validator";
 
 export interface VideoPipelineService {
@@ -39,6 +40,7 @@ export const VideoPipelineLive = Layer.effect(
     const fs = yield* FileSystem;
     const s3 = yield* S3Client;
     const videoValidator = yield* VideoValidator;
+    const storyboardGenerator = yield* VideoStoryboardGenerator;
     const videoProcessor = yield* VideoProcessor;
     return {
       processVideo: (data: VideoProcessingJob) =>
@@ -55,37 +57,41 @@ export const VideoPipelineLive = Layer.effect(
               Effect.flatMap((originalPath) =>
                 Effect.gen(function* () {
                   // 4. Validate video
-                  const { rawMetadata, parsedFPS } =
+                  const { rawMetadata, parsedFPS, duration } =
                     yield* videoValidator.validateVideo(originalPath);
                   // 5. Update status to PROCESSING,
                   yield* videoRepo.update(data.rowId, {
                     creationStatus: VideoCreationStatus.PROCESSING,
                   });
                   // 6. Normalize video, transcode to sub resolutions, create HLS/DASH
-                  const { entries, ladder } = yield* videoProcessor.transcode(
+                  const transcodeEntries = yield* videoProcessor.transcode(
                     originalPath,
                     data.rowId,
                     rawMetadata,
                     parsedFPS,
+                    duration,
                   );
-                  console.log("Ladder", ladder);
-                  console.log(
-                    "Entries",
-                    entries.map((e) => e.key),
+                  const storyboardEntries = yield* storyboardGenerator.generate(
+                    originalPath,
+                    data.rowId,
+                    duration,
                   );
                   /* TODO: 
                   - Update ladder to db 
                   - Create thumbnails from low resolution video + storyboard (VTT),
                   - Write original, segments, manifest, thumbnails, storyboard to s3,
                   */
+                  const entries = [...transcodeEntries, ...storyboardEntries];
                   yield* s3.uploadFiles(entries, "videos");
                   yield* videoRepo.update(data.rowId, {
                     hlsUrl: `http://localhost:8080/videos/${data.rowId}/master.m3u8`, // TODO replace with cdn url env variable
                     dashUrl: `http://localhost:8080/videos/${data.rowId}/manifest.mpd`, // TODO replace with cdn url env variable
-                    duration: rawMetadata.format?.duration,
+                    storyboardUrl: `http://localhost:8080/videos/${data.rowId}/storyboard.vtt`, // TODO replace with cdn url env variable
+                    duration: duration,
                   });
                   // 10. Delete temp files,
                   yield* fs.deleteDirectory(`/tmp/${data.rowId}`);
+                  console.log("Video processed successfully", data.rowId);
                 }),
               ),
             );

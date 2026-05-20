@@ -1,4 +1,4 @@
-import { useVideoPlayerController } from '@/lib/video-player/video-player-context';
+import { useVideoPlayerController } from '@/lib/video-player1/video-player-context';
 import { Image } from '@unpic/react';
 import { RefObject } from 'react';
 

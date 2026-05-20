@@ -1,6 +1,19 @@
 import type { WatchVideo } from '@/lib/queries/get-watch-video';
-import { Link } from '@tanstack/react-router';
-import { VideoPlayer2 } from '../video-player2/video-player2';
+import { PlayerProvider } from '@/lib/video-player/player';
+import { ClientOnly, Link } from '@tanstack/react-router';
+import { VideoPlayerControls } from '../video-player/controls/video-player-controls';
+import { VideoPlayerFullscreenButton } from '../video-player/controls/video-player-fullscreen-button';
+import { VideoPlayerPipButton } from '../video-player/controls/video-player-pip-button';
+import { VideoPlayerPlayButton } from '../video-player/controls/video-player-play-button';
+import { VideoPlayerPlayrate } from '../video-player/controls/video-player-playrate';
+import { VideoPlayerQuality } from '../video-player/controls/video-player-quality';
+import { VideoPlayerSettings } from '../video-player/controls/video-player-settings';
+import { VideoPlayerTimeline } from '../video-player/controls/video-player-timeline';
+import { VideoPlayerTimer } from '../video-player/controls/video-player-timer';
+import { VideoPlayerVolume } from '../video-player/controls/video-player-volume';
+import { Video } from '../video-player/video';
+import { VideoPlayerContainer } from '../video-player/video-player-container';
+import { VideoPlayerOverlay } from '../video-player/video-player-overlay';
 
 export function WatchLayout({ video }: { video: WatchVideo }) {
   return (
@@ -13,8 +26,41 @@ export function WatchLayout({ video }: { video: WatchVideo }) {
         }
       >
       </ClientOnly> */}
-      <VideoPlayer2 hlsUrl={video.hlsUrl} dashUrl={video.dashUrl} />
+
+      <ClientOnly>
+        <PlayerProvider
+          source={{
+            hls: video.hlsUrl,
+            dash: video.dashUrl,
+          }}
+          storyboardUrl={video.storyboardUrl}
+        >
+          <VideoPlayerContainer>
+            <Video />
+            <VideoPlayerOverlay />
+            <VideoPlayerControls>
+              <VideoPlayerTimeline />
+              <div className="flex flex-row justify-between">
+                <div className="flex flex-row gap-2">
+                  <VideoPlayerPlayButton />
+                  <VideoPlayerVolume />
+                  <VideoPlayerTimer />
+                </div>
+                <div className="flex flex-row gap-2">
+                  <VideoPlayerSettings>
+                    <VideoPlayerPlayrate />
+                    <VideoPlayerQuality />
+                  </VideoPlayerSettings>
+                  <VideoPlayerPipButton />
+                  <VideoPlayerFullscreenButton />
+                </div>
+              </div>
+            </VideoPlayerControls>
+          </VideoPlayerContainer>
+        </PlayerProvider>
+      </ClientOnly>
       {/* <video
+</ClientOnly>
         controls={true}
         src="http://localhost:8080/videos/909c3fd4-ecdc-40dc-a3d5-c5b4b0a86948/media_0.m3u8"
         onWaiting={() => console.log('waiting')}

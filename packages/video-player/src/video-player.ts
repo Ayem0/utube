@@ -16,15 +16,10 @@ import Hls, {
   MediaAttachedData,
 } from "hls.js";
 import { EventEmitter } from "./event-emitter";
+import { VideoQuality } from "./types";
 
 interface VideoPlayerEvents {
-  qualitiesLoaded: [
-    qualities: Array<{
-      index: number;
-      height: number;
-      frameRate: number;
-    }>,
-  ];
+  qualitiesLoaded: [qualities: VideoQuality[]];
   volumeChange: [volume: number];
   timeChange: [time: number];
   playbackrateChange: [playbackRate: number];
@@ -37,6 +32,7 @@ export class VideoPlayer extends EventEmitter<VideoPlayerEvents> {
   private video: HTMLVideoElement | null = null;
   private hls: Hls | null = null;
   private dash: MediaPlayerClass | null = null;
+  private qualities: VideoQuality[] | null = null;
 
   constructor() {
     super();
@@ -50,16 +46,15 @@ export class VideoPlayer extends EventEmitter<VideoPlayerEvents> {
     console.log("attaching video player");
     this.video = videoElement;
 
-    // if (Hls.isSupported()) {
-    //   this.hls = new Hls({
-    //     enableWorker: true,
-    //   });
-    //   this.hls.loadSource(hlsUrl);
-    //   this.hls.attachMedia(this.video);
-    //   this.initVideoListeners();
-    //   this.initHlsListeners();
-    // } else
-    if (supportsMediaSource()) {
+    if (Hls.isSupported()) {
+      this.hls = new Hls({
+        enableWorker: true,
+      });
+      this.hls.loadSource(hlsUrl);
+      this.hls.attachMedia(this.video);
+      this.initVideoListeners();
+      this.initHlsListeners();
+    } else if (supportsMediaSource()) {
       this.dash = MediaPlayer().create();
       this.dash.updateSettings({
         // debug: {
@@ -235,13 +230,13 @@ export class VideoPlayer extends EventEmitter<VideoPlayerEvents> {
 
   private onHlsManifestParsed = (data: ManifestParsedData) => {
     console.log("manifest parsed", data);
-    const qualities = data.levels.map((level, i) => ({
+    this.qualities = data.levels.map((level, i) => ({
       index: i,
       height: level.height,
       frameRate: level.frameRate,
     }));
-    console.log("qualities", qualities);
-    this.emit("qualitiesLoaded", qualities);
+    console.log("qualities", this.qualities);
+    this.emit("qualitiesLoaded", this.qualities);
   };
 
   private onDashStreamInitialized = (e: StreamInitializedEvent) => {

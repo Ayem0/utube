@@ -77,6 +77,7 @@ CREATE TABLE "video" (
 	"hls_url" text,
 	"dash_url" text,
 	"thumbnail_url" text,
+	"storyboard_url" text,
 	"duration" numeric,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"creation_status" smallint DEFAULT 1 NOT NULL,

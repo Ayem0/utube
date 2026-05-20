@@ -8,7 +8,10 @@ import {
   VideoPipelineLive,
 } from "@repo/services/video/video-pipeline";
 import { VideoProcessorLive } from "@repo/services/video/video-processor";
+import { VideoProcessorConfigLive } from "@repo/services/video/video-processor-config";
 import { VideoReposistoryLive } from "@repo/services/video/video-repository";
+import { VideoStoryboardConfigLive } from "@repo/services/video/video-storyboard-config";
+import { VideoStoryboardGeneratorLive } from "@repo/services/video/video-storyboard-generator";
 import { VideoValidatorLive } from "@repo/services/video/video-validator";
 import { videoProcessingJobSchema } from "@repo/types/schemas/video-processing-job";
 import { VideoProcessingJob } from "@repo/types/types/video-processing-job";
@@ -38,6 +41,9 @@ const layer = VideoPipelineLive.pipe(
   Layer.provide(VideoProcessorLive),
   Layer.provide(VideoValidatorLive),
   Layer.provide(MediaValidatorConfigLive),
+  Layer.provide(VideoProcessorConfigLive),
+  Layer.provide(VideoStoryboardGeneratorLive),
+  Layer.provide(VideoStoryboardConfigLive),
 );
 
 const runtime = ManagedRuntime.make(layer);

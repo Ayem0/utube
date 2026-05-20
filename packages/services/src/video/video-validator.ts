@@ -8,7 +8,7 @@ interface VideoValidatorService {
   validateVideo: (
     path: string,
   ) => Effect.Effect<
-    { rawMetadata: VideoMetadata; parsedFPS: number },
+    { rawMetadata: VideoMetadata; parsedFPS: number; duration: number },
     VideoValidationError | ParseError,
     never
   >;
@@ -28,8 +28,15 @@ export const VideoValidatorLive = Layer.effect(
         Effect.gen(function* () {
           const metadata = yield* probeVideo(path);
           console.log("metadata", JSON.stringify(metadata));
-          const { parsedFPS } = yield* validateMetadata(mediaConfig, metadata);
-          return { rawMetadata: metadata, parsedFPS: parsedFPS };
+          const { parsedFPS, duration } = yield* validateMetadata(
+            mediaConfig,
+            metadata,
+          );
+          return {
+            rawMetadata: metadata,
+            parsedFPS: parsedFPS,
+            duration: duration,
+          };
         }),
     };
   }),
@@ -129,7 +136,11 @@ const validateMetadata = (
     const { parsedFPS } = yield* validateVideoStream(cfg, metadata.streams);
     yield* validateAudioStream(cfg, metadata.streams);
 
-    return { rawMetadata: metadata, parsedFPS: parsedFPS };
+    return {
+      rawMetadata: metadata,
+      parsedFPS: parsedFPS,
+      duration: metadata.format.duration,
+    };
   });
 
 const validateVideoStream = (

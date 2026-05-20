@@ -1,5 +1,5 @@
 import { useVideoPlayerStates } from '@/hooks/use-video-state';
-import { useVideoPlayerController } from '@/lib/video-player/video-player-context';
+import { useVideoPlayerController } from '@/lib/video-player1/video-player-context';
 import { Button } from '@repo/ui/components/button';
 import { Slider } from '@repo/ui/components/slider';
 import { Volume1, Volume2, VolumeX } from 'lucide-react';

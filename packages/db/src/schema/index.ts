@@ -128,6 +128,7 @@ export const video = pgTable(
     hlsUrl: text("hls_url"),
     dashUrl: text("dash_url"),
     thumbnailUrl: text("thumbnail_url"),
+    storyboardUrl: text("storyboard_url"),
     duration: numeric("duration", { mode: "number" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     creationStatus: smallint("creation_status")

@@ -7,3 +7,7 @@ export class VideoProcessingError extends Data.TaggedError(
 export class VideoValidationError extends Data.TaggedError(
   "VideoValidationError",
 )<{ cause: unknown; message: string }> {}
+
+export class VideoStoryboardError extends Data.TaggedError(
+  "VideoStoryboardError",
+)<{ cause: unknown; message: string }> {}

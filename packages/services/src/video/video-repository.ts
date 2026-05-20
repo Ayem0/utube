@@ -174,6 +174,7 @@ const getById = (id: string, db: DBClient["Type"]) =>
           hlsUrl: videoTable.hlsUrl,
           dashUrl: videoTable.dashUrl,
           thumbnailUrl: videoTable.thumbnailUrl,
+          storyboardUrl: videoTable.storyboardUrl,
           duration: videoTable.duration,
           visibility: videoTable.visibility,
           channelName: channelTable.name,
@@ -187,6 +188,7 @@ const getById = (id: string, db: DBClient["Type"]) =>
             isNotNull(videoTable.hlsUrl),
             isNotNull(videoTable.dashUrl),
             isNotNull(videoTable.duration),
+            isNotNull(videoTable.storyboardUrl),
             or(
               eq(videoTable.visibility, VideoVisibility.PUBLIC),
               eq(videoTable.visibility, VideoVisibility.PRIVATE),
@@ -208,6 +210,7 @@ const getById = (id: string, db: DBClient["Type"]) =>
       hlsUrl: res.hlsUrl!,
       dashUrl: res.dashUrl!,
       thumbnailUrl: res.thumbnailUrl,
+      storyboardUrl: res.storyboardUrl!,
       duration: res.duration!,
       channel: {
         id: res.channelId,

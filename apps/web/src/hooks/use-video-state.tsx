@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import { useVideoPlayerStore } from '../lib/video-player/video-player-context';
-import { VideoPlayerControllerState } from '../lib/video-player/video-player-state';
+import { useVideoPlayerStore } from '../lib/video-player1/video-player-context';
+import { VideoPlayerControllerState } from '../lib/video-player1/video-player-state';
 
 export function useVideoPlayerStates<T>(
   selector: (state: VideoPlayerControllerState) => T,

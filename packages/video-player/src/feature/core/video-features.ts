@@ -1,0 +1,15 @@
+import { displayFeature } from "./display";
+import { interactionFeature } from "./interaction";
+import { playbackFeature } from "./playback";
+import { qualityFeature } from "./quality";
+import { timeFeature } from "./time";
+import { volumeFeature } from "./volume";
+
+export const videoFeatures = [
+  playbackFeature,
+  displayFeature,
+  volumeFeature,
+  timeFeature,
+  interactionFeature,
+  qualityFeature,
+] as const;
