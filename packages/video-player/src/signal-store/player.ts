@@ -15,6 +15,10 @@ import {
   type FeatureApi,
   type FeatureDependencyContext,
   type FeatureEvents,
+  type FeatureInit,
+  type FeatureInternalStateArgs,
+  type FeatureStateArgs,
+  type PlayerFeatureOptions,
   type WritableFeatureDependencyContext,
 } from "./feature";
 import { createStore, Store, type DeepSignal } from "./store";
@@ -25,17 +29,23 @@ export class Player<const T extends Features> {
   private engine: Engine;
   private videoEl: HTMLVideoElement | null = null;
   private containerEl: HTMLDivElement | null = null;
-  private apis: FeatureRegistry<T>["api"];
+  private _apis: FeatureRegistry<T>["api"];
   private features: T;
   private featureDisposers = new Map<string, Disposer[]>();
   private featureContexts = new Map<string, FeatureContext<any, any, any>>();
+  private featureOptions: PlayerFeatureOptions<T>;
 
-  constructor(features: T, defaultState: EngineDefaultState) {
+  constructor(
+    features: T,
+    defaultState: EngineDefaultState,
+    featureOptions: PlayerFeatureOptions<T> = {},
+  ) {
     this.engine = createEngine(defaultState);
     this.features = features;
+    this.featureOptions = featureOptions;
     this._store = createStore(this.createFeatureState(features));
     this.featuresInternalState = this.createFeatureInternalState(features);
-    this.apis = this.createFeatureApi(features);
+    this._apis = this.createFeatureApi(features);
   }
 
   public attach(video: HTMLVideoElement, container?: HTMLDivElement) {
@@ -63,6 +73,10 @@ export class Player<const T extends Features> {
 
   public get store(): Pick<typeof this._store, "use"> {
     return this._store;
+  }
+
+  public get apis() {
+    return this._apis;
   }
 
   private createFeatureContext<F extends T[number]>(
@@ -133,7 +147,7 @@ export class Player<const T extends Features> {
           (s) => s[dependency.name as D["name"]],
         ) as DeepSignal<FeatureState<D>>,
         get api() {
-          return that.apis[dependency.name as D["name"]] as FeatureApi<D>;
+          return that._apis[dependency.name as D["name"]] as FeatureApi<D>;
         },
       } as FeatureDependencyContext<FeatureDependencies<F>>[D["name"]];
     };
@@ -254,8 +268,12 @@ export class Player<const T extends Features> {
   private createFeatureInternalState(features: T) {
     const internalState = {} as FeatureRegistry<T>["internalState"];
     for (const feature of features) {
+      const args = ((
+        (this.featureOptions[feature.name as T[number]["name"]] ??
+          {}) as FeatureInit<T[number]>
+      )?.internalStateArgs ?? []) as FeatureInternalStateArgs<T[number]>;
       internalState[feature.name as T[number]["name"]] =
-        feature.getInternalInitialState();
+        feature.getInternalState(...args);
     }
     return internalState;
   }
@@ -264,9 +282,25 @@ export class Player<const T extends Features> {
     const state = {} as FeatureRegistry<T>["state"];
 
     for (const feature of features) {
-      state[feature.name as T[number]["name"]] = feature.getInitialState();
+      const args = ((
+        (this.featureOptions[feature.name as T[number]["name"]] ??
+          {}) as FeatureInit<T[number]>
+      )?.stateArgs ?? []) as FeatureStateArgs<T[number]>;
+      state[feature.name as T[number]["name"]] = feature.getState(...args);
     }
 
     return state;
   }
+}
+
+export function createPlayer<T extends Features>(args: {
+  features: T;
+  engineOptions?: EngineDefaultState;
+  featureOptions?: PlayerFeatureOptions<T>;
+}): Player<T> {
+  return new Player<T>(
+    args.features,
+    { quality: args.engineOptions?.quality ?? -1 },
+    args.featureOptions,
+  );
 }

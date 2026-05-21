@@ -65,39 +65,79 @@ export type FeatureContext<
   batch: (fn: () => void) => void;
 };
 
+type StateGetter = (...args: any[]) => object;
+
 export type Feature<
   TName extends string,
-  TState extends object,
-  TInternalState extends object,
+  // TState extends object,
+  // TInternalState extends object,
+  TGetState extends StateGetter,
+  TGetInternalState extends StateGetter,
   TApi extends object,
   TDependencies extends readonly AnyFeature[],
 > = {
   name: TName;
   dependencies?: TDependencies;
-  getInitialState: (...args: any[]) => TState;
-  getInternalInitialState: (...args: any[]) => TInternalState;
-  getApi: (ctx: FeatureContext<TState, TInternalState, TDependencies>) => TApi;
+  getState: TGetState;
+  getInternalState: TGetInternalState;
+  getApi: (
+    ctx: FeatureContext<
+      ReturnType<TGetState>,
+      ReturnType<TGetInternalState>,
+      TDependencies
+    >,
+  ) => TApi;
+  onSetup?: (
+    ctx: FeatureContext<
+      ReturnType<TGetState>,
+      ReturnType<TGetInternalState>,
+      TDependencies
+    >,
+  ) => void;
+  onDestroy?: (
+    ctx: FeatureContext<
+      ReturnType<TGetState>,
+      ReturnType<TGetInternalState>,
+      TDependencies
+    >,
+  ) => void;
   onMediaAttach?: (
-    ctx: FeatureContext<TState, TInternalState, TDependencies>,
+    ctx: FeatureContext<
+      ReturnType<TGetState>,
+      ReturnType<TGetInternalState>,
+      TDependencies
+    >,
   ) => void;
   onMediaDetach?: (
-    ctx: FeatureContext<TState, TInternalState, TDependencies>,
+    ctx: FeatureContext<
+      ReturnType<TGetState>,
+      ReturnType<TGetInternalState>,
+      TDependencies
+    >,
   ) => void;
   onSourceLoad?: (
-    ctx: FeatureContext<TState, TInternalState, TDependencies>,
+    ctx: FeatureContext<
+      ReturnType<TGetState>,
+      ReturnType<TGetInternalState>,
+      TDependencies
+    >,
   ) => void;
 };
 
-export type FeatureState<F extends AnyFeature> = ReturnType<
-  F["getInitialState"]
+export type FeatureState<F extends AnyFeature> = ReturnType<F["getState"]>;
+
+export type FeatureStateArgs<F extends AnyFeature> = Parameters<F["getState"]>;
+
+export type FeatureInternalStateArgs<F extends AnyFeature> = Parameters<
+  F["getInternalState"]
 >;
 export type FeatureApi<F extends AnyFeature> = ReturnType<F["getApi"]>;
 export type FeatureInternalState<F extends AnyFeature> = ReturnType<
-  F["getInternalInitialState"]
+  F["getInternalState"]
 >;
 
 export type FeatureDependencies<F extends AnyFeature> =
-  F extends Feature<string, object, object, object, infer D> ? D : never;
+  F extends Feature<string, any, any, any, infer D> ? D : never;
 
 export type Features = readonly AnyFeature[];
 
@@ -113,23 +153,34 @@ export type FeatureRegistry<T extends Features> = {
   };
 };
 
+export type FeatureInit<F extends AnyFeature> = {
+  stateArgs?: FeatureStateArgs<F>;
+  internalStateArgs?: FeatureInternalStateArgs<F>;
+};
+
+export type PlayerFeatureOptions<T extends Features> = {
+  [F in T[number] as F["name"]]?: FeatureInit<F>;
+};
+
 export const createFeature = <
   TName extends string,
-  TState extends object,
-  TInternalState extends object,
+  // TState extends object,
+  // TInternalState extends object,
+  TGetState extends StateGetter,
+  TGetInternalState extends StateGetter,
   TApi extends object,
   TDependencies extends readonly AnyFeature[],
 >(
   feature: Omit<
-    Feature<TName, TState, TInternalState, TApi, TDependencies>,
-    "getInternalInitialState"
+    Feature<TName, TGetState, TGetInternalState, TApi, TDependencies>,
+    "getInternalState"
   > & {
-    getInternalInitialState?: () => TInternalState;
+    getInternalState?: TGetInternalState;
   },
-): Feature<TName, TState, TInternalState, TApi, TDependencies> => {
+): Feature<TName, TGetState, TGetInternalState, TApi, TDependencies> => {
   return {
     ...feature,
-    getInternalInitialState:
-      feature.getInternalInitialState ?? (() => ({}) as TInternalState),
+    getInternalState:
+      feature.getInternalState ?? ((() => ({})) as TGetInternalState),
   };
 };
