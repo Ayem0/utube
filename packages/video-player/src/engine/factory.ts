@@ -6,6 +6,6 @@ export function createEngine(defaultState: EngineDefaultState): Engine {
   if (Hls.isSupported()) {
     return new HlsEngine(defaultState);
   } else {
-    throw new Error("Engine not found");
+    throw new Error("Engine not supported");
   }
 }

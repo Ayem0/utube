@@ -23,7 +23,7 @@ export abstract class EventEmitter<
     handler: (...args: EventMap[K]) => void,
   ) {
     this.listeners[event] = this.listeners[event]?.filter((l) => l !== handler);
-    return this;
+    return;
   }
   protected clearListeners() {
     this.listeners = {};

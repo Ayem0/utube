@@ -22,15 +22,19 @@ export type Signal<T> = {
   (value: T): void;
 };
 
+export type ReadOnlySignal<T> = {
+  (): T;
+};
+
 type ReactiveRuntime = {
   signal<T = undefined>(): Signal<T | undefined>;
   signal<T>(initialValue: T): Signal<T>;
 
   computed: <T>(getter: (previousValue?: T) => T) => () => T;
   effect: (fn: () => void | (() => void)) => () => void;
+  batch: (fn: () => void) => void;
   effectScope: (fn: () => void) => () => void;
   trigger: (fn: () => void) => void;
-  batch: (fn: () => void) => void;
 };
 
 export function createReactiveRuntime(): ReactiveRuntime {

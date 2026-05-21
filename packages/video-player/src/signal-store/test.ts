@@ -102,7 +102,7 @@ const ITERATIONS = 1_000_000;
   const store = createTestStore();
 
   bench("leaf read", ITERATIONS, () => {
-    store.value.playback.paused();
+    store.select((s) => s.playback.paused);
   });
 }
 
@@ -112,7 +112,7 @@ const ITERATIONS = 1_000_000;
 
   bench("leaf write no subscriber", ITERATIONS, () => {
     value = !value;
-    store.value.playback.paused(value);
+    store.set((s) => s.playback.paused, value);
   });
 }
 
@@ -120,7 +120,7 @@ const ITERATIONS = 1_000_000;
   const store = createTestStore();
 
   bench("branch read", ITERATIONS, () => {
-    store.value.playback();
+    store.select((s) => s.playback);
   });
 }
 
@@ -129,16 +129,14 @@ const ITERATIONS = 1_000_000;
   let value = false;
   let notifications = 0;
 
-  const res = store.subscribe(
-    (s) => s.playback.paused,
-    () => {
-      notifications++;
-    },
-  );
+  const { getSnapshot, subscribe } = store.use((s) => s.playback.paused);
+  subscribe(() => {
+    notifications++;
+  });
 
   bench("leaf write with leaf subscriber", ITERATIONS, () => {
     value = !value;
-    store.value.playback.paused(value);
+    store.set((s) => s.playback.paused, value);
   });
 
   console.log("notifications:", notifications);
@@ -149,16 +147,14 @@ const ITERATIONS = 1_000_000;
   let value = false;
   let notifications = 0;
 
-  store.subscribe(
-    (s) => s.playback,
-    () => {
-      notifications++;
-    },
-  );
+  const { getSnapshot, subscribe } = store.use((s) => s.playback);
+  subscribe(() => {
+    notifications++;
+  });
 
   bench("leaf write with branch subscriber", ITERATIONS, () => {
     value = !value;
-    store.value.playback.paused(value);
+    store.set((s) => s.playback.paused, value);
   });
 
   console.log("notifications:", notifications);
@@ -169,16 +165,14 @@ const ITERATIONS = 1_000_000;
   let value = false;
   let notifications = 0;
 
-  store.subscribe(
-    (s) => s.playback.paused,
-    () => {
-      notifications++;
-    },
-  );
+  const { getSnapshot, subscribe } = store.use((s) => s.playback.paused);
+  subscribe(() => {
+    notifications++;
+  });
 
   bench("unrelated leaf write with leaf subscriber", ITERATIONS, () => {
     value = !value;
-    store.value.playback.ended(value);
+    store.set((s) => s.playback.ended, value);
   });
 
   console.log("notifications:", notifications);

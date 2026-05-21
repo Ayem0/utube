@@ -1,13 +1,13 @@
-import { createReactiveRuntime, Signal } from "./runtime";
+import { createReactiveRuntime, Signal, type ReadOnlySignal } from "./runtime";
 
-export class Store<T> {
+export class Store<T extends Record<PropertyKey, unknown>> {
   private runtime = createReactiveRuntime();
-  private state: DeepSignal<T>;
+  private state: BranchSignal<T>;
   /**
    *
    */
   constructor(initial: T) {
-    this.state = this.createDeepSignal(initial);
+    this.state = this.createDeepSignal(initial) as BranchSignal<T>;
   }
 
   private createDeepSignal<V>(initial: V): DeepSignal<V> {
@@ -60,25 +60,57 @@ export class Store<T> {
     return branch as BranchSignal<V>;
   }
 
+  public select<S>(selector: (value: BranchSignal<T>) => DeepSignal<S>) {
+    return selector(this.state);
+  }
+
+  public set<S>(selector: (value: BranchSignal<T>) => DeepSignal<S>, value: S) {
+    selector(this.state)(value);
+  }
+
   /**
-   * @internal Allows to get the entire state, use only for debug purposes
+   * Bridge for react useSyncExternalStore
+   * @param selector selector of the signal tree
+   * @returns the selected signal value
    */
-  public get value(): DeepSignal<T> {
-    return this.state;
-  }
+  public use<S>(selector: (value: DeepSignal<T>) => DeepSignal<S>) {
+    const signal = selector(this.state);
 
-  public subscribe<S>(
-    selector: (value: DeepSignal<T>) => DeepSignal<S>,
-    listener: () => void,
-  ) {
-    return this.runtime.effect(() => {
-      selector(this.state)();
-      listener();
-    });
-  }
+    let initialized = false;
+    let current!: S;
 
-  public getSnapshot<S>(selector: (value: DeepSignal<T>) => DeepSignal<S>): S {
-    return selector(this.state)();
+    const read = () => {
+      current = signal();
+      initialized = true;
+      return current;
+    };
+
+    return {
+      getSnapshot: () => {
+        if (!initialized) {
+          return read();
+        }
+
+        return current;
+      },
+
+      subscribe: (listener: () => void) => {
+        return this.runtime.effect(() => {
+          const next = signal();
+
+          if (!initialized) {
+            current = next;
+            initialized = true;
+            return;
+          }
+
+          if (!Object.is(current, next)) {
+            current = next;
+            listener();
+          }
+        });
+      },
+    };
   }
 
   public batch = this.runtime.batch;
@@ -89,19 +121,24 @@ export class Store<T> {
 
 export type DeepSignal<T> = [T] extends [object] ? BranchSignal<T> : Signal<T>;
 
-type BranchSignal<T extends object> = {
-  (): T;
-  (value: T): void;
-} & {
+type BranchSignal<T extends object> = Signal<T> & {
   [K in keyof T]: DeepSignal<T[K]>;
 };
 
+export type ReadOnlyDeepSignal<T> = [T] extends [object]
+  ? ReadOnlyBranchSignal<T>
+  : ReadOnlySignal<T>;
+type ReadOnlyBranchSignal<T extends object> = ReadOnlySignal<T> & {
+  [K in keyof T]: ReadOnlyDeepSignal<T[K]>;
+};
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (value === null || typeof value !== "object") return false;
   const proto = Object.getPrototypeOf(value);
   return proto === Object.prototype || proto === null;
 }
 
-export function createStore<T>(initial: T) {
+export function createStore<T extends Record<PropertyKey, unknown>>(
+  initial: T,
+) {
   return new Store(initial);
 }
