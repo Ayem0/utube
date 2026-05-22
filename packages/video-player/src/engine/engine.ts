@@ -19,7 +19,8 @@ export abstract class Engine extends EventEmitter<EngineEvents> {
 
 export interface EngineEvents {
   qualitiesChanged: [qualities: readonly VideoQuality[]];
-  qualityChanged: [qualityIndex: VideoQuality];
+  qualityChanged: [quality: VideoQuality];
+  bufferAppended: [data: { end: number }];
 }
 
 export interface EngineOptions {

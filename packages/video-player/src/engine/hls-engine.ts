@@ -4,6 +4,7 @@ import Hls, {
   LevelSwitchedData,
   LevelUpdatedData,
   ManifestParsedData,
+  type BufferAppendedData,
 } from "hls.js";
 import { VideoQuality, VideoSource } from "../types";
 import { Engine, EngineOptions } from "./engine";
@@ -108,6 +109,23 @@ export class HlsEngine extends Engine {
     this.hls.on(Events.LEVEL_UPDATED, this.onLevelUpdated);
     this.hls.on(Events.LEVEL_SWITCHED, this.onLevelSwitched);
     this.hls.on(Events.LEVELS_UPDATED, this.onLevelsUpdated);
+    this.hls.on(Events.BUFFER_APPENDED, this.onBufferAppended);
+  };
+
+  private destroyListeners = () => {
+    this.hls.off(Events.MANIFEST_PARSED, this.onManifestParsed);
+    this.hls.off(Events.LEVEL_UPDATED, this.onLevelUpdated);
+    this.hls.off(Events.LEVEL_SWITCHED, this.onLevelSwitched);
+    this.hls.off(Events.LEVELS_UPDATED, this.onLevelsUpdated);
+    this.hls.off(Events.BUFFER_APPENDED, this.onBufferAppended);
+  };
+
+  private onBufferAppended = (
+    event: Events.BUFFER_APPENDED,
+    data: BufferAppendedData,
+  ) => {
+    console.log("HLS BUFFER_APPENDED", data);
+    this.emit("bufferAppended", { end: data.frag.end });
   };
 
   private onLevelsUpdated = (
@@ -121,13 +139,6 @@ export class HlsEngine extends Engine {
       frameRate: level.frameRate,
     }));
     this.emit("qualitiesChanged", this.qualities);
-  };
-
-  private destroyListeners = () => {
-    this.hls.off(Events.MANIFEST_PARSED, this.onManifestParsed);
-    this.hls.off(Events.LEVEL_UPDATED, this.onLevelUpdated);
-    this.hls.off(Events.LEVEL_SWITCHED, this.onLevelSwitched);
-    this.hls.off(Events.LEVELS_UPDATED, this.onLevelsUpdated);
   };
 
   private onManifestParsed = (
