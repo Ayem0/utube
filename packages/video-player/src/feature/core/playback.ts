@@ -1,4 +1,4 @@
-import { createFeature } from "../factory";
+import { createFeature } from "../feature";
 
 // type PlaybackState = {
 //   paused: boolean;
@@ -9,7 +9,7 @@ import { createFeature } from "../factory";
 
 export const playbackFeature = createFeature({
   name: "playback",
-  getInitialState: (defaultPlaybackRate: number = 1) => ({
+  getState: (defaultPlaybackRate: number = 1) => ({
     paused: true,
     waiting: false,
     ended: false,
@@ -40,44 +40,47 @@ export const playbackFeature = createFeature({
     togglePlay: (isOverlay: boolean = false) => {
       const video = ctx.getVideo();
       if (!video) return;
-      if (ctx.getState().ended && isOverlay) return;
+      if (ctx.state.ended() && isOverlay) return;
       video.paused ? video.play() : video.pause();
     },
     toggleLoop: () => {
       const video = ctx.getVideo();
       if (!video) return;
       video.loop = !video.loop;
-      ctx.setState({ loop: video.loop });
+      ctx.state.loop(video.loop);
     },
   }),
   onMediaAttach: (ctx) => {
     const video = ctx.getVideo();
     if (!video) return;
-    video.playbackRate = ctx.getState().playbackRate;
-    ctx.setState({ paused: video.paused });
-    ctx.setState({ ended: video.ended });
-    ctx.setState({ loop: video.loop });
-    ctx.addMediaEventListener("play", () => {
-      ctx.setState({ paused: false, ended: false });
+    video.playbackRate = ctx.state.playbackRate();
+    ctx.batch(() => {
+      ctx.state.paused(video.paused);
+      ctx.state.ended(video.ended);
+      ctx.state.loop(video.loop);
     });
-    ctx.addMediaEventListener("pause", () => {
-      ctx.setState({ paused: true });
+    ctx.events.video("play", () => {
+      ctx.batch(() => {
+        ctx.state.paused(false);
+        ctx.state.ended(false);
+      });
     });
-    ctx.addMediaEventListener("waiting", () => {
-      ctx.setState({ waiting: true });
+    ctx.events.video("pause", () => {
+      ctx.state.paused(true);
     });
-    ctx.addMediaEventListener("playing", () => {
-      ctx.setState({ waiting: false });
+    ctx.events.video("waiting", () => {
+      ctx.state.waiting(true);
     });
-    ctx.addMediaEventListener("ended", () => {
-      ctx.setState({ ended: true });
+    ctx.events.video("playing", () => {
+      ctx.state.waiting(false);
     });
-    ctx.addMediaEventListener("ratechange", () => {
+    ctx.events.video("ended", () => {
+      ctx.state.ended(true);
+    });
+    ctx.events.video("ratechange", () => {
       const video = ctx.getVideo();
       if (!video) return;
-      ctx.setState({
-        playbackRate: video.playbackRate,
-      });
+      ctx.state.playbackRate(video.playbackRate);
     });
   },
 });

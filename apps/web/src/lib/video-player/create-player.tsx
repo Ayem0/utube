@@ -1,6 +1,12 @@
-import type { Features } from '@repo/video-player/feature/feature';
-import { createPlayer as createPlayerCore } from '@repo/video-player/player/factory';
-import { StoreState } from '@repo/video-player/store/store';
+import type { EngineOptions } from '@repo/video-player/engine/engine';
+import type {
+  FeatureRegistry,
+  Features,
+  PlayerFeatureOptions,
+} from '@repo/video-player/feature/feature';
+import { createPlayer as createPlayerCore } from '@repo/video-player/player/player';
+import type { DeepSignal } from '@repo/video-player/store/store';
+// import { StoreState } from '@repo/video-player/store/store';
 import { VideoSource } from '@repo/video-player/types';
 import {
   createContext,
@@ -12,12 +18,14 @@ import {
 
 export const createPlayer = <T extends Features>({
   features,
-  defaultQuality,
+  engineOptions,
+  featureOptions,
 }: {
   features: T;
-  defaultQuality?: number;
+  engineOptions?: EngineOptions | undefined;
+  featureOptions?: PlayerFeatureOptions<T> | undefined;
 }) => {
-  const player = createPlayerCore({ features, defaultQuality });
+  const player = createPlayerCore({ features, engineOptions, featureOptions });
   const Context = createContext<{
     source: VideoSource;
     storyboardUrl?: string;
@@ -76,31 +84,38 @@ export const createPlayer = <T extends Features>({
   };
 
   const usePlayerApi = <K extends T[number]['name']>(featureName: K) => {
-    return player.store.getApi(featureName);
+    return player.apis[featureName];
   };
 
-  const usePlayerState: {
-    <K extends T[number]['name']>(featureName: K): StoreState<T>[K];
-
-    <K extends T[number]['name'], SS>(
-      featureName: K,
-      selector: (state: StoreState<T>[K]) => SS,
-    ): SS;
-  } = <K extends T[number]['name'], SS>(
-    featureName: K,
-    selector?: (state: StoreState<T>[K]) => SS,
+  const usePlayerState = <S,>(
+    selector: (state: DeepSignal<FeatureRegistry<T>['state']>) => DeepSignal<S>,
   ) => {
-    const getSnapshot = () =>
-      selector
-        ? player.store.getFeatureSnapshot(featureName, selector)
-        : player.store.getFeatureSnapshot(featureName);
-    return useSyncExternalStore(
-      (onStoreChange) =>
-        player.store.subscribeFeature(featureName, onStoreChange),
-      getSnapshot,
-      getSnapshot,
-    );
+    const { getSnapshot, subscribe } = player.store.use(selector);
+    return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   };
+
+  // const usePlayerState: {
+  //   <K extends T[number]['name']>(featureName: K): StoreState<T>[K];
+
+  //   <K extends T[number]['name'], SS>(
+  //     featureName: K,
+  //     selector: (state: StoreState<T>[K]) => SS,
+  //   ): SS;
+  // } = <K extends T[number]['name'], SS>(
+  //   featureName: K,
+  //   selector?: (state: StoreState<T>[K]) => SS,
+  // ) => {
+  //   const getSnapshot = () =>
+  //     selector
+  //       ? player.store.getFeatureSnapshot(featureName, selector)
+  //       : player.store.getFeatureSnapshot(featureName);
+  //   return useSyncExternalStore(
+  //     (onStoreChange) =>
+  //       player.store.subscribeFeature(featureName, onStoreChange),
+  //     getSnapshot,
+  //     getSnapshot,
+  //   );
+  // };
 
   return {
     Provider,

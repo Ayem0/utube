@@ -11,7 +11,7 @@ import {
 import { Gauge } from 'lucide-react';
 
 export function VideoPlayerPlayrate() {
-  const { playbackRate } = usePlayerState('playback');
+  const playbackRate = usePlayerState((s) => s.playback.playbackRate);
   const { setPlaybackRate } = usePlayerApi('playback');
   return (
     <DropdownMenuSub>

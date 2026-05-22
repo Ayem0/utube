@@ -3,8 +3,9 @@ import { Button } from '@repo/ui/components/button';
 import { useLayoutEffect, useRef, useState } from 'react';
 
 export function VideoPlayerTimer() {
-  const { currentTimeStr, durationStr, remainingTimeStr } =
-    usePlayerState('time');
+  const currentTimeStr = usePlayerState((s) => s.time.currentTimeStr);
+  const durationStr = usePlayerState((s) => s.time.durationStr);
+  const remainingTimeStr = usePlayerState((s) => s.time.remainingTimeStr);
   const [remainingMode, setRemainingMode] = useState(false);
   const timeRef = useRef<HTMLTimeElement>(null);
 

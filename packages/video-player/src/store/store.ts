@@ -1,155 +1,144 @@
-import {
-  FeatureContext,
-  FeatureDependencies,
-  FeatureInternalState,
-  FeatureRegistry,
-  Features,
-  FeatureState,
-} from "../feature/feature";
-import { Disposer } from "../types";
+import { createReactiveRuntime, Signal, type ReadOnlySignal } from "./runtime";
 
-export type StoreState<T extends Features> = FeatureRegistry<T>["state"];
-export type StoreApi<T extends Features> = FeatureRegistry<T>["api"];
-export type StoreInternalState<T extends Features> =
-  FeatureRegistry<T>["internalState"];
-
-type Listener = () => void;
-
-export class Store<T extends Features> {
-  private _state: StoreState<T>;
-  private _internalState: StoreInternalState<T>;
-  private _api: StoreApi<T>;
-  private featureListeners = new Map<keyof StoreState<T>, Set<Listener>>();
-  // private listeners = new Set<Listener>();
-
-  constructor(
-    features: T,
-    createFeatureContext: <F extends T[number]>(
-      feature: F,
-    ) => FeatureContext<
-      FeatureState<F>,
-      FeatureInternalState<F>,
-      FeatureDependencies<F>
-    >,
-  ) {
-    this._state = Object.assign(
-      {},
-      ...features.map((feature) => ({
-        [feature.name]: feature.getInitialState(),
-      })),
-    );
-    this._api = Object.assign(
-      {},
-      ...features.map((feature) => ({
-        [feature.name]: feature.getApi(createFeatureContext(feature)),
-      })),
-    );
-    this._internalState = Object.assign(
-      {},
-      ...features.map((feature) => ({
-        [feature.name]: feature.getInternalInitialState(),
-      })),
-    );
+export class Store<T extends Record<PropertyKey, unknown>> {
+  private runtime = createReactiveRuntime();
+  private state: BranchSignal<T>;
+  /**
+   *
+   */
+  constructor(initial: T) {
+    this.state = this.createDeepSignal(initial) as BranchSignal<T>;
   }
 
-  public subscribeFeature = <K extends keyof StoreState<T>>(
-    featureName: K,
-    listener: Listener,
-  ): Disposer => {
-    if (!this.featureListeners.has(featureName)) {
-      this.featureListeners.set(featureName, new Set());
-    }
-    this.featureListeners.get(featureName)!.add(listener);
-    return () => {
-      this.featureListeners.get(featureName)?.delete(listener);
+  private createDeepSignal<V>(initial: V): DeepSignal<V> {
+    if (!isPlainObject(initial))
+      return this.runtime.signal(initial) as DeepSignal<V>;
+
+    return this.createBranchSignal(initial) as DeepSignal<V>;
+  }
+
+  private createBranchSignal<V extends object>(initial: V): BranchSignal<V> {
+    const keys = Object.keys(initial) as Array<keyof V>;
+    const children = {} as {
+      [K in keyof V]: DeepSignal<V[K]>;
     };
-  };
 
-  // public getSnapshot = <R extends unknown>(
-  //   selector: (state: StoreState<T>) => R,
-  // ) => selector(this._state);
+    for (const key of keys) {
+      children[key] = this.createDeepSignal(initial[key]);
+    }
 
-  public getFeatureSnapshot<K extends keyof StoreState<T>>(
-    featureName: K,
-  ): StoreState<T>[K];
+    const read = this.runtime.computed(() => {
+      const out = {} as {
+        [K in keyof V]: V[K];
+      };
+      for (const key of keys) {
+        out[key] = children[key]() as V[typeof key];
+      }
+      return out;
+    });
 
-  public getFeatureSnapshot<K extends keyof StoreState<T>, SS>(
-    featureName: K,
-    selector: (state: StoreState<T>[K]) => SS,
-  ): SS;
+    const runtime = this.runtime;
 
-  public getFeatureSnapshot<K extends keyof StoreState<T>, SS>(
-    featureName: K,
-    selector?: (state: StoreState<T>[K]) => SS,
-  ): StoreState<T>[K] | SS {
-    return selector
-      ? selector(this._state[featureName])
-      : this._state[featureName];
+    function branch(): V;
+    function branch(value: V): void;
+    function branch(...args: [] | [V]) {
+      if (args.length === 0) {
+        return read();
+      }
+
+      const value = args[0];
+
+      runtime.batch(() => {
+        for (const key of keys) {
+          children[key](value[key] as any);
+        }
+      });
+    }
+
+    Object.assign(branch, children);
+
+    return branch as BranchSignal<V>;
   }
 
-  // public subscribe = (listener: Listener): Disposer => {
-  //   this.listeners.add(listener);
+  public select<S>(selector: (value: BranchSignal<T>) => DeepSignal<S>) {
+    return selector(this.state);
+  }
 
-  //   return () => {
-  //     this.listeners.delete(listener);
-  //   };
-  // };
+  public set<S>(selector: (value: BranchSignal<T>) => DeepSignal<S>, value: S) {
+    selector(this.state)(value);
+  }
 
-  private notify = (featureName: keyof StoreState<T>) => {
-    this.featureListeners.get(featureName)?.forEach((listener) => listener());
-    // this.listeners.forEach((listener) => listener());
-  };
+  /**
+   * Bridge for react useSyncExternalStore
+   * @param selector selector of the signal tree
+   * @returns the selected signal value
+   */
+  public use<S>(selector: (value: DeepSignal<T>) => DeepSignal<S>) {
+    const signal = selector(this.state);
 
-  public setInternalState = <K extends keyof StoreInternalState<T>>(
-    featureName: K,
-    newState: Partial<StoreInternalState<T>[K]>,
-  ) => {
-    this._internalState = {
-      ...this._internalState,
-      [featureName]: {
-        ...this._internalState[featureName],
-        ...newState,
+    let initialized = false;
+    let current!: S;
+
+    const read = () => {
+      current = signal();
+      initialized = true;
+      return current;
+    };
+
+    return {
+      getSnapshot: () => {
+        if (!initialized) {
+          return read();
+        }
+
+        return current;
+      },
+
+      subscribe: (listener: () => void) => {
+        return this.runtime.effect(() => {
+          const next = signal();
+
+          if (!initialized) {
+            current = next;
+            initialized = true;
+            return;
+          }
+
+          if (!Object.is(current, next)) {
+            current = next;
+            listener();
+          }
+        });
       },
     };
-  };
-
-  public getState = <F extends keyof StoreState<T>>(featureName: F) => {
-    return this._state[featureName];
-  };
-
-  public getApi = <F extends keyof StoreApi<T>>(featureName: F) => {
-    return this._api[featureName];
-  };
-
-  public setState = <K extends keyof StoreState<T>>(
-    featureName: K,
-    newState: Partial<StoreState<T>[K]>,
-  ) => {
-    if (!this.hasPatchChanged(this._state[featureName], newState)) return;
-
-    this._state[featureName] = {
-      ...this._state[featureName],
-      ...newState,
-    };
-    this.notify(featureName);
-  };
-
-  private hasPatchChanged<S extends object>(
-    prev: S,
-    patch: Partial<S>,
-  ): boolean {
-    for (const key of Reflect.ownKeys(patch) as Array<keyof S>) {
-      if (!Object.is(prev[key], patch[key])) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
-  public getInternalState = <F extends keyof StoreInternalState<T>>(
-    featureName: F,
-  ) => {
-    return this._internalState[featureName];
-  };
+  public batch = this.runtime.batch;
+  public effect = this.runtime.effect;
+  public signal = this.runtime.signal;
+  public computed = this.runtime.computed;
+}
+
+export type DeepSignal<T> = [T] extends [object] ? BranchSignal<T> : Signal<T>;
+
+type BranchSignal<T extends object> = Signal<T> & {
+  [K in keyof T]: DeepSignal<T[K]>;
+};
+
+export type ReadOnlyDeepSignal<T> = [T] extends [object]
+  ? ReadOnlyBranchSignal<T>
+  : ReadOnlySignal<T>;
+type ReadOnlyBranchSignal<T extends object> = ReadOnlySignal<T> & {
+  [K in keyof T]: ReadOnlyDeepSignal<T[K]>;
+};
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== "object") return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+export function createStore<T extends Record<PropertyKey, unknown>>(
+  initial: T,
+) {
+  return new Store(initial);
 }

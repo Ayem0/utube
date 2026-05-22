@@ -1,16 +1,16 @@
-import { createFeature } from "../factory";
+import { createFeature } from "../feature";
 
 export const interactionFeature = createFeature({
   name: "interaction",
-  getInitialState: () => ({
+  getState: () => ({
     isActive: false,
   }),
   getApi: (ctx) => ({
     setActive: () => {
-      ctx.setState({ isActive: true });
+      ctx.state.isActive(true);
     },
     setInactive: () => {
-      ctx.setState({ isActive: false });
+      ctx.state.isActive(false);
     },
   }),
 });

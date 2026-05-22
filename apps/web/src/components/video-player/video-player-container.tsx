@@ -11,8 +11,8 @@ export function VideoPlayerContainer({
   children: React.ReactNode;
 }) {
   const { containerRef } = usePlayerContext();
-  const isActive = usePlayerState('interaction', (s) => s.isActive);
-  const isFullscreen = usePlayerState('display', (s) => s.fullscreen);
+  const isActive = usePlayerState((s) => s.interaction.isActive);
+  const isFullscreen = usePlayerState((s) => s.display.fullscreen);
   const { setActive, setInactive } = usePlayerApi('interaction');
   const debouncedAutoHide = useDebouncedCallback(setInactive, {
     wait: 1500,

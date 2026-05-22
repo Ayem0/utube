@@ -1,8 +1,8 @@
 import Hls from "hls.js";
-import { Engine, EngineDefaultState } from "./engine";
+import { Engine, EngineOptions } from "./engine";
 import { HlsEngine } from "./hls-engine";
 
-export function createEngine(defaultState: EngineDefaultState): Engine {
+export function createEngine(defaultState: EngineOptions): Engine {
   if (Hls.isSupported()) {
     return new HlsEngine(defaultState);
   } else {

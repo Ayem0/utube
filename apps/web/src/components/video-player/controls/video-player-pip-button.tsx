@@ -4,7 +4,7 @@ import { PictureInPicture, PictureInPicture2 } from 'lucide-react';
 
 export function VideoPlayerPipButton() {
   const { togglePiP } = usePlayerApi('display');
-  const isPip = usePlayerState('display', (s) => s.pip);
+  const isPip = usePlayerState((s) => s.display.pip);
 
   return (
     <Button

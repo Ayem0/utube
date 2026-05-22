@@ -1,4 +1,4 @@
-import { createFeature } from "../factory";
+import { createFeature } from "../feature";
 
 export type TimeState = {
   currentTimeStr: string | null;
@@ -10,7 +10,7 @@ export type TimeState = {
 
 export const timeFeature = createFeature({
   name: "time",
-  getInitialState: (): TimeState => ({
+  getState: (): TimeState => ({
     currentTimeStr: null,
     remainingTimeStr: null,
     invDuration: 0,
@@ -20,40 +20,43 @@ export const timeFeature = createFeature({
 
   getApi: (ctx) => ({
     setCurrentTimeFromRatio: (ratio: number) => {
-      const duration = ctx.getState().duration;
+      const duration = ctx.state.duration();
       if (!Number.isFinite(duration)) return;
       const newTime = duration * ratio;
       const newRemainingTime = duration - newTime;
-      ctx.setState({
-        currentTimeStr: formatTime(newTime),
-        remainingTimeStr: "-" + formatTime(newRemainingTime),
+      ctx.batch(() => {
+        ctx.state.currentTimeStr(formatTime(newTime));
+        ctx.state.remainingTimeStr("-" + formatTime(newRemainingTime));
       });
     },
   }),
   onMediaAttach: (ctx) => {
     const video = ctx.getVideo();
     if (!video) return;
-    ctx.setState({
+    ctx.state({
       duration: video.duration,
       currentTimeStr: formatTime(video.currentTime),
       durationStr: formatTime(video.duration),
       invDuration: 1 / video.duration,
+      remainingTimeStr: "-" + formatTime(video.duration - video.currentTime),
     });
-    ctx.addMediaEventListener("timeupdate", () => {
+    ctx.events.video("timeupdate", () => {
       const video = ctx.getVideo();
       if (!video) return;
-      ctx.setState({
-        currentTimeStr: formatTime(video.currentTime),
-        remainingTimeStr: "-" + formatTime(video.duration - video.currentTime),
+      ctx.batch(() => {
+        ctx.state.currentTimeStr(formatTime(video.currentTime));
+        ctx.state.remainingTimeStr(
+          "-" + formatTime(video.duration - video.currentTime),
+        );
       });
     });
-    ctx.addMediaEventListener("durationchange", () => {
+    ctx.events.video("durationchange", () => {
       const video = ctx.getVideo();
       if (!video) return;
-      ctx.setState({
-        duration: video.duration,
-        durationStr: formatTime(video.duration),
-        invDuration: 1 / video.duration,
+      ctx.batch(() => {
+        ctx.state.duration(video.duration);
+        ctx.state.durationStr(formatTime(video.duration));
+        ctx.state.invDuration(1 / video.duration);
       });
     });
   },

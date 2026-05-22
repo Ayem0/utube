@@ -1,8 +1,4 @@
-import {
-  Engine,
-  EngineDefaultState,
-  type EngineEvents,
-} from "../engine/engine";
+import { Engine, EngineOptions, type EngineEvents } from "../engine/engine";
 import { createEngine } from "../engine/factory";
 import { Disposer, VideoSource } from "../types";
 import {
@@ -37,7 +33,7 @@ export class Player<const T extends Features> {
 
   constructor(
     features: T,
-    defaultState: EngineDefaultState,
+    defaultState: EngineOptions,
     featureOptions: PlayerFeatureOptions<T> = {},
   ) {
     this.engine = createEngine(defaultState);
@@ -295,7 +291,7 @@ export class Player<const T extends Features> {
 
 export function createPlayer<T extends Features>(args: {
   features: T;
-  engineOptions?: EngineDefaultState;
+  engineOptions?: EngineOptions;
   featureOptions?: PlayerFeatureOptions<T>;
 }): Player<T> {
   return new Player<T>(

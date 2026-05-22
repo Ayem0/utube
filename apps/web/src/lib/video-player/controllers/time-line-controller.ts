@@ -165,11 +165,22 @@ export class TimeLineController {
         String(scale),
       );
       this.setCurrentTimeFromRatio(scale);
+      if (this.elements?.previewTimer) {
+        this.elements.previewTimer.textContent = formatTime(
+          this.duration * scale,
+        );
+      }
     } else if (this.isHovering) {
+      const scale = this.previewX * this.invTimeLineContainerWidth;
       this.elements?.timeLineContainer.style.setProperty(
         '--pointerpx',
         this.previewX + 'px',
       );
+      if (this.elements?.previewTimer) {
+        this.elements.previewTimer.textContent = formatTime(
+          this.duration * scale,
+        );
+      }
     }
     this.rafId = requestAnimationFrame(this.rafLoop);
   };
@@ -218,4 +229,18 @@ export class TimeLineController {
     this.video.cancelVideoFrameCallback(this.vfrcId);
     this.vfrcId = null;
   };
+}
+
+function formatTime(time: number) {
+  if (!Number.isFinite(time)) return '--:--';
+  const rounded = Math.round(time);
+  const hours = Math.floor(rounded / 3600);
+  const minutes = Math.floor((rounded % 3600) / 60);
+  const seconds = Math.floor(rounded % 60);
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds
+      .toString()
+      .padStart(2, '0')}`;
+  }
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }

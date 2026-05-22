@@ -24,8 +24,8 @@ export function VideoPlayerSettings({
       <DropdownMenuContent
         side="top"
         align="center"
-        sideOffset={15}
-        className="w-96"
+        sideOffset={32}
+        className="w-80"
       >
         <DropdownMenuGroup>{children}</DropdownMenuGroup>
       </DropdownMenuContent>

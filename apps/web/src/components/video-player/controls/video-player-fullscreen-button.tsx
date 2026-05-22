@@ -3,7 +3,7 @@ import { Button } from '@repo/ui/components/button';
 import { Maximize2, Minimize2 } from 'lucide-react';
 
 export function VideoPlayerFullscreenButton() {
-  const fullscreen = usePlayerState('display', (s) => s.fullscreen);
+  const fullscreen = usePlayerState((s) => s.display.fullscreen);
   const { toggleFullscreen } = usePlayerApi('display');
 
   return (

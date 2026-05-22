@@ -12,7 +12,9 @@ import { VideoQuality } from '@repo/video-player/types';
 import { SlidersHorizontal } from 'lucide-react';
 
 export function VideoPlayerQuality() {
-  const { currentQuality, qualities, isAuto } = usePlayerState('quality');
+  const { currentQuality, qualities, isAuto } = usePlayerState(
+    (s) => s.quality,
+  );
   const { setQuality } = usePlayerApi('quality');
   if (!currentQuality) return null;
   return (

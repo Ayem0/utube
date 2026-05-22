@@ -2,7 +2,7 @@ import { EventEmitter } from "../event-emitter";
 import { VideoQuality, VideoSource } from "../types";
 
 export abstract class Engine extends EventEmitter<EngineEvents> {
-  constructor(defaultState: EngineDefaultState) {
+  constructor(defaultState: EngineOptions) {
     super();
   }
   public abstract loadSource: (source: VideoSource) => void;
@@ -22,6 +22,6 @@ export interface EngineEvents {
   qualityChanged: [qualityIndex: VideoQuality];
 }
 
-export interface EngineDefaultState {
+export interface EngineOptions {
   quality: number;
 }

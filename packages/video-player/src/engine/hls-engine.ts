@@ -6,14 +6,14 @@ import Hls, {
   ManifestParsedData,
 } from "hls.js";
 import { VideoQuality, VideoSource } from "../types";
-import { Engine, EngineDefaultState } from "./engine";
+import { Engine, EngineOptions } from "./engine";
 
 export class HlsEngine extends Engine {
   private hls: Hls;
   private qualities: VideoQuality[] = [];
   private videoEl: HTMLVideoElement | null = null;
 
-  constructor(defaultState: EngineDefaultState) {
+  constructor(defaultState: EngineOptions) {
     super(defaultState);
     this.hls = new Hls({
       enableWorker: true,

@@ -9,10 +9,11 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 export function VideoPlayerTimeline() {
   const { videoRef } = usePlayerContext();
   const { togglePlay, seek } = usePlayerApi('playback');
-  const isActive = usePlayerState('interaction', (s) => s.isActive);
-  const { ended, paused } = usePlayerState('playback');
-  const invDuration = usePlayerState('time', (s) => s.invDuration);
-  const duration = usePlayerState('time', (s) => s.duration);
+  const isActive = usePlayerState((s) => s.interaction.isActive);
+  const paused = usePlayerState((s) => s.playback.paused);
+  const ended = usePlayerState((s) => s.playback.ended);
+  const invDuration = usePlayerState((s) => s.time.invDuration);
+  const duration = usePlayerState((s) => s.time.duration);
   const { setCurrentTimeFromRatio } = usePlayerApi('time');
 
   const containerRef = useRef<HTMLDivElement>(null);

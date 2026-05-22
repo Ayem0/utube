@@ -5,7 +5,8 @@ import { useMemo } from 'react';
 
 export function VideoPlayerPlayButton() {
   const { togglePlay } = usePlayerApi('playback');
-  const { ended, paused } = usePlayerState('playback');
+  const ended = usePlayerState((s) => s.playback.ended);
+  const paused = usePlayerState((s) => s.playback.paused);
   const Icon = useMemo(() => {
     if (ended) return RotateCcw;
     if (paused) return Play;

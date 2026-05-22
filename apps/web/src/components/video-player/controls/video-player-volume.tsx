@@ -5,7 +5,8 @@ import { useDebouncedCallback } from '@tanstack/react-pacer';
 import { Volume1, Volume2, VolumeX } from 'lucide-react';
 
 export function VideoPlayerVolume() {
-  const { muted, volume } = usePlayerState('volume');
+  const muted = usePlayerState((s) => s.volume.muted);
+  const volume = usePlayerState((s) => s.volume.volume);
   const { setMuted, setVolume, setLastVolume } = usePlayerApi('volume');
   const { setActive, setInactive } = usePlayerApi('interaction');
   const debouncedAutoHide = useDebouncedCallback(setInactive, {
