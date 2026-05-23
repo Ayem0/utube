@@ -28,7 +28,7 @@ RUN bun install --frozen-lockfile
 COPY --from=pruner /app/out/full/ .
 
 # Build the app using Turbo (which runs the vite build script)
-RUN bunx turbo run build --filter=video-processing-worker...
+RUN bunx turbo run build --filter=video-processing-worker
 
 # Stage 3: Runner
 FROM base AS runner
@@ -40,4 +40,4 @@ COPY --from=builder /app .
 WORKDIR /app/apps/video-processing-worker
 
 # Run the worker.ts file using the bun runtime
-CMD ["bun", "run", "src/worker.ts"]
+CMD ["bun", "run", "dist/worker.mjs"]
