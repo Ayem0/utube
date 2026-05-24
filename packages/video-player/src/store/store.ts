@@ -2,7 +2,7 @@ import { createReactiveRuntime, Signal, type ReadOnlySignal } from "./runtime";
 
 export class Store<T extends Record<PropertyKey, unknown>> {
   private runtime = createReactiveRuntime();
-  private state: BranchSignal<T>;
+  public state: BranchSignal<T>;
   /**
    *
    */

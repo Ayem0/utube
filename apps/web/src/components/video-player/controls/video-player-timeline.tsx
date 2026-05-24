@@ -15,6 +15,7 @@ export function VideoPlayerTimeline() {
   const invDuration = usePlayerState((s) => s.time.invDuration);
   const duration = usePlayerState((s) => s.time.duration);
   const { setCurrentTimeFromRatio } = usePlayerApi('time');
+  const bufferedEnd = usePlayerState((s) => s.time.bufferedEnd);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -41,8 +42,9 @@ export function VideoPlayerTimeline() {
       ended,
       isActive,
       paused,
+      bufferedEnd,
     });
-  }, [paused, ended, invDuration, isActive]);
+  }, [paused, ended, invDuration, isActive, bufferedEnd]);
 
   return (
     <div
@@ -56,10 +58,13 @@ export function VideoPlayerTimeline() {
         className="absolute left-0 right-0 bg-zinc-700 h-1 group-hover/timeline:h-1.5 group-focus/timeline-within:h-1.5 rounded-full overflow-hidden"
       >
         <div
+          data-buffer
+          className="origin-left absolute inset-y-0 left-0 w-full bg-gray-500 will-change-transform transform-[scaleX(var(--buffered))]"
+        />
+        <div
           data-fill
           className="origin-left absolute inset-y-0 left-0 w-full bg-red-500 will-change-transform transform-[scaleX(var(--fill))]"
         />
-        <div data-buffer className="absolute inset-y-0 left-0 bg-gray-500" />
       </div>
       <div
         data-thumb

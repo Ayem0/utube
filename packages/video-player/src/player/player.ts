@@ -42,6 +42,9 @@ export class Player<const T extends Features> {
     this._store = createStore(this.createFeatureState(features));
     this.featuresInternalState = this.createFeatureInternalState(features);
     this._apis = this.createFeatureApi(features);
+    this.features.forEach((feature) => {
+      feature.onSetup?.(this.getFeatureContext(feature));
+    });
   }
 
   public attach(video: HTMLVideoElement, container?: HTMLDivElement) {
@@ -67,7 +70,7 @@ export class Player<const T extends Features> {
     this.engine.loadSource(source);
   }
 
-  public get store(): Pick<typeof this._store, "use"> {
+  public get store(): Pick<typeof this._store, "use" | "state"> {
     return this._store;
   }
 

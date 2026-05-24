@@ -27,6 +27,7 @@ export class TimeLineController {
   private timeLineContainerOffsetLeft = 0;
   private timeLineContainerWidth = 0;
   private invTimeLineContainerWidth = 0;
+  private bufferedEnd = 0;
 
   private observer: ResizeObserver | null = null;
 
@@ -48,6 +49,7 @@ export class TimeLineController {
     paused: boolean;
     duration: number;
     invDuration: number;
+    bufferedEnd: number;
   }) => {
     this.video = config.video;
     this.elements = config.elements;
@@ -56,6 +58,7 @@ export class TimeLineController {
     this.duration = config.duration;
     this.invDuration = config.invDuration;
     this.isActive = config.isActive;
+    this.bufferedEnd = config.bufferedEnd;
     this.initObservers();
     this.initContainerListener();
     this.startVFRC();
@@ -210,9 +213,19 @@ export class TimeLineController {
     );
   };
 
+  private updateBuffered = (buffered: number) => {
+    if (!this.elements?.timeLineContainer) return;
+    const percent = buffered * this.invDuration;
+    this.elements.timeLineContainer.style.setProperty(
+      '--buffered',
+      String(percent),
+    );
+  };
+
   private vfrc: VideoFrameRequestCallback = (_, metadata) => {
     if (!this.video) return;
     this.updatePosition(metadata.mediaTime);
+    this.updateBuffered(this.bufferedEnd);
     if (!this.paused && !this.ended && this.isActive) {
       this.vfrcId = this.video.requestVideoFrameCallback(this.vfrc);
     }

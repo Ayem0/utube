@@ -6,6 +6,7 @@ export type TimeState = {
   invDuration: number;
   durationStr: string | null;
   duration: number;
+  bufferedEnd: number;
 };
 
 export const timeFeature = createFeature({
@@ -16,6 +17,7 @@ export const timeFeature = createFeature({
     invDuration: 0,
     durationStr: null,
     duration: Infinity,
+    bufferedEnd: 0,
   }),
 
   getApi: (ctx) => ({
@@ -30,15 +32,23 @@ export const timeFeature = createFeature({
       });
     },
   }),
+  onSetup: (ctx) => {
+    ctx.events.engine("bufferedEnd", (end) => {
+      console.log("BufferedEnd", end);
+      ctx.state.bufferedEnd(end);
+    });
+  },
   onMediaAttach: (ctx) => {
     const video = ctx.getVideo();
     if (!video) return;
-    ctx.state({
-      duration: video.duration,
-      currentTimeStr: formatTime(video.currentTime),
-      durationStr: formatTime(video.duration),
-      invDuration: 1 / video.duration,
-      remainingTimeStr: "-" + formatTime(video.duration - video.currentTime),
+    ctx.batch(() => {
+      ctx.state.duration(video.duration);
+      ctx.state.currentTimeStr(formatTime(video.currentTime));
+      ctx.state.durationStr(formatTime(video.duration));
+      ctx.state.invDuration(1 / video.duration);
+      ctx.state.remainingTimeStr(
+        "-" + formatTime(video.duration - video.currentTime),
+      );
     });
     ctx.events.video("timeupdate", () => {
       const video = ctx.getVideo();

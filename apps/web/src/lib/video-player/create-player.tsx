@@ -94,29 +94,6 @@ export const createPlayer = <T extends Features>({
     return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   };
 
-  // const usePlayerState: {
-  //   <K extends T[number]['name']>(featureName: K): StoreState<T>[K];
-
-  //   <K extends T[number]['name'], SS>(
-  //     featureName: K,
-  //     selector: (state: StoreState<T>[K]) => SS,
-  //   ): SS;
-  // } = <K extends T[number]['name'], SS>(
-  //   featureName: K,
-  //   selector?: (state: StoreState<T>[K]) => SS,
-  // ) => {
-  //   const getSnapshot = () =>
-  //     selector
-  //       ? player.store.getFeatureSnapshot(featureName, selector)
-  //       : player.store.getFeatureSnapshot(featureName);
-  //   return useSyncExternalStore(
-  //     (onStoreChange) =>
-  //       player.store.subscribeFeature(featureName, onStoreChange),
-  //     getSnapshot,
-  //     getSnapshot,
-  //   );
-  // };
-
   return {
     Provider,
     usePlayerApi,
