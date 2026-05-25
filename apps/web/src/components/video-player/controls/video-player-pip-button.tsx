@@ -1,10 +1,10 @@
-import { usePlayerApi, usePlayerState } from '@/lib/video-player/player';
+import { mainPlayer } from '@/lib/video-player/player';
 import { Button } from '@repo/ui/components/button';
 import { PictureInPicture, PictureInPicture2 } from 'lucide-react';
 
 export function VideoPlayerPipButton() {
-  const { togglePiP } = usePlayerApi('display');
-  const isPip = usePlayerState((s) => s.display.pip);
+  const { togglePiP } = mainPlayer.usePlayerApi('display');
+  const isPip = mainPlayer.usePlayerState((s) => s.display.pip);
 
   return (
     <Button

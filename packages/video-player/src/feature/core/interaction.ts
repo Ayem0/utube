@@ -4,6 +4,7 @@ export const interactionFeature = createFeature({
   name: "interaction",
   getState: () => ({
     isActive: false,
+    isScrubbing: false,
   }),
   getApi: (ctx) => ({
     setActive: () => {

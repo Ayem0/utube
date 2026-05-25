@@ -15,6 +15,7 @@ export abstract class Engine extends EventEmitter<EngineEvents> {
   public abstract getQualities: () => readonly VideoQuality[];
   public abstract getCurrentQuality: () => VideoQuality | null;
   public abstract getIsAuto: () => boolean;
+  public abstract preloadStream: (time: number) => void;
 }
 
 export interface EngineEvents {

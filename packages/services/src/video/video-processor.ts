@@ -247,7 +247,8 @@ function buildFfmpegArgs(params: {
   const filterComplex = filterComplexParts.join(";");
 
   const videoArgs = ladder.flatMap((row, i) => {
-    const gop = row.fps * config.SEGMENT_DURATION_SECONDS;
+    // const gop = row.fps * config.SEGMENT_DURATION_SECONDS;
+    const gop = row.fps;
     const profile = row.height >= 720 ? "high" : "main";
 
     return [
@@ -306,8 +307,10 @@ function buildFfmpegArgs(params: {
     // "+faststart",
     "-flags",
     "+cgop",
-    "-force_key_frames",
-    `expr:gte(t,n_forced*${config.SEGMENT_DURATION_SECONDS})`,
+    // "-force_key_frames",
+    // "-force_key_frames",
+    // `expr:gte(t,n_forced*30)`,
+    // `expr:gte(t,n_forced*${config.SEGMENT_DURATION_SECONDS})`,
     "-adaptation_sets",
     hasAudio ? "id=0,streams=v id=1,streams=a" : "id=0,streams=v",
     "-f",

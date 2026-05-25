@@ -1,50 +1,29 @@
 import { TimeLineController } from '@/lib/video-player/controllers/time-line-controller';
-import {
-  usePlayerApi,
-  usePlayerContext,
-  usePlayerState,
-} from '@/lib/video-player/player';
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { mainPlayer } from '@/lib/video-player/player';
+import { useEffect, useMemo, useRef } from 'react';
 
 export function VideoPlayerTimeline() {
-  const { videoRef } = usePlayerContext();
-  const { togglePlay, seek } = usePlayerApi('playback');
-  const isActive = usePlayerState((s) => s.interaction.isActive);
-  const paused = usePlayerState((s) => s.playback.paused);
-  const ended = usePlayerState((s) => s.playback.ended);
-  const invDuration = usePlayerState((s) => s.time.invDuration);
-  const duration = usePlayerState((s) => s.time.duration);
-  const { setCurrentTimeFromRatio } = usePlayerApi('time');
-  const bufferedEnd = usePlayerState((s) => s.time.bufferedEnd);
-
+  const { videoRef } = mainPlayer.usePlayerContext();
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const previewTimerRef = useRef<HTMLOutputElement>(null);
   const controller = useMemo(
-    () => new TimeLineController(togglePlay, seek, setCurrentTimeFromRatio),
+    () => new TimeLineController(mainPlayer.getControllerContext()),
     [],
   );
-  useLayoutEffect(() => {
+  useEffect(() => {
     const container = containerRef.current;
     const video = videoRef?.current;
     if (!video || !container || !previewTimerRef.current || !imgRef.current)
       return;
 
-    controller.attach({
-      duration,
-      invDuration,
-      video,
-      elements: {
-        previewImage: imgRef.current,
-        previewTimer: previewTimerRef.current,
-        timeLineContainer: container,
-      },
-      ended,
-      isActive,
-      paused,
-      bufferedEnd,
+    controller.attach(video, {
+      previewImage: imgRef.current,
+      previewTimer: previewTimerRef.current,
+      timeLineContainer: container,
     });
-  }, [paused, ended, invDuration, isActive, bufferedEnd]);
+    return () => controller.detach();
+  }, []);
 
   return (
     <div

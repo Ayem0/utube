@@ -1,14 +1,15 @@
-import { usePlayerApi, usePlayerState } from '@/lib/video-player/player';
+import { mainPlayer } from '@/lib/video-player/player';
 import { Button } from '@repo/ui/components/button';
 import { Slider } from '@repo/ui/components/slider';
 import { useDebouncedCallback } from '@tanstack/react-pacer';
 import { Volume1, Volume2, VolumeX } from 'lucide-react';
 
 export function VideoPlayerVolume() {
-  const muted = usePlayerState((s) => s.volume.muted);
-  const volume = usePlayerState((s) => s.volume.volume);
-  const { setMuted, setVolume, setLastVolume } = usePlayerApi('volume');
-  const { setActive, setInactive } = usePlayerApi('interaction');
+  const muted = mainPlayer.usePlayerState((s) => s.volume.muted);
+  const volume = mainPlayer.usePlayerState((s) => s.volume.volume);
+  const { setMuted, setVolume, setLastVolume } =
+    mainPlayer.usePlayerApi('volume');
+  const { setActive, setInactive } = mainPlayer.usePlayerApi('interaction');
   const debouncedAutoHide = useDebouncedCallback(setInactive, {
     wait: 1500,
   });

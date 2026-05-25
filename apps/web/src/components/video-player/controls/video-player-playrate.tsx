@@ -1,4 +1,4 @@
-import { usePlayerApi, usePlayerState } from '@/lib/video-player/player';
+import { mainPlayer } from '@/lib/video-player/player';
 import {
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
@@ -11,8 +11,10 @@ import {
 import { Gauge } from 'lucide-react';
 
 export function VideoPlayerPlayrate() {
-  const playbackRate = usePlayerState((s) => s.playback.playbackRate);
-  const { setPlaybackRate } = usePlayerApi('playback');
+  const playbackRate = mainPlayer.usePlayerState(
+    (s) => s.playback.playbackRate,
+  );
+  const { setPlaybackRate } = mainPlayer.usePlayerApi('playback');
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger>

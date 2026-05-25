@@ -1,10 +1,10 @@
-import { usePlayerApi, usePlayerState } from '@/lib/video-player/player';
+import { mainPlayer } from '@/lib/video-player/player';
 import { Button } from '@repo/ui/components/button';
 import { Maximize2, Minimize2 } from 'lucide-react';
 
 export function VideoPlayerFullscreenButton() {
-  const fullscreen = usePlayerState((s) => s.display.fullscreen);
-  const { toggleFullscreen } = usePlayerApi('display');
+  const fullscreen = mainPlayer.usePlayerState((s) => s.display.fullscreen);
+  const { toggleFullscreen } = mainPlayer.usePlayerApi('display');
 
   return (
     <Button

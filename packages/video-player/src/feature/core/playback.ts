@@ -7,6 +7,30 @@ import { createFeature } from "../feature";
 //   playbackRate: number;
 // };
 
+let seekStart = 0;
+
+function dumpBuffered(video: HTMLVideoElement) {
+  const ranges: string[] = [];
+
+  for (let i = 0; i < video.buffered.length; i++) {
+    ranges.push(
+      `${video.buffered.start(i).toFixed(3)}-${video.buffered.end(i).toFixed(3)}`,
+    );
+  }
+
+  return ranges.join(", ");
+}
+
+function isBuffered(video: HTMLVideoElement, time: number) {
+  for (let i = 0; i < video.buffered.length; i++) {
+    if (time >= video.buffered.start(i) && time <= video.buffered.end(i)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export const playbackFeature = createFeature({
   name: "playback",
   getState: (defaultPlaybackRate: number = 1) => ({

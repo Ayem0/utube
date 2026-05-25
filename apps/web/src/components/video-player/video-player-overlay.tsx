@@ -1,8 +1,8 @@
-import { usePlayerApi } from '@/lib/video-player/player';
+import { mainPlayer } from '@/lib/video-player/player';
 
 export function VideoPlayerOverlay() {
-  const { toggleFullscreen } = usePlayerApi('display');
-  const { togglePlay } = usePlayerApi('playback');
+  const { toggleFullscreen } = mainPlayer.usePlayerApi('display');
+  const { togglePlay } = mainPlayer.usePlayerApi('playback');
   return (
     <div
       className="absolute inset-0"

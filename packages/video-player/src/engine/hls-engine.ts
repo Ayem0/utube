@@ -20,6 +20,12 @@ export class HlsEngine extends Engine {
     this.hls = new Hls({
       enableWorker: true,
       startLevel: defaultState.quality,
+      maxBufferLength: 60,
+      maxMaxBufferLength: 120,
+      maxBufferSize: 120 * 1000 * 1000,
+
+      capLevelToPlayerSize: true,
+      capLevelOnFPSDrop: true,
     });
     this.initListeners();
   }
@@ -41,25 +47,24 @@ export class HlsEngine extends Engine {
     this.videoEl = null;
   };
 
+  public preloadStream = (time: number) => {
+    this.hls.startLoad(time, true);
+  };
+
   /** Set quality to specific quality index */
   public setQuality = (qualityIndex: number) => {
     if (qualityIndex < -1 || qualityIndex >= this.hls.levels.length) return;
     if (this.hls.currentLevel === qualityIndex) return;
 
     this.hls.currentLevel = qualityIndex;
-
-    const hls = this.hls;
-
     // Trigger a seek to avoid Chromium browsers freezing the video until next keyframe
     // https://github.com/video-dev/hls.js/issues/3596
-    const onBufferAppended = () => {
+    this.hls.once(Hls.Events.BUFFER_APPENDED, () => {
       if (this.videoEl) {
         const t = this.videoEl.currentTime;
         this.videoEl.currentTime = t;
       }
-      hls.off(Hls.Events.BUFFER_APPENDED, onBufferAppended);
-    };
-    hls.on(Hls.Events.BUFFER_APPENDED, onBufferAppended);
+    });
   };
 
   /** Get current quality index */
@@ -128,15 +133,19 @@ export class HlsEngine extends Engine {
     data: BufferFlushedData,
   ) => {
     console.log("HLS BUFFER_FLUSHED");
-    this.emit("bufferedEnd", 0);
+    if (this.videoEl) {
+      this.emit("bufferedEnd", getMaxBufferedEnd(this.videoEl));
+    }
   };
 
   private onBufferAppended = (
     event: Events.BUFFER_APPENDED,
     data: BufferAppendedData,
   ) => {
-    console.log("HLS BUFFER_APPENDED", data);
-    this.emit("bufferedEnd", data.frag.end);
+    console.log("HLS BUFFER_APPENDED");
+    if (this.videoEl) {
+      this.emit("bufferedEnd", getMaxBufferedEnd(this.videoEl));
+    }
   };
 
   private onLevelsUpdated = (
@@ -181,4 +190,12 @@ export class HlsEngine extends Engine {
       this.emit("qualityChanged", quality);
     }
   };
+}
+
+function getMaxBufferedEnd(video: HTMLVideoElement) {
+  let maxEnd = 0;
+  for (let i = 0; i < video.buffered.length; i++) {
+    maxEnd = Math.max(maxEnd, video.buffered.end(i));
+  }
+  return maxEnd;
 }

@@ -1,5 +1,5 @@
 import type { WatchVideo } from '@/lib/queries/get-watch-video';
-import { PlayerProvider } from '@/lib/video-player/player';
+import { mainPlayer } from '@/lib/video-player/player';
 import { ClientOnly, Link } from '@tanstack/react-router';
 import { VideoPlayerControls } from '../video-player/controls/video-player-controls';
 import { VideoPlayerFullscreenButton } from '../video-player/controls/video-player-fullscreen-button';
@@ -28,7 +28,7 @@ export function WatchLayout({ video }: { video: WatchVideo }) {
       </ClientOnly> */}
 
       <ClientOnly>
-        <PlayerProvider
+        <mainPlayer.Provider
           source={{
             hls: video.hlsUrl,
             dash: video.dashUrl,
@@ -57,7 +57,7 @@ export function WatchLayout({ video }: { video: WatchVideo }) {
               </div>
             </VideoPlayerControls>
           </VideoPlayerContainer>
-        </PlayerProvider>
+        </mainPlayer.Provider>
       </ClientOnly>
       {/* <video
 </ClientOnly>

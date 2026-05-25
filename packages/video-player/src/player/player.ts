@@ -16,7 +16,12 @@ import {
   type PlayerFeatureOptions,
   type WritableFeatureDependencyContext,
 } from "../feature/feature";
-import { createStore, Store, type DeepSignal } from "../store/store";
+import {
+  createStore,
+  Store,
+  type DeepSignal,
+  type ReadOnlyDeepSignal,
+} from "../store/store";
 import { Disposer, VideoSource } from "../types";
 
 export class Player<const T extends Features> {
@@ -70,7 +75,18 @@ export class Player<const T extends Features> {
     this.engine.loadSource(source);
   }
 
-  public get store(): Pick<typeof this._store, "use" | "state"> {
+  public getControllerContext = () => {
+    return {
+      apis: this.apis,
+      state: this._store.state as ReadOnlyDeepSignal<
+        FeatureRegistry<T>["state"]
+      >,
+      effect: this._store.effect,
+      computed: this._store.computed,
+    };
+  };
+
+  public get store(): Pick<typeof this._store, "use"> {
     return this._store;
   }
 

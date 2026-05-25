@@ -31,10 +31,12 @@ export const timeFeature = createFeature({
         ctx.state.remainingTimeStr("-" + formatTime(newRemainingTime));
       });
     },
+    preload: (time: number) => {
+      ctx.engine.preloadStream(time);
+    },
   }),
   onSetup: (ctx) => {
     ctx.events.engine("bufferedEnd", (end) => {
-      console.log("BufferedEnd", end);
       ctx.state.bufferedEnd(end);
     });
   },

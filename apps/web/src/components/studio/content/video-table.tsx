@@ -32,7 +32,7 @@ export function VideoTable() {
     }),
   );
 
-  const [open, setOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const table = useReactTable({
     columns: videoTableColumns,
@@ -75,7 +75,10 @@ export function VideoTable() {
     <div className="flex flex-1 flex-col gap-2">
       <DataTableHeader
         createComponent={
-          <Button variant="default" onClick={() => setOpen((open) => !open)}>
+          <Button
+            variant="default"
+            onClick={() => setDialogOpen((open) => !open)}
+          >
             <Plus />
             Upload
           </Button>
@@ -88,7 +91,7 @@ export function VideoTable() {
             createComponent={
               <Button
                 variant="outline"
-                onClick={() => setOpen((open) => !open)}
+                onClick={() => setDialogOpen((open) => !open)}
               >
                 Import video
               </Button>
@@ -102,7 +105,7 @@ export function VideoTable() {
         hasSelection={false}
         className="pb-2"
       />
-      <VideoTableDialog open={open} onOpenChange={setOpen} />
+      <VideoTableDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   );
 }

@@ -22,8 +22,8 @@ export const createPlayer = <T extends Features>({
   featureOptions,
 }: {
   features: T;
-  engineOptions?: EngineOptions | undefined;
-  featureOptions?: PlayerFeatureOptions<T> | undefined;
+  engineOptions?: EngineOptions;
+  featureOptions?: PlayerFeatureOptions<T>;
 }) => {
   const player = createPlayerCore({ features, engineOptions, featureOptions });
   const Context = createContext<{
@@ -99,5 +99,6 @@ export const createPlayer = <T extends Features>({
     usePlayerApi,
     usePlayerState,
     usePlayerContext,
+    getControllerContext: player.getControllerContext,
   };
 };

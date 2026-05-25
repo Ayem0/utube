@@ -1,28 +1,29 @@
 import { videoFeatures } from '@repo/video-player/feature/core/video-features';
+import type { PlayerFeatureOptions } from '@repo/video-player/feature/feature';
 import { createPlayer } from './create-player';
+import {
+  getSessionVolumeState,
+  setSessionVolumeState,
+} from './video-player-volume';
 
 const defaultPlaybackRate = 1; // TODO fetch from localstorage / session storage
-const defaultVolume = 1; // TODO fetch from localstorage / session storage
-const defaultMuted = false; // TODO fetch from localstorage / session storage
 const defaultQuality = -1; // TODO fetch from localstorage / session storage (-1 means auto)
 
-const { Provider, usePlayerApi, usePlayerState, usePlayerContext } =
-  createPlayer({
-    features: videoFeatures,
-    engineOptions: { quality: defaultQuality },
-    featureOptions: {
-      playback: {
-        stateArgs: [defaultPlaybackRate],
-      },
-      volume: {
-        stateArgs: [defaultVolume, defaultMuted],
-      },
-    },
-  });
+const { muted: defaultMuted, volume: defaultVolume } = getSessionVolumeState();
 
-export {
-  Provider as PlayerProvider,
-  usePlayerApi,
-  usePlayerContext,
-  usePlayerState,
-};
+export const mainPlayer = createPlayer({
+  features: videoFeatures,
+  engineOptions: { quality: defaultQuality },
+  featureOptions: {
+    playback: {
+      stateArgs: [defaultPlaybackRate],
+    },
+    volume: {
+      stateArgs: [defaultVolume, defaultMuted],
+      internalStateArgs: [
+        defaultVolume,
+        (volume, muted) => setSessionVolumeState({ volume, muted }),
+      ],
+    },
+  } satisfies PlayerFeatureOptions<typeof videoFeatures>,
+});

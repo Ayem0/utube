@@ -1,8 +1,4 @@
-import {
-  usePlayerApi,
-  usePlayerContext,
-  usePlayerState,
-} from '@/lib/video-player/player';
+import { mainPlayer } from '@/lib/video-player/player';
 import { useDebouncedCallback } from '@tanstack/react-pacer';
 
 export function VideoPlayerContainer({
@@ -10,10 +6,10 @@ export function VideoPlayerContainer({
 }: {
   children: React.ReactNode;
 }) {
-  const { containerRef } = usePlayerContext();
-  const isActive = usePlayerState((s) => s.interaction.isActive);
-  const isFullscreen = usePlayerState((s) => s.display.fullscreen);
-  const { setActive, setInactive } = usePlayerApi('interaction');
+  const { containerRef } = mainPlayer.usePlayerContext();
+  const isActive = mainPlayer.usePlayerState((s) => s.interaction.isActive);
+  const isFullscreen = mainPlayer.usePlayerState((s) => s.display.fullscreen);
+  const { setActive, setInactive } = mainPlayer.usePlayerApi('interaction');
   const debouncedAutoHide = useDebouncedCallback(setInactive, {
     wait: 1500,
   });
