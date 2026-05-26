@@ -21,9 +21,7 @@ type StoryboardVTT = {
 
 export const storyboardFeature = createFeature({
   name: "storyboard",
-  getState: () => ({
-    activeCue: null as Cue | null,
-  }),
+  getState: () => ({}),
   getInternalState: () => ({
     track: null as HTMLTrackElement | null,
     storyboardVTT: null as StoryboardVTT | null,
@@ -52,17 +50,17 @@ export const storyboardFeature = createFeature({
       ctx.internalState.storyboardVTT = null;
     };
 
-    const setActiveCue = (time: number) => {
+    const getCue = (time: number) => {
       const story = ctx.internalState.storyboardVTT;
       if (!story) return;
       const cue = findFrame(time, story);
-      ctx.state.activeCue(cue);
+      return cue;
     };
 
     return {
       attachTrack,
       detachTrack,
-      setActiveCue,
+      getCue,
     };
   },
 });

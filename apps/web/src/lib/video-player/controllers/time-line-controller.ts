@@ -1,9 +1,6 @@
 import type { interactionFeature } from '@repo/video-player/feature/core/interaction';
 import type { playbackFeature } from '@repo/video-player/feature/core/playback';
-import type {
-  Cue,
-  storyboardFeature,
-} from '@repo/video-player/feature/core/storyboard';
+import type { storyboardFeature } from '@repo/video-player/feature/core/storyboard';
 import type { timeFeature } from '@repo/video-player/feature/core/time';
 import type { Player } from '@repo/video-player/player/player';
 
@@ -20,7 +17,6 @@ export class TimeLineController {
 
   private vfrcEffectDisposer: (() => void) | null = null;
   private bufferedEffectDisposer: (() => void) | null = null;
-  private activeCueEffectDisposer: (() => void) | null = null;
 
   private lastPreloadedAt: number = 0;
 
@@ -78,10 +74,6 @@ export class TimeLineController {
       const bufferedEnd = this.ctx.state.time.bufferedEnd();
       this.updateBuffered(bufferedEnd);
     });
-    this.activeCueEffectDisposer = this.ctx.effect(() => {
-      const activeCue = this.ctx.state.storyboard.activeCue();
-      this.updateActiveCue(activeCue);
-    });
   };
 
   public detach = () => {
@@ -92,10 +84,6 @@ export class TimeLineController {
     if (this.bufferedEffectDisposer) {
       this.bufferedEffectDisposer();
       this.bufferedEffectDisposer = null;
-    }
-    if (this.activeCueEffectDisposer) {
-      this.activeCueEffectDisposer();
-      this.activeCueEffectDisposer = null;
     }
     if (this.observer) {
       this.observer.disconnect();
@@ -239,6 +227,7 @@ export class TimeLineController {
     );
   };
 
+  // TODO refactor this loop
   private rafLoop = () => {
     const duration = this.ctx.state.time.duration();
     if ((!this.isScrubbing && !this.isHovering) || duration <= 0) return;
@@ -262,7 +251,18 @@ export class TimeLineController {
         this.elements.previewTimer.textContent = formatTime(time);
       }
       if (this.elements?.previewImage) {
-        this.ctx.apis.storyboard.setActiveCue(time);
+        const cue = this.ctx.apis.storyboard.getCue(time);
+        const img = this.elements.previewImage;
+        if (cue) {
+          if (img.src !== cue.img) {
+            img.src = cue.img;
+          }
+
+          img.style.width = `${cue.w * 5}px`;
+          img.style.height = `${cue.h * 5}px`;
+
+          img.style.transform = `translate3d(${-cue.x}px, ${-cue.y}px, 0)`;
+        }
       }
       const now = performance.now();
       if (now - this.lastPreloadedAt > 200) {
@@ -280,7 +280,18 @@ export class TimeLineController {
         this.elements.previewTimer.textContent = formatTime(time);
       }
       if (this.elements?.previewImage) {
-        this.ctx.apis.storyboard.setActiveCue(time);
+        const cue = this.ctx.apis.storyboard.getCue(time);
+        const img = this.elements.previewImage;
+        if (cue) {
+          if (img.src !== cue.img) {
+            img.src = cue.img;
+          }
+
+          img.style.width = `${cue.w * 5}px`;
+          img.style.height = `${cue.h * 5}px`;
+
+          img.style.transform = `translate3d(${-cue.x}px, ${-cue.y}px, 0)`;
+        }
       }
     }
     this.rafId = requestAnimationFrame(this.rafLoop);
@@ -310,20 +321,6 @@ export class TimeLineController {
       '--fillpx',
       String(fillpx) + 'px',
     );
-  };
-
-  private updateActiveCue = (cue: Cue | null) => {
-    const img = this.elements?.previewImage;
-    if (!img || !cue) return;
-
-    if (img.src !== cue.img) {
-      img.src = cue.img;
-    }
-
-    img.style.width = `${cue.w * 5}px`;
-    img.style.height = `${cue.h * 5}px`;
-
-    img.style.transform = `translate3d(${-cue.x}px, ${-cue.y}px, 0)`;
   };
 
   private updateBuffered = (buffered: number) => {

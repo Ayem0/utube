@@ -11,5 +11,7 @@ export function VTTTrack({ src }: { src: string }) {
     return () => storyboardApi.detachTrack();
   });
 
-  return <track src={src} ref={ref} kind="metadata" />;
+  return (
+    <track src={src} label="thumbnails" ref={ref} kind="metadata" default />
+  );
 }
