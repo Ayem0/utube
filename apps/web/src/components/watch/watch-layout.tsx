@@ -14,6 +14,7 @@ import { VideoPlayerVolume } from '../video-player/controls/video-player-volume'
 import { Video } from '../video-player/video';
 import { VideoPlayerContainer } from '../video-player/video-player-container';
 import { VideoPlayerOverlay } from '../video-player/video-player-overlay';
+import { VTTTrack } from '../video-player/VTT-track';
 
 export function WatchLayout({ video }: { video: WatchVideo }) {
   return (
@@ -33,10 +34,11 @@ export function WatchLayout({ video }: { video: WatchVideo }) {
             hls: video.hlsUrl,
             dash: video.dashUrl,
           }}
-          storyboardUrl={video.storyboardUrl}
         >
           <VideoPlayerContainer>
-            <Video />
+            <Video>
+              <VTTTrack src={video.storyboardUrl} />
+            </Video>
             <VideoPlayerOverlay />
             <VideoPlayerControls>
               <VideoPlayerTimeline />

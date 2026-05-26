@@ -33,14 +33,14 @@ export function VideoPlayerPlayrate() {
           value={playbackRate}
           onValueChange={(v: number) => setPlaybackRate(v)}
         >
-          <DropdownMenuRadioItem value={0.25}>0.25x</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value={0.5}>0.50x</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value={0.75}>0.75x</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value={1}>1.00x</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value={1.25}>1.25x</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value={1.5}>1.50x</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value={1.75}>1.75x</DropdownMenuRadioItem>
           <DropdownMenuRadioItem value={2}>2.00x</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value={1.75}>1.75x</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value={1.5}>1.50x</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value={1.25}>1.25x</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value={1}>1.00x</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value={0.75}>0.75x</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value={0.5}>0.50x</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value={0.25}>0.25x</DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuSubContent>
     </DropdownMenuSub>

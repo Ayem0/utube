@@ -53,8 +53,13 @@ export function VideoPlayerTimeline() {
         data-thumbnail-preview
         className="absolute bottom-10 will-change-transform transform-[translate3d(calc(clamp(80px,var(--pointerpx),calc(100cqi-80px))-50%),0,0)] pointer-events-none group-hover/timeline:opacity-100 opacity-0"
       >
-        <div className="relative w-[160px] h-[90px] bg-gray-600  rounded-md overflow-hidden">
-          <img ref={imgRef} src={undefined} alt="" />
+        <div className="relative w-[160px] h-[90px] bg-gray-600 rounded-md overflow-hidden">
+          <img
+            ref={imgRef}
+            src={undefined}
+            alt=""
+            className="max-w-none left-0 top-0 will-change-transform origin-top-left absolute"
+          />
         </div>
         <output
           ref={previewTimerRef}

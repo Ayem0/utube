@@ -42,11 +42,9 @@ export const createPlayer = <T extends Features>({
   });
   const Provider = ({
     source,
-    storyboardUrl,
     children,
   }: {
     source: VideoSource;
-    storyboardUrl?: string;
     children: React.ReactNode;
   }) => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -69,7 +67,6 @@ export const createPlayer = <T extends Features>({
       <Context.Provider
         value={{
           source: source,
-          storyboardUrl: storyboardUrl,
           videoRef,
           containerRef,
         }}
