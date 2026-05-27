@@ -28,7 +28,6 @@ export const createPlayer = <T extends Features>({
   const player = createPlayerCore({ features, engineOptions, featureOptions });
   const Context = createContext<{
     source: VideoSource;
-    storyboardUrl?: string;
     videoRef: React.RefObject<HTMLVideoElement | null> | null;
     containerRef: React.RefObject<HTMLDivElement | null> | null;
   }>({
@@ -36,7 +35,6 @@ export const createPlayer = <T extends Features>({
       dash: undefined,
       hls: undefined,
     },
-    storyboardUrl: undefined,
     videoRef: null,
     containerRef: null,
   });

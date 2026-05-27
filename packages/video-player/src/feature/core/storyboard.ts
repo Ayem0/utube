@@ -3,7 +3,7 @@ import { createFeature } from "../feature";
 export type Cue = {
   start: number;
   end: number;
-  img: string;
+  src: string;
   x: number;
   y: number;
   w: number;
@@ -12,7 +12,7 @@ export type Cue = {
 
 type StoryboardVTT = {
   cues: Cue[];
-  interval: number;
+  invInterval: number;
   cols: 5;
   rows: 5;
   frameW: number;
@@ -81,7 +81,7 @@ function parseTextTrackCueList(list: TextTrackCueList): StoryboardVTT {
     cues.push({
       end: cue.endTime,
       start: cue.startTime,
-      img: img,
+      src: img,
       x,
       y,
       w,
@@ -90,7 +90,7 @@ function parseTextTrackCueList(list: TextTrackCueList): StoryboardVTT {
   }
   return {
     cues,
-    interval: cues[0] ? cues[0].end - cues[0].start : 0,
+    invInterval: cues[0] ? 1 / (cues[0].end - cues[0].start) : 0,
     cols: 5,
     rows: 5,
     frameW: cues[0] ? cues[0].w : 0,
@@ -99,7 +99,7 @@ function parseTextTrackCueList(list: TextTrackCueList): StoryboardVTT {
 }
 
 function findFrame(time: number, story: StoryboardVTT): Cue | null {
-  const index = Math.floor(time / story.interval);
+  const index = Math.floor(time * story.invInterval);
   if (index < 0 || index > story.cues.length - 1) return null;
   return story.cues[index] ?? null;
 }

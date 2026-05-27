@@ -50,11 +50,7 @@ export type FeatureContext<
 
   engine: Pick<
     Engine,
-    | "setQuality"
-    | "getQualities"
-    | "getCurrentQuality"
-    | "getIsAuto"
-    | "preloadStream"
+    "setQuality" | "getQualities" | "getCurrentQuality" | "getIsAuto"
   >;
 
   state: DeepSignal<TState>;

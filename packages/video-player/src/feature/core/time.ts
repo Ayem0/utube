@@ -21,18 +21,15 @@ export const timeFeature = createFeature({
   }),
 
   getApi: (ctx) => ({
-    setCurrentTimeFromRatio: (ratio: number) => {
+    setCurrentTimeWhenScrubbing: (ratio: number) => {
       const duration = ctx.state.duration();
-      if (!Number.isFinite(duration)) return;
+      if (!Number.isFinite(duration) || Number.isNaN(duration)) return;
       const newTime = duration * ratio;
       const newRemainingTime = duration - newTime;
       ctx.batch(() => {
         ctx.state.currentTimeStr(formatTime(newTime));
         ctx.state.remainingTimeStr("-" + formatTime(newRemainingTime));
       });
-    },
-    preload: (time: number) => {
-      ctx.engine.preloadStream(time);
     },
   }),
   onSetup: (ctx) => {
@@ -74,8 +71,8 @@ export const timeFeature = createFeature({
   },
 });
 
-function formatTime(time: number) {
-  if (!Number.isFinite(time)) return "--:--";
+export function formatTime(time: number) {
+  if (!Number.isFinite(time) || Number.isNaN(time)) return "--:--";
   const rounded = Math.round(time);
   const hours = Math.floor(rounded / 3600);
   const minutes = Math.floor((rounded % 3600) / 60);

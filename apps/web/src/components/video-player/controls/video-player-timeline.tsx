@@ -1,4 +1,4 @@
-import { TimeLineController } from '@/lib/video-player/controllers/time-line-controller';
+import { TimelineController } from '@/lib/video-player/controllers/timeline-controller';
 import { mainPlayer } from '@/lib/video-player/player';
 import { useEffect, useMemo, useRef } from 'react';
 
@@ -8,7 +8,7 @@ export function VideoPlayerTimeline() {
   const imgRef = useRef<HTMLImageElement>(null);
   const previewTimerRef = useRef<HTMLOutputElement>(null);
   const controller = useMemo(
-    () => new TimeLineController(mainPlayer.getControllerContext()),
+    () => new TimelineController(mainPlayer.getControllerContext()),
     [],
   );
   useEffect(() => {
@@ -20,7 +20,7 @@ export function VideoPlayerTimeline() {
     controller.attach(video, {
       previewImage: imgRef.current,
       previewTimer: previewTimerRef.current,
-      timeLineContainer: container,
+      timelineContainer: container,
     });
     return () => controller.detach();
   }, []);

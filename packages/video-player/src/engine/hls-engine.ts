@@ -47,10 +47,6 @@ export class HlsEngine extends Engine {
     this.videoEl = null;
   };
 
-  public preloadStream = (time: number) => {
-    this.hls.startLoad(time, true);
-  };
-
   /** Set quality to specific quality index */
   public setQuality = (qualityIndex: number) => {
     if (qualityIndex < -1 || qualityIndex >= this.hls.levels.length) return;

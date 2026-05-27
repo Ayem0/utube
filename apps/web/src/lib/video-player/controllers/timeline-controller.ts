@@ -1,24 +1,25 @@
 import type { interactionFeature } from '@repo/video-player/feature/core/interaction';
 import type { playbackFeature } from '@repo/video-player/feature/core/playback';
 import type { storyboardFeature } from '@repo/video-player/feature/core/storyboard';
-import type { timeFeature } from '@repo/video-player/feature/core/time';
+import {
+  formatTime,
+  type timeFeature,
+} from '@repo/video-player/feature/core/time';
 import type { Player } from '@repo/video-player/player/player';
 
-interface TimeLineControllerElements {
-  timeLineContainer: HTMLDivElement;
+interface TimelineControllerElements {
+  timelineContainer: HTMLDivElement;
   previewImage: HTMLImageElement;
   previewTimer: HTMLOutputElement;
 }
 
-export class TimeLineController {
+export class TimelineController {
   private video: HTMLVideoElement | null = null;
-  private elements: TimeLineControllerElements | null = null;
+  private elements: TimelineControllerElements | null = null;
   private ctx;
 
   private vfrcEffectDisposer: (() => void) | null = null;
   private bufferedEffectDisposer: (() => void) | null = null;
-
-  private lastPreloadedAt: number = 0;
 
   private vfrcId: number | null = null;
   private rafId: number | null = null;
@@ -49,7 +50,7 @@ export class TimeLineController {
 
   public attach = (
     video: HTMLVideoElement,
-    elements: TimeLineControllerElements,
+    elements: TimelineControllerElements,
   ) => {
     this.video = video;
     this.elements = elements;
@@ -118,36 +119,40 @@ export class TimeLineController {
     }
     this.observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        if (entry.target === this.elements?.timeLineContainer) {
+        if (entry.target === this.elements?.timelineContainer) {
           this.timeLineContainerWidth = entry.contentRect.width;
           this.invTimeLineContainerWidth = 1 / this.timeLineContainerWidth;
           this.timeLineContainerOffsetLeft =
             entry.target.getBoundingClientRect().left;
+
+          if (this.video) {
+            this.updatePosition(this.video.currentTime);
+          }
         }
       }
     });
-    this.observer.observe(this.elements.timeLineContainer);
+    this.observer.observe(this.elements.timelineContainer);
   };
 
   private initContainerListener = () => {
     if (!this.elements) return;
-    this.elements.timeLineContainer.addEventListener(
+    this.elements.timelineContainer.addEventListener(
       'pointerenter',
       this.onPointerEnter,
     );
-    this.elements.timeLineContainer.addEventListener(
+    this.elements.timelineContainer.addEventListener(
       'pointerleave',
       this.onPointerLeave,
     );
-    this.elements.timeLineContainer.addEventListener(
+    this.elements.timelineContainer.addEventListener(
       'pointermove',
       this.onPointerMove,
     );
-    this.elements.timeLineContainer.addEventListener(
+    this.elements.timelineContainer.addEventListener(
       'pointerdown',
       this.onPointerDown,
     );
-    this.elements.timeLineContainer.addEventListener(
+    this.elements.timelineContainer.addEventListener(
       'pointerup',
       this.onPointerUp,
     );
@@ -155,23 +160,23 @@ export class TimeLineController {
 
   private removeContainerListener = () => {
     if (!this.elements) return;
-    this.elements.timeLineContainer.removeEventListener(
+    this.elements.timelineContainer.removeEventListener(
       'pointerenter',
       this.onPointerEnter,
     );
-    this.elements.timeLineContainer.removeEventListener(
+    this.elements.timelineContainer.removeEventListener(
       'pointerleave',
       this.onPointerLeave,
     );
-    this.elements.timeLineContainer.removeEventListener(
+    this.elements.timelineContainer.removeEventListener(
       'pointermove',
       this.onPointerMove,
     );
-    this.elements.timeLineContainer.removeEventListener(
+    this.elements.timelineContainer.removeEventListener(
       'pointerdown',
       this.onPointerDown,
     );
-    this.elements.timeLineContainer.removeEventListener(
+    this.elements.timelineContainer.removeEventListener(
       'pointerup',
       this.onPointerUp,
     );
@@ -227,74 +232,65 @@ export class TimeLineController {
     );
   };
 
-  // TODO refactor this loop
   private rafLoop = () => {
     const duration = this.ctx.state.time.duration();
     if ((!this.isScrubbing && !this.isHovering) || duration <= 0) return;
+    const scale = this.previewX * this.invTimeLineContainerWidth;
+    const time = duration * scale;
     if (this.isScrubbing) {
-      const scale = this.previewX * this.invTimeLineContainerWidth;
-      this.elements?.timeLineContainer.style.setProperty(
-        '--pointerpx',
-        this.previewX + 'px',
-      );
-      this.elements?.timeLineContainer.style.setProperty(
-        '--fillpx',
-        this.previewX + 'px',
-      );
-      this.elements?.timeLineContainer.style.setProperty(
-        '--fill',
-        String(scale),
-      );
-      this.ctx.apis.time.setCurrentTimeFromRatio(scale);
-      const time = duration * scale;
-      if (this.elements?.previewTimer) {
-        this.elements.previewTimer.textContent = formatTime(time);
-      }
-      if (this.elements?.previewImage) {
-        const cue = this.ctx.apis.storyboard.getCue(time);
-        const img = this.elements.previewImage;
-        if (cue) {
-          if (img.src !== cue.img) {
-            img.src = cue.img;
-          }
-
-          img.style.width = `${cue.w * 5}px`;
-          img.style.height = `${cue.h * 5}px`;
-
-          img.style.transform = `translate3d(${-cue.x}px, ${-cue.y}px, 0)`;
-        }
-      }
-      const now = performance.now();
-      if (now - this.lastPreloadedAt > 200) {
-        this.ctx.apis.time.preload(time);
-        this.lastPreloadedAt = now;
-      }
+      this.updateFillAndPreview(scale, time);
     } else if (this.isHovering) {
-      const scale = this.previewX * this.invTimeLineContainerWidth;
-      this.elements?.timeLineContainer.style.setProperty(
-        '--pointerpx',
-        this.previewX + 'px',
-      );
-      const time = duration * scale;
-      if (this.elements?.previewTimer) {
-        this.elements.previewTimer.textContent = formatTime(time);
-      }
-      if (this.elements?.previewImage) {
-        const cue = this.ctx.apis.storyboard.getCue(time);
-        const img = this.elements.previewImage;
-        if (cue) {
-          if (img.src !== cue.img) {
-            img.src = cue.img;
-          }
-
-          img.style.width = `${cue.w * 5}px`;
-          img.style.height = `${cue.h * 5}px`;
-
-          img.style.transform = `translate3d(${-cue.x}px, ${-cue.y}px, 0)`;
-        }
-      }
+      this.updatePreview(time);
     }
     this.rafId = requestAnimationFrame(this.rafLoop);
+  };
+
+  private updateFillAndPreview = (scale: number, time: number) => {
+    this.ctx.apis.time.setCurrentTimeWhenScrubbing(scale);
+    this.updateFill(scale);
+    this.updatePreview(time);
+  };
+
+  private updateFill = (scale: number) => {
+    if (!this.elements) return;
+    this.elements.timelineContainer.style.setProperty(
+      '--fillpx',
+      this.previewX + 'px',
+    );
+    this.elements.timelineContainer.style.setProperty('--fill', String(scale));
+  };
+
+  private updatePreview = (time: number) => {
+    this.updatePointerPosition();
+    this.updatePreviewTimer(time);
+    this.updateStoryboardPreview(time);
+  };
+
+  private updatePointerPosition = () => {
+    this.elements?.timelineContainer.style.setProperty(
+      '--pointerpx',
+      this.previewX + 'px',
+    );
+  };
+
+  private updatePreviewTimer = (time: number) => {
+    if (!this.elements) return;
+    this.elements.previewTimer.textContent = formatTime(time);
+  };
+
+  private updateStoryboardPreview = (time: number) => {
+    if (!this.elements) return;
+
+    const cue = this.ctx.apis.storyboard.getCue(time);
+    if (!cue) return;
+
+    const img = this.elements.previewImage;
+    if (img.src !== cue.src) {
+      img.src = cue.src;
+      img.style.width = `${cue.w * 5}px`;
+      img.style.height = `${cue.h * 5}px`;
+    }
+    img.style.transform = `translate3d(${-cue.x}px, ${-cue.y}px, 0)`;
   };
 
   private startRafLoop = () => {
@@ -309,25 +305,25 @@ export class TimeLineController {
   };
 
   private updatePosition = (t: number) => {
-    if (!this.elements?.timeLineContainer) return;
+    if (!this.elements?.timelineContainer) return;
     const invDuration = this.ctx.state.time.invDuration();
     const fillpercent = t * invDuration;
     const fillpx = fillpercent * this.timeLineContainerWidth;
-    this.elements.timeLineContainer.style.setProperty(
+    this.elements.timelineContainer.style.setProperty(
       '--fill',
       String(fillpercent),
     );
-    this.elements.timeLineContainer.style.setProperty(
+    this.elements.timelineContainer.style.setProperty(
       '--fillpx',
       String(fillpx) + 'px',
     );
   };
 
   private updateBuffered = (buffered: number) => {
-    if (!this.elements?.timeLineContainer) return;
+    if (!this.elements?.timelineContainer) return;
     const invDuration = this.ctx.state.time.invDuration();
     const percent = buffered * invDuration;
-    this.elements.timeLineContainer.style.setProperty(
+    this.elements.timelineContainer.style.setProperty(
       '--buffered',
       String(percent),
     );
@@ -355,18 +351,4 @@ export class TimeLineController {
     this.video.cancelVideoFrameCallback(this.vfrcId);
     this.vfrcId = null;
   };
-}
-
-function formatTime(time: number) {
-  if (!Number.isFinite(time)) return '--:--';
-  const rounded = Math.round(time);
-  const hours = Math.floor(rounded / 3600);
-  const minutes = Math.floor((rounded % 3600) / 60);
-  const seconds = Math.floor(rounded % 60);
-  if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds
-      .toString()
-      .padStart(2, '0')}`;
-  }
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }

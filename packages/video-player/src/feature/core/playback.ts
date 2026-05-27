@@ -1,36 +1,5 @@
 import { createFeature } from "../feature";
 
-// type PlaybackState = {
-//   paused: boolean;
-//   waiting: boolean;
-//   ended: boolean;
-//   playbackRate: number;
-// };
-
-let seekStart = 0;
-
-function dumpBuffered(video: HTMLVideoElement) {
-  const ranges: string[] = [];
-
-  for (let i = 0; i < video.buffered.length; i++) {
-    ranges.push(
-      `${video.buffered.start(i).toFixed(3)}-${video.buffered.end(i).toFixed(3)}`,
-    );
-  }
-
-  return ranges.join(", ");
-}
-
-function isBuffered(video: HTMLVideoElement, time: number) {
-  for (let i = 0; i < video.buffered.length; i++) {
-    if (time >= video.buffered.start(i) && time <= video.buffered.end(i)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
 export const playbackFeature = createFeature({
   name: "playback",
   getState: (defaultPlaybackRate: number = 1) => ({
@@ -60,6 +29,11 @@ export const playbackFeature = createFeature({
       const video = ctx.getVideo();
       if (!video) return;
       video.currentTime = time;
+      if (video.currentTime === video.duration) {
+        ctx.state.ended(true);
+      } else {
+        ctx.state.ended(false);
+      }
     },
     togglePlay: (isOverlay: boolean = false) => {
       const video = ctx.getVideo();

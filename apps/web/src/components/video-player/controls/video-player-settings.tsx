@@ -1,3 +1,4 @@
+import { mainPlayer } from '@/lib/video-player/player';
 import { Button } from '@repo/ui/components/button';
 import {
   DropdownMenu,
@@ -12,6 +13,7 @@ export function VideoPlayerSettings({
 }: {
   children: React.ReactNode;
 }) {
+  const { containerRef } = mainPlayer.usePlayerContext();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -26,6 +28,7 @@ export function VideoPlayerSettings({
         align="center"
         sideOffset={32}
         className="w-80"
+        container={containerRef}
       >
         <DropdownMenuGroup>{children}</DropdownMenuGroup>
       </DropdownMenuContent>
