@@ -143,6 +143,7 @@
       "name": "@repo/db",
       "version": "0.0.0",
       "dependencies": {
+        "@repo/redis": "workspace:*",
         "drizzle-kit": "catalog:",
         "drizzle-orm": "catalog:",
       },

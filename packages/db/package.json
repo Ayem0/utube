@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "drizzle-kit": "catalog:",
-    "drizzle-orm": "catalog:"
+    "drizzle-orm": "catalog:",
+    "@repo/redis": "workspace:*"
   }
 }

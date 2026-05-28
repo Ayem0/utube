@@ -93,7 +93,8 @@ export const VideoReposistoryLive = Layer.effect(
               .from(videoTable)
               .where(eq(videoTable.channelId, channel.id))
               .limit(size)
-              .offset(index * size),
+              .offset(index * size)
+              .$withCache(),
           );
 
           return {
@@ -195,7 +196,8 @@ const getById = (id: string, db: DBClient["Type"]) =>
             ),
           ),
         )
-        .innerJoin(channelTable, eq(videoTable.channelId, channelTable.id)),
+        .innerJoin(channelTable, eq(videoTable.channelId, channelTable.id))
+        .$withCache(),
     );
     if (!res) {
       return yield* Effect.fail(
