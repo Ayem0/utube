@@ -71,14 +71,6 @@ export function LoginForm() {
           },
         },
       );
-      // if (res.error) {
-      //   setError(res.error.message ?? 'Unkown error occured please try again.');
-      // } else if (res.data.user) {
-      //   await queryClient.invalidateQueries({ queryKey: ['auth-session'] });
-      //   await router.invalidate();
-      //   console.log('before navigation');
-      //   router.navigate({ to: redirectUrl, replace: true });
-      // }
     },
   });
   return (

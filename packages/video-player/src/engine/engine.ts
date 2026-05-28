@@ -6,6 +6,7 @@ export abstract class Engine extends EventEmitter<EngineEvents> {
     super();
   }
   public abstract loadSource: (source: VideoSource) => void;
+  public abstract setStartPosition: (time: number) => void;
   public abstract attachMedia: (video: HTMLVideoElement) => void;
   public abstract detachMedia: () => void;
 

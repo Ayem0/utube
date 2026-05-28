@@ -1,12 +1,12 @@
-import { mainPlayer } from '@/lib/video-player/player';
+import { player } from '@/lib/video-player/player';
 import { Button } from '@repo/ui/components/button';
 import { Pause, Play, RotateCcw } from 'lucide-react';
 import { useMemo } from 'react';
 
 export function VideoPlayerPlayButton() {
-  const { togglePlay } = mainPlayer.usePlayerApi('playback');
-  const ended = mainPlayer.usePlayerState((s) => s.playback.ended);
-  const paused = mainPlayer.usePlayerState((s) => s.playback.paused);
+  const { togglePlay } = player.usePlayerApi('playback');
+  const ended = player.usePlayerState((s) => s.playback.ended);
+  const paused = player.usePlayerState((s) => s.playback.paused);
   const Icon = useMemo(() => {
     if (ended) return RotateCcw;
     if (paused) return Play;

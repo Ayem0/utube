@@ -1,9 +1,9 @@
-import { mainPlayer } from '@/lib/video-player/player';
+import { player } from '@/lib/video-player/player';
 import { useEffect, useRef } from 'react';
 
 export function VTTTrack({ src }: { src: string }) {
   const ref = useRef<HTMLTrackElement>(null);
-  const storyboardApi = mainPlayer.usePlayerApi('storyboard');
+  const storyboardApi = player.usePlayerApi('storyboard');
 
   useEffect(() => {
     if (!ref.current) return;

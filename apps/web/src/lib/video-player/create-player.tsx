@@ -41,15 +41,14 @@ export const createPlayer = <T extends Features>({
   const Provider = ({
     source,
     children,
+    defaultTime,
   }: {
     source: VideoSource;
     children: React.ReactNode;
+    defaultTime: number;
   }) => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
-    useEffect(() => {
-      player.loadSource(source);
-    }, [source]);
 
     useEffect(() => {
       const v = videoRef.current;
@@ -61,6 +60,11 @@ export const createPlayer = <T extends Features>({
       };
     }, [videoRef.current, containerRef.current]);
 
+    useEffect(() => {
+      console.log('inside the source, defaultTime effect');
+      player.setStartPosition(defaultTime);
+      player.loadSource(source);
+    }, [source, defaultTime]);
     return (
       <Context.Provider
         value={{

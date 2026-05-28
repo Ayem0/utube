@@ -14,6 +14,7 @@ export class HlsEngine extends Engine {
   private hls: Hls;
   private qualities: VideoQuality[] = [];
   private videoEl: HTMLVideoElement | null = null;
+  private startPosition = 0;
 
   constructor(defaultState: EngineOptions) {
     super(defaultState);
@@ -23,17 +24,23 @@ export class HlsEngine extends Engine {
       maxBufferLength: 60,
       maxMaxBufferLength: 120,
       maxBufferSize: 120 * 1000 * 1000,
-
       capLevelToPlayerSize: true,
       capLevelOnFPSDrop: true,
+      autoStartLoad: false,
     });
     this.initListeners();
   }
 
-  /** Load the source and attach to video element */
-  public loadSource = (source: VideoSource) => {
+  /** Load the source  */
+  public loadSource = (source: VideoSource, defaultTime: number = 0) => {
     this.resetState();
-    if (source.hls) this.hls.loadSource(source.hls);
+    if (source.hls) {
+      this.hls.loadSource(source.hls);
+    }
+  };
+
+  public setStartPosition = (seconds: number) => {
+    this.startPosition = seconds;
   };
 
   public attachMedia = (video: HTMLVideoElement) => {
@@ -168,6 +175,7 @@ export class HlsEngine extends Engine {
       frameRate: level.frameRate,
     }));
     this.emit("qualitiesChanged", this.qualities);
+    this.hls.startLoad(this.startPosition);
   };
 
   private onLevelUpdated = (

@@ -1,6 +1,6 @@
 import { createFeature } from "../feature";
 
-export type TimeState = {
+type TimeState = {
   currentTimeStr: string | null;
   remainingTimeStr: string | null;
   invDuration: number;
@@ -40,6 +40,7 @@ export const timeFeature = createFeature({
   onMediaAttach: (ctx) => {
     const video = ctx.getVideo();
     if (!video) return;
+
     ctx.batch(() => {
       ctx.state.duration(video.duration);
       ctx.state.currentTimeStr(formatTime(video.currentTime));

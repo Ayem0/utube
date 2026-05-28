@@ -75,6 +75,10 @@ export class Player<const T extends Features> {
     this.engine.loadSource(source);
   }
 
+  public setStartPosition(time: number) {
+    this.engine.setStartPosition(time);
+  }
+
   public getControllerContext = () => {
     return {
       apis: this.apis,

@@ -1,14 +1,14 @@
 import { TimelineController } from '@/lib/video-player/controllers/timeline-controller';
-import { mainPlayer } from '@/lib/video-player/player';
+import { player } from '@/lib/video-player/player';
 import { useEffect, useMemo, useRef } from 'react';
 
 export function VideoPlayerTimeline() {
-  const { videoRef } = mainPlayer.usePlayerContext();
+  const { videoRef } = player.usePlayerContext();
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const previewTimerRef = useRef<HTMLOutputElement>(null);
   const controller = useMemo(
-    () => new TimelineController(mainPlayer.getControllerContext()),
+    () => new TimelineController(player.getControllerContext()),
     [],
   );
   useEffect(() => {

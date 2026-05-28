@@ -28,7 +28,6 @@ export const storyboardFeature = createFeature({
   }),
   getApi: (ctx) => {
     const onLoad = () => {
-      console.log("on load");
       const cues = ctx.internalState.track?.track.cues;
       if (!cues) return;
       ctx.internalState.storyboardVTT = parseTextTrackCueList(cues);

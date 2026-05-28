@@ -1,4 +1,4 @@
-import { mainPlayer } from '@/lib/video-player/player';
+import { player } from '@/lib/video-player/player';
 import {
   ContextMenu,
   ContextMenuCheckboxItem,
@@ -8,10 +8,10 @@ import {
 import { Repeat2 } from 'lucide-react';
 
 export function VideoPlayerOverlay() {
-  const { toggleFullscreen } = mainPlayer.usePlayerApi('display');
-  const { togglePlay, toggleLoop } = mainPlayer.usePlayerApi('playback');
-  const looping = mainPlayer.usePlayerState((s) => s.playback.loop);
-  const { containerRef } = mainPlayer.usePlayerContext();
+  const { toggleFullscreen } = player.usePlayerApi('display');
+  const { togglePlay, toggleLoop } = player.usePlayerApi('playback');
+  const looping = player.usePlayerState((s) => s.playback.loop);
+  const { containerRef } = player.usePlayerContext();
   return (
     <div
       className="absolute inset-0"

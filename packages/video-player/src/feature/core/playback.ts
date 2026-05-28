@@ -80,5 +80,12 @@ export const playbackFeature = createFeature({
       if (!video) return;
       ctx.state.playbackRate(video.playbackRate);
     });
+    // TODO REMOVE
+    ctx.events.video("seeked", () => {
+      console.log("seeked");
+    });
+    ctx.events.video("seeking", () => {
+      console.log("seeking");
+    });
   },
 });

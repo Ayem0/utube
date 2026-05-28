@@ -11,7 +11,7 @@ const defaultQuality = -1; // TODO fetch from localstorage / session storage (-1
 
 const { muted: defaultMuted, volume: defaultVolume } = getSessionVolumeState();
 
-export const mainPlayer = createPlayer({
+export const player = createPlayer({
   features: videoFeatures,
   engineOptions: { quality: defaultQuality },
   featureOptions: {

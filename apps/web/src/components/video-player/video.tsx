@@ -1,7 +1,7 @@
-import { mainPlayer } from '@/lib/video-player/player';
+import { player } from '@/lib/video-player/player';
 
 export function Video({ children }: { children?: React.ReactNode }) {
-  const { videoRef } = mainPlayer.usePlayerContext();
+  const { videoRef } = player.usePlayerContext();
 
   return (
     <video

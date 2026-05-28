@@ -1,5 +1,5 @@
 import type { WatchVideo } from '@/lib/queries/get-watch-video';
-import { mainPlayer } from '@/lib/video-player/player';
+import { player } from '@/lib/video-player/player';
 import { ClientOnly, Link } from '@tanstack/react-router';
 import { VideoPlayerControls } from '../video-player/controls/video-player-controls';
 import { VideoPlayerFullscreenButton } from '../video-player/controls/video-player-fullscreen-button';
@@ -16,24 +16,22 @@ import { VideoPlayerContainer } from '../video-player/video-player-container';
 import { VideoPlayerOverlay } from '../video-player/video-player-overlay';
 import { VTTTrack } from '../video-player/VTT-track';
 
-export function WatchLayout({ video }: { video: WatchVideo }) {
+export function WatchLayout({
+  video,
+  defaultTime,
+}: {
+  video: WatchVideo;
+  defaultTime: number;
+}) {
   return (
     <div className="flex flex-col w-full">
-      {/* <ClientOnly
-        fallback={
-          <AspectRatio ratio={16 / 9} className="w-full max-h-[748px]">
-            <Skeleton className="w-full h-full " />
-          </AspectRatio>
-        }
-      >
-      </ClientOnly> */}
-
       <ClientOnly>
-        <mainPlayer.Provider
+        <player.Provider
           source={{
             hls: video.hlsUrl,
             dash: video.dashUrl,
           }}
+          defaultTime={defaultTime}
         >
           <VideoPlayerContainer>
             <Video>
@@ -59,15 +57,8 @@ export function WatchLayout({ video }: { video: WatchVideo }) {
               </div>
             </VideoPlayerControls>
           </VideoPlayerContainer>
-        </mainPlayer.Provider>
+        </player.Provider>
       </ClientOnly>
-      {/* <video
-</ClientOnly>
-        controls={true}
-        src="http://localhost:8080/videos/909c3fd4-ecdc-40dc-a3d5-c5b4b0a86948/media_0.m3u8"
-        onWaiting={() => console.log('waiting')}
-        onCanPlay={() => console.log('can play')}
-      /> */}
 
       <div className="flex flex-col w-full p-3 gap-2 pl-2">
         <span className="text-lg">{video.title}</span>
