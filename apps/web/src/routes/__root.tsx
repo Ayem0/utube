@@ -1,4 +1,5 @@
 import { NotFoundComponent } from '@/components/not-found/not-found';
+import { WS } from '@/components/ws/ws';
 import appCss from '@/styles/styles.css?url';
 import { User } from '@repo/auth/user';
 import uiCss from '@repo/ui/styles/globals.css?url';
@@ -58,9 +59,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 });
 
 function RootComponent() {
+  const { user } = Route.useRouteContext();
   return (
     <RootDocument>
-      <Outlet />
+      <WS user={user}>
+        <Outlet />
+      </WS>
     </RootDocument>
   );
 }
