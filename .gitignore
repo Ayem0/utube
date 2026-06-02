@@ -39,3 +39,9 @@ yarn-error.log*
 
 # Tanstack 
 .tanstack
+
+# Cloudflare Wrangler
+*.wrangler
+
+# Docker
+volume

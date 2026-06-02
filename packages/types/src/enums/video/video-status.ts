@@ -1,9 +1,11 @@
 export enum VideoCreationStatus {
   PENDING = 1,
-  VALIDATING = 2,
-  VALIDATION_FAILED = 3,
-  VALIDATED = 4,
-  PROCESSING = 5,
-  COMPLETED = 6,
-  FAILED = 7,
+  UPLOADING = 2,
+  UPLOADED = 3,
+  VALIDATING = 4,
+  VALIDATION_FAILED = 5,
+  VALIDATED = 6,
+  PROCESSING = 7,
+  COMPLETED = 8,
+  FAILED = 9,
 }

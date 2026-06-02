@@ -7,3 +7,5 @@ export const api = <T extends {}>(headers?: T): ApiType =>
     headers,
     fetch: { credentials: "include" },
   }).api;
+
+api().channel.get();

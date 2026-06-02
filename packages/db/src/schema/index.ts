@@ -122,9 +122,9 @@ export const video = pgTable(
     description: text("description"),
     visibility: smallint("visibility")
       .notNull()
-      .default(VideoVisibility.PUBLIC),
+      .default(VideoVisibility.PRIVATE),
     tempVideoKey: text("temp_video_key").notNull(),
-    tempThumbnailKey: text("temp_thumbnail_key").notNull(),
+    tempThumbnailKey: text("temp_thumbnail_key"),
     hlsUrl: text("hls_url"),
     dashUrl: text("dash_url"),
     thumbnailUrl: text("thumbnail_url"),

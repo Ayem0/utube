@@ -20,6 +20,11 @@ export interface S3ClientService {
     key: string,
     bucket: string,
   ) => Effect.Effect<void, S3Error, never>;
+  getPresignedUrl: (
+    path: string,
+    bucket: string,
+    expiresIn?: number,
+  ) => Effect.Effect<string, never, never>;
 }
 
 export class S3Client extends Context.Tag("S3Client")<
@@ -91,4 +96,6 @@ export const S3ClientLive = Layer.succeed(S3Client, {
         times: 3,
       }),
     ),
+  getPresignedUrl: (path, bucket, expiresIn) =>
+    Effect.succeed(s3Client.presign(path, { bucket, expiresIn })),
 });

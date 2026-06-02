@@ -1,12 +1,9 @@
-import {
-  ChannelRepository,
-  ChannelRepositoryLive,
-} from "@repo/services/channel/channel-repository";
-import { DBClientLive } from "@repo/services/db/db-client";
-import { Effect, Layer, ManagedRuntime } from "effect";
+import { ChannelRepository } from "@repo/services/channel/channel-repository";
+import { Effect } from "effect";
 import Elysia from "elysia";
 import { authPlugin } from "./auth";
 import { channelMacro } from "./channel-macro";
+import { apiRuntime } from "./runtime";
 
 export const channelController = new Elysia()
   .use(authPlugin)
@@ -14,7 +11,7 @@ export const channelController = new Elysia()
   .get(
     "/channel",
     async ({ user, status, selectedChannelId }) => {
-      return await runtime.runPromise(
+      return await apiRuntime.runPromise(
         getChannelsByUserId(user.id, selectedChannelId).pipe(
           Effect.match({
             onSuccess: (res) => {
@@ -34,8 +31,6 @@ export const channelController = new Elysia()
     },
   );
 
-const layer = ChannelRepositoryLive.pipe(Layer.provide(DBClientLive));
-const runtime = ManagedRuntime.make(layer);
 const getChannelsByUserId = (userId: string, selectedChannelId?: string) =>
   Effect.gen(function* () {
     const repo = yield* ChannelRepository;

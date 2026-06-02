@@ -1,4 +1,4 @@
-import { api } from '@repo/api-types/index';
+import { api } from '@repo/api-types';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
 

@@ -53,7 +53,7 @@ export function ChannelSwitcherItem({
         <div className="flex flex-row items-center gap-2">
           <Avatar>
             <AvatarImage
-              src={channel?.image ?? undefined}
+              src={channel?.avatarUrl ?? undefined}
               alt={channel?.name ?? undefined}
             />
             <AvatarFallback className="rounded-4xl">

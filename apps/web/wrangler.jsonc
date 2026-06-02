@@ -1,0 +1,9 @@
+{
+    "$schema": "./node_modules/wrangler/config-schema.json",
+    "name": "utube-web",
+    "compatibility_date": "2026-06-02",
+    "main": "@tanstack/react-start/server-entry",
+    "compatibility_flags": [
+        "nodejs_compat"
+    ],
+}

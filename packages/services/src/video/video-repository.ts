@@ -140,7 +140,6 @@ export const VideoReposistoryLive = Layer.effect(
                 title: data.title,
                 description: data.description,
                 tempVideoKey: data.tempVideoKey,
-                tempThumbnailKey: data.tempThumbnailKey,
               })
               .returning(),
           );

@@ -34,6 +34,14 @@ export interface VideoPublisherService {
     | S3Error
     | QueueError
   >;
+  uploadVideo: (
+    channelId: string,
+    path: string,
+  ) => Effect.Effect<
+    { videoId: string; presignedUrl: string; title: string },
+    S3Error,
+    never
+  >;
 }
 
 export const VideoPublisherLive = Layer.effect(
@@ -120,6 +128,26 @@ export const VideoPublisherLive = Layer.effect(
             return created;
           }),
         ),
+      uploadVideo: (channelId, path) =>
+        Effect.gen(function* () {
+          const s3Client = yield* S3Client;
+          const videoRepo = yield* VideoRepository;
+
+          const videoId = crypto.randomUUID();
+          const parts = path.split(".");
+          const title = parts.length > 0 ? parts[0] : "video title";
+          const presignedUrl = yield* s3Client.getPresignedUrl(path, "temp");
+
+          const created = yield* videoRepo.create({
+            channelId,
+            tempVideoKey,
+            description,
+            tempVideoKey: videoId,
+            tempThumbnailKey: imageId,
+          });
+
+          return { videoId, presignedUrl, title };
+        }),
     };
   }),
 );
