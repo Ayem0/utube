@@ -1,8 +1,5 @@
-# Use postgres/example user/password credentials
-
 services:
   localstack:
-    container_name: "${LOCALSTACK_DOCKER_NAME:-localstack-main}"
     image: localstack/localstack-pro # required for Pro
     ports:
       - "127.0.0.1:4566:4566" # LocalStack Gateway
@@ -17,6 +14,29 @@ services:
     volumes:
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
+
+  terraform:
+    image: hashicorp/terraform:latest
+    working_dir: /infra/terraform/
+    volumes:
+      - ./infra:/infra
+    environment:
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+    # entrypoint: ["/bin/sh", "-c"]
+    entrypoint: []
+    command:
+      - sh
+      - -c
+      - |
+        terraform init
+        terraform apply -auto-approve
+    depends_on:
+      localstack:
+        condition: service_healthy
+    # networks:
+    #   - app
 
   redis:
     image: redis
@@ -77,10 +97,16 @@ services:
       - ./apps/video-processing-worker/.env
     restart: always
     depends_on:
-      - redis
-      - db
-      - minio
-      - nginx
+      terraform:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+      db:
+        condition: service_started
+      minio:
+        condition: service_started
+      nginx:
+        condition: service_started
 volumes:
   minio:
     driver: local

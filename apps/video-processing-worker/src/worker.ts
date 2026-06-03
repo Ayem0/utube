@@ -1,7 +1,7 @@
 import { DBClientLive } from "@repo/services/db/db-client";
 import { FileSystemLive } from "@repo/services/file-system/file-system";
-import { InvalidVideoError } from "@repo/services/media/media-errors";
 import { MediaValidatorConfigLive } from "@repo/services/media/media-validator-config";
+import { SqsClient, SqsClientLive } from "@repo/services/queue/sqs-client";
 import { S3ClientLive } from "@repo/services/s3/s3-client";
 import {
   VideoPipeline,
@@ -14,61 +14,78 @@ import { VideoStoryboardConfigLive } from "@repo/services/video/video-storyboard
 import { VideoStoryboardGeneratorLive } from "@repo/services/video/video-storyboard-generator";
 import { VideoValidatorLive } from "@repo/services/video/video-validator";
 import { videoProcessingJobSchema } from "@repo/types/schemas/video-processing-job";
-import { VideoProcessingJob } from "@repo/types/types/video-processing-job";
-import { Worker } from "bullmq";
-import { Effect, Layer, ManagedRuntime, Schedule } from "effect";
+import { Effect, Layer, ManagedRuntime } from "effect";
 
-new Worker(
-  "videoProcessingQueue",
-  async (job) => {
-    console.log("Processing job...");
-    const payload = videoProcessingJobSchema.parse(job.data);
-    await runtime.runPromise(program(payload));
-  },
-  {
-    connection: {
-      url: process.env.REDIS_URL,
-    },
-  },
+const infraLayer = Layer.mergeAll(
+  DBClientLive,
+  S3ClientLive,
+  SqsClientLive,
+  FileSystemLive,
+  MediaValidatorConfigLive,
+  VideoProcessorConfigLive,
+  VideoStoryboardConfigLive,
 );
-console.log("WORKER RUNNING");
-const layer = VideoPipelineLive.pipe(
-  Layer.provide(FileSystemLive),
-  Layer.provide(VideoReposistoryLive),
-  Layer.provide(DBClientLive),
-  Layer.provide(S3ClientLive),
-  Layer.provide(FileSystemLive),
-  Layer.provide(VideoProcessorLive),
-  Layer.provide(VideoValidatorLive),
-  Layer.provide(MediaValidatorConfigLive),
-  Layer.provide(VideoProcessorConfigLive),
-  Layer.provide(VideoStoryboardGeneratorLive),
-  Layer.provide(VideoStoryboardConfigLive),
+const domainLayer = Layer.mergeAll(
+  VideoReposistoryLive,
+  VideoProcessorLive,
+  VideoValidatorLive,
+  VideoStoryboardGeneratorLive,
 );
 
-const runtime = ManagedRuntime.make(layer);
-
-const retryPolicy = Schedule.exponential("500 millis").pipe(
-  Schedule.intersect(Schedule.recurs(3)),
+const appLayer = Layer.provideMerge(
+  VideoPipelineLive,
+  Layer.provideMerge(domainLayer, infraLayer),
 );
 
-const program = (data: VideoProcessingJob) =>
-  Effect.gen(function* () {
-    const videoPipeline = yield* VideoPipeline;
-    console.log("Processing video...");
-    yield* videoPipeline.processVideo(data).pipe(
-      Effect.retry({
-        schedule: retryPolicy,
-        while: (e) => !(e instanceof InvalidVideoError),
-      }),
-      Effect.match({
-        onFailure: (e) => {
-          console.log("FAILURE");
-          console.log(e);
-        },
-        onSuccess: () => {
-          console.log("Success");
-        },
-      }),
-    );
-  });
+const runtime = ManagedRuntime.make(appLayer);
+
+const program = Effect.gen(function* () {
+  const sqsClient = yield* SqsClient;
+  const videoPipeline = yield* VideoPipeline;
+  yield* sqsClient.subscribe(
+    process.env.VIDEO_PROCESSING_QUEUE_URL!,
+    (message) =>
+      videoPipeline.processVideo(
+        videoProcessingJobSchema.parse(JSON.parse(message)),
+      ),
+  );
+});
+
+runtime.runPromise(program);
+
+// const retryPolicy = Schedule.exponential("500 millis").pipe(
+//   Schedule.intersect(Schedule.recurs(3)),
+// );
+// const handler = (data: VideoProcessingJob) =>
+//   Effect.gen(function* () {
+//     const videoPipeline = yield* VideoPipeline;
+//     console.log("Processing video...");
+//     yield* videoPipeline.processVideo(data).pipe(
+//       Effect.retry({
+//         schedule: retryPolicy,
+//         while: (e) => !(e instanceof InvalidVideoError),
+//       }),
+//       Effect.match({
+//         onFailure: (e) => {
+//           console.log("FAILURE");
+//           console.log(e);
+//         },
+//         onSuccess: () => {
+//           console.log("Success");
+//         },
+//       }),
+//     );
+//   });
+// new Worker(
+//   "videoProcessingQueue",
+//   async (job) => {
+//     console.log("Processing job...");
+//     const payload = videoProcessingJobSchema.parse(job.data);
+//     await runtime.runPromise(program(payload));
+//   },
+//   {
+//     connection: {
+//       url: process.env.REDIS_URL,
+//     },
+//   },
+// );

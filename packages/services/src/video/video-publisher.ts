@@ -1,13 +1,13 @@
 import { video as videoTable } from "@repo/db/schema";
-import { videoProcessingQueue } from "@repo/queues/video-processing-queue";
+import type { VideoProcessingJob } from "@repo/types/types/video-processing-job";
 import { Context, Effect, Exit, Layer } from "effect";
 import { DBError, DBNotFoundError } from "../db/db-errors";
 import {
   InvalidMediaSizeError,
   InvalidMediaTypeError,
 } from "../media/media-errors";
-import { QueueClient } from "../queue/queue-client";
 import { QueueError } from "../queue/queue-errors";
+import { SnsClient } from "../queue/sns-client";
 import { S3Client } from "../s3/s3-client";
 import { S3Error } from "../s3/s3-errors";
 import { VideoRepository } from "./video-repository";
@@ -34,14 +34,14 @@ export interface VideoPublisherService {
     | S3Error
     | QueueError
   >;
-  uploadVideo: (
-    channelId: string,
-    path: string,
-  ) => Effect.Effect<
-    { videoId: string; presignedUrl: string; title: string },
-    S3Error,
-    never
-  >;
+  // uploadVideo: (
+  //   channelId: string,
+  //   path: string,
+  // ) => Effect.Effect<
+  //   { videoId: string; presignedUrl: string; title: string },
+  //   S3Error,
+  //   never
+  // >;
 }
 
 export const VideoPublisherLive = Layer.effect(
@@ -50,7 +50,8 @@ export const VideoPublisherLive = Layer.effect(
     const videoRepo = yield* VideoRepository;
     const fileStorage = yield* S3Client;
     // const mediaValidator = yield* MediaValidator;
-    const queueClient = yield* QueueClient;
+    // const queueClient = yield* QueueClient;
+    const snsClient = yield* SnsClient;
     return {
       publishVideo: (
         channelId: string,
@@ -116,38 +117,38 @@ export const VideoPublisherLive = Layer.effect(
                   : Effect.void,
             );
 
-            yield* queueClient.send(
-              videoProcessingQueue,
-              "video-processing-job",
-              {
-                rowId: created.id,
-                imageKey: created.tempThumbnailKey,
-                videoKey: created.tempVideoKey,
-              },
+            const message: VideoProcessingJob = {
+              rowId: created.id,
+              imageKey: imageId,
+              videoKey: videoId,
+            };
+            yield* snsClient.send(
+              process.env.VIDEO_PROCESSING_TOPIC_ARN!,
+              message,
             );
             return created;
           }),
         ),
-      uploadVideo: (channelId, path) =>
-        Effect.gen(function* () {
-          const s3Client = yield* S3Client;
-          const videoRepo = yield* VideoRepository;
+      // uploadVideo: (channelId, path) =>
+      //   Effect.gen(function* () {
+      //     const s3Client = yield* S3Client;
+      //     const videoRepo = yield* VideoRepository;
 
-          const videoId = crypto.randomUUID();
-          const parts = path.split(".");
-          const title = parts.length > 0 ? parts[0] : "video title";
-          const presignedUrl = yield* s3Client.getPresignedUrl(path, "temp");
+      //     const videoId = crypto.randomUUID();
+      //     const parts = path.split(".");
+      //     const title = parts.length > 0 ? parts[0] : "video title";
+      //     const presignedUrl = yield* s3Client.getPresignedUrl(path, "temp");
 
-          const created = yield* videoRepo.create({
-            channelId,
-            tempVideoKey,
-            description,
-            tempVideoKey: videoId,
-            tempThumbnailKey: imageId,
-          });
+      //     const created = yield* videoRepo.create({
+      //       channelId,
+      //       tempVideoKey,
+      //       description,
+      //       tempVideoKey: videoId,
+      //       tempThumbnailKey: imageId,
+      //     });
 
-          return { videoId, presignedUrl, title };
-        }),
+      //     return { videoId, presignedUrl, title };
+      //   }),
     };
   }),
 );

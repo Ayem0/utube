@@ -1,5 +1,5 @@
 {
-  "id": "e5e5dd78-e60f-4d60-a2b9-18c0244580b3",
+  "id": "34bb55a9-c7d8-4a89-8cf1-dfba7e705f60",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -537,7 +537,7 @@
           "type": "smallint",
           "primaryKey": false,
           "notNull": true,
-          "default": 1
+          "default": 2
         },
         "temp_video_key": {
           "name": "temp_video_key",
@@ -549,7 +549,7 @@
           "name": "temp_thumbnail_key",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "hls_url": {
           "name": "hls_url",

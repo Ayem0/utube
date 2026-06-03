@@ -3,6 +3,7 @@ import { DBClientLive } from "@repo/services/db/db-client";
 import { FileSystemLive } from "@repo/services/file-system/file-system";
 import { MediaValidatorConfigLive } from "@repo/services/media/media-validator-config";
 import { QueueClientLive } from "@repo/services/queue/queue-client";
+import { SnsClientLive } from "@repo/services/queue/sns-client";
 import { S3ClientLive } from "@repo/services/s3/s3-client";
 import { VideoPublisherLive } from "@repo/services/video/video-publisher";
 import { VideoReposistoryLive } from "@repo/services/video/video-repository";
@@ -14,6 +15,7 @@ const infraLayer = Layer.mergeAll(
   S3ClientLive,
   QueueClientLive,
   FileSystemLive,
+  SnsClientLive,
 );
 
 const domainLayer = Layer.mergeAll(
