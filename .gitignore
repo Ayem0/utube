@@ -45,4 +45,7 @@ yarn-error.log*
 
 # Docker
 volume
-infra/terraform/.terraform
+# Terraform
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.backup
