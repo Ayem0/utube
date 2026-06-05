@@ -25,6 +25,10 @@ export interface S3ClientService {
     bucket: string,
     expiresIn?: number,
   ) => Effect.Effect<string, never, never>;
+  exists: (
+    key: string,
+    bucket: string,
+  ) => Effect.Effect<boolean, S3Error, never>;
 }
 
 export class S3Client extends Context.Tag("S3Client")<
@@ -62,11 +66,7 @@ export const S3ClientLive = Layer.succeed(S3Client, {
           bucket: bucket,
         }),
       catch: (e) => new S3Error({ cause: e, message: "S3Error" }),
-    }).pipe(
-      Effect.retry({
-        times: 3,
-      }),
-    ),
+    }),
   uploadFiles: (entries, bucket) =>
     Effect.forEach(
       entries,
@@ -79,23 +79,28 @@ export const S3ClientLive = Layer.succeed(S3Client, {
           },
           catch: (e) => new S3Error({ cause: e, message: "S3Error" }),
         }).pipe(Effect.retry({ times: 3 })),
-      { concurrency: 4 },
+      { concurrency: "unbounded" },
     ),
   deleteFile: (path, bucket) =>
-    Effect.gen(function* () {
-      yield* Effect.tryPromise({
-        try: async () => {
-          await s3Client.delete(path, {
-            bucket: bucket,
-          });
-        },
-        catch: (e) => new S3Error({ cause: e, message: "S3Error" }),
-      });
-    }).pipe(
-      Effect.retry({
-        times: 3,
+    Effect.tryPromise({
+      try: async () => {
+        await s3Client.delete(path, {
+          bucket: bucket,
+        });
+      },
+      catch: (e) => new S3Error({ cause: e, message: "S3Error" }),
+    }),
+  getPresignedUrl: (path, bucket, expiresIn) =>
+    Effect.succeed(
+      s3Client.presign(path, {
+        bucket,
+        expiresIn,
+        method: "PUT",
       }),
     ),
-  getPresignedUrl: (path, bucket, expiresIn) =>
-    Effect.succeed(s3Client.presign(path, { bucket, expiresIn })),
+  exists: (path, bucket) =>
+    Effect.tryPromise({
+      try: async () => await s3Client.exists(path, { bucket: bucket }),
+      catch: (e) => new S3Error({ cause: e, message: "S3Error" }),
+    }),
 });

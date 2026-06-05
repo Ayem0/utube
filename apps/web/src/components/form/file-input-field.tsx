@@ -4,11 +4,12 @@ import type { FieldProps } from './base-field';
 import { BaseField } from './base-field';
 
 interface FileInputFieldProps extends FieldProps<File | undefined> {
-  placeholder: string;
+  placeholder?: string;
   max?: number;
   ref?: RefObject<HTMLInputElement | null>;
   required?: boolean;
   autofocus?: boolean;
+  className?: string;
 }
 
 export function FileInputField({
@@ -18,6 +19,7 @@ export function FileInputField({
   field,
   required,
   autofocus,
+  className,
   ...props
 }: FileInputFieldProps) {
   return (
@@ -40,6 +42,7 @@ export function FileInputField({
           disabled={isSubmitting}
           required={required}
           autoFocus={autofocus}
+          className={className}
         />
       )}
     />

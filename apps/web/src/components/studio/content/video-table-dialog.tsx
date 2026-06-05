@@ -1,13 +1,11 @@
-import { Button } from '@repo/ui/components/button';
+import { UploadVideo } from '@/components/upload/upload-video';
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/dialog';
-import { UploadForm } from '../../upload/upload-form';
 
 export function VideoTableDialog({
   open,
@@ -25,12 +23,13 @@ export function VideoTableDialog({
           <DialogTitle>Upload video</DialogTitle>
           <DialogDescription>Upload a video to your channel.</DialogDescription>
         </DialogHeader>
-        <UploadForm
+        {/* <UploadForm
           closeButton={
             <DialogClose render={<Button variant="outline">Cancel</Button>} />
           }
           onSuccess={() => onOpenChange(false)}
-        />
+        /> */}
+        <UploadVideo />
       </DialogContent>
     </Dialog>
   );

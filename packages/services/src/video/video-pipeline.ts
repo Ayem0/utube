@@ -99,7 +99,7 @@ export const VideoPipelineLive = Layer.effect(
             Effect.tap(
               Effect.gen(function* () {
                 yield* videoRepo.update(data.rowId, {
-                  creationStatus: VideoCreationStatus.COMPLETED,
+                  creationStatus: VideoCreationStatus.PROCESSED,
                 });
               }),
             ),

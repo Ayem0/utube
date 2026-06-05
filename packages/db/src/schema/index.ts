@@ -133,7 +133,7 @@ export const video = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     creationStatus: smallint("creation_status")
       .notNull()
-      .default(VideoCreationStatus.PENDING),
+      .default(VideoCreationStatus.UPLOADING),
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())

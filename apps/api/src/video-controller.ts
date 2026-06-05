@@ -1,47 +1,60 @@
 import { VideoPublisher } from "@repo/services/video/video-publisher";
 import { VideoRepository } from "@repo/services/video/video-repository";
-import { videoUploadSchema } from "@repo/types/schemas/video-upload";
-import type { VideoUpload } from "@repo/types/types/video-upload";
+import {
+  uploadedVideoSchema,
+  uploadVideoSchema,
+} from "@repo/types/schemas/upload-video";
 import { Effect } from "effect";
-import Elysia, { fileType } from "elysia";
+import Elysia from "elysia";
 import { authPlugin } from "./auth";
 import { apiRuntime } from "./runtime";
 
-const postVideo = (body: VideoUpload) =>
-  Effect.gen(function* () {
-    const videoPublisher = yield* VideoPublisher;
-    const res = yield* videoPublisher.publishVideo(
-      body.channelId,
-      body.title,
-      body.description,
-      body.image,
-      body.video,
-    );
-    return res;
-  });
+// const postVideo = (body: VideoUpload) =>
+//   Effect.gen(function* () {
+//     const videoPublisher = yield* VideoPublisher;
+//     const res = yield* videoPublisher.publishVideo(
+//       body.channelId,
+//       body.title,
+//       body.description,
+//       body.image,
+//       body.video,
+//     );
+//     return res;
+//   });
 const getVideo = (id: string) =>
   Effect.gen(function* () {
     const videoRepository = yield* VideoRepository;
     const res = yield* videoRepository.getById(id);
     return res;
   });
+
+const startUpload = (channelId: string, fileName: string) =>
+  Effect.gen(function* () {
+    const videoPublisher = yield* VideoPublisher;
+    const res = yield* videoPublisher.uploadVideo(channelId, fileName);
+    return res;
+  });
+const uploadedVideo = (videoId: string) =>
+  Effect.gen(function* () {
+    const videoPublisher = yield* VideoPublisher;
+    const res = yield* videoPublisher.uploadedVideo(videoId);
+    return res;
+  });
+
 const videoController = new Elysia()
   .use(authPlugin)
   .post(
-    "/video",
+    "/video/upload-video",
     async ({ body, status }) => {
       return await apiRuntime.runPromise(
-        postVideo(body).pipe(
+        startUpload(body.channelId, body.fileName).pipe(
           Effect.match({
             onSuccess: (res) => {
-              return status(201, res);
+              return status(200, res);
             },
             onFailure: (e) => {
               console.log("ERROR", e);
-              if (
-                e._tag === "InvalidMediaSizeError" ||
-                e._tag === "InvalidMediaTypeError"
-              ) {
+              if (e._tag === "InvalidMediaFileNameError") {
                 return status(400, e.message);
               } else {
                 return status(500);
@@ -52,18 +65,71 @@ const videoController = new Elysia()
       );
     },
     {
-      body: videoUploadSchema.extend({
-        // Refine using elysia utility function to handle files
-        image: videoUploadSchema.shape.image.refine((f) =>
-          fileType(f, ["image/jpeg", "image/png", "image/webp"]),
-        ),
-        video: videoUploadSchema.shape.video.refine((f) =>
-          fileType(f, ["video/mp4", "video/webm"]),
-        ),
-      }),
-      auth: true,
+      body: uploadVideoSchema,
     },
   )
+  .post(
+    "/video/uploaded-video",
+    async ({ body, status }) => {
+      return await apiRuntime.runPromise(
+        uploadedVideo(body.videoId).pipe(
+          Effect.match({
+            onSuccess: (res) => {
+              return status(200, res);
+            },
+            onFailure: (e) => {
+              console.log("ERROR", e);
+              if (e._tag === "VideoUploadError") {
+                return status(400, e.message);
+              } else {
+                return status(500);
+              }
+            },
+          }),
+        ),
+      );
+    },
+    {
+      body: uploadedVideoSchema,
+    },
+  )
+  // .post(
+  //   "/video",
+  //   async ({ body, status }) => {
+  //     return await apiRuntime.runPromise(
+  //       postVideo(body).pipe(
+  //         Effect.match({
+  //           onSuccess: (res) => {
+  //             return status(201, res);
+  //           },
+  //           onFailure: (e) => {
+  //             console.log("ERROR", e);
+  //             if (
+  //               e._tag === "InvalidMediaSizeError" ||
+  //               e._tag === "InvalidMediaTypeError"
+  //             ) {
+  //               return status(400, e.message);
+  //             } else {
+  //               return status(500);
+  //             }
+  //           },
+  //         }),
+  //       ),
+  //     );
+  //   },
+  //   {
+  //     body: videoUploadSchema.extend({
+  //       // Refine using elysia utility function to handle files
+  //       image: videoUploadSchema.shape.image.refine((f) =>
+  //         fileType(f, ["image/jpeg", "image/png", "image/webp"]),
+  //       ),
+  //       video: videoUploadSchema.shape.video.refine((f) =>
+  //         fileType(f, ["video/mp4", "video/webm"]),
+  //       ),
+  //     }),
+  //     auth: true,
+  //   },
+  // )
   .get("/video/:id", async ({ params, status }) => {
     return await apiRuntime.runPromise(
       getVideo(params.id).pipe(

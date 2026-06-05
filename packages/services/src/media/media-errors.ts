@@ -16,3 +16,9 @@ export class InvalidVideoError extends Data.TaggedError("InvalidVideoError")<{
   readonly cause: unknown;
   readonly message: string;
 }> {}
+
+export class InvalidMediaFileNameError extends Data.TaggedError(
+  "InvalidMediaFileNameError",
+)<{
+  readonly message: string;
+}> {}

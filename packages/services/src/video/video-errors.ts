@@ -11,3 +11,7 @@ export class VideoValidationError extends Data.TaggedError(
 export class VideoStoryboardError extends Data.TaggedError(
   "VideoStoryboardError",
 )<{ cause: unknown; message: string }> {}
+
+export class VideoUploadError extends Data.TaggedError("VideoUploadError")<{
+  message: string;
+}> {}

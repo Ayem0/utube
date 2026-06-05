@@ -20,9 +20,7 @@ export interface VideoRepositoryService {
   create: (data: {
     channelId: string;
     title: string;
-    description: string;
     tempVideoKey: string;
-    tempThumbnailKey: string;
   }) => Effect.Effect<Video, DBNotFoundError | DBError>;
   delete: (id: string) => Effect.Effect<void, DBError>;
   getStudioVideosByChannelId: (
@@ -32,6 +30,7 @@ export interface VideoRepositoryService {
     size: number,
   ) => Effect.Effect<PaginationResult<Video[]>, DBError | DBNotFoundError>;
   getById: (id: string) => ReturnType<typeof getById>;
+  getTempVideoKeyById: (id: string) => ReturnType<typeof getTempVideoKeyById>;
 }
 
 export const VideoReposistoryLive = Layer.effect(
@@ -125,9 +124,7 @@ export const VideoReposistoryLive = Layer.effect(
       create: (data: {
         channelId: string;
         title: string;
-        description: string;
         tempVideoKey: string;
-        tempThumbnailKey: string;
       }) =>
         Effect.gen(function* () {
           const id = crypto.randomUUID();
@@ -138,7 +135,6 @@ export const VideoReposistoryLive = Layer.effect(
                 id,
                 channelId: data.channelId,
                 title: data.title,
-                description: data.description,
                 tempVideoKey: data.tempVideoKey,
               })
               .returning(),
@@ -158,6 +154,7 @@ export const VideoReposistoryLive = Layer.effect(
           );
         }),
       getById: (id) => getById(id, db),
+      getTempVideoKeyById: (id) => getTempVideoKeyById(id, db),
     };
   }),
 );
@@ -199,9 +196,7 @@ const getById = (id: string, db: DBClient["Type"]) =>
         .$withCache(),
     );
     if (!res) {
-      return yield* Effect.fail(
-        new DBNotFoundError({ message: "Video not found" }),
-      );
+      return yield* new DBNotFoundError({ message: "Video not found" });
     }
     return {
       id: res.id,
@@ -222,60 +217,19 @@ const getById = (id: string, db: DBClient["Type"]) =>
     };
   });
 
-// getById: (id) =>
-//   Effect.gen(function* () {
-//     const [res] = yield* db.run((db) =>
-//       db
-//         .select({
-//           id: videoTable.id,
-//           channelId: videoTable.channelId,
-//           title: videoTable.title,
-//           description: videoTable.description,
-//           hlsUrl: videoTable.hlsUrl,
-//           dashUrl: videoTable.dashUrl,
-//           thumbnailUrl: videoTable.thumbnailUrl,
-//           duration: videoTable.duration,
-//           visibility: videoTable.visibility,
-//           channelName: channelTable.name,
-//           channelAlias: channelTable.alias,
-//           channelAvatarUrl: channelTable.avatarUrl,
-//         })
-//         .from(videoTable)
-//         .where(
-//           and(
-//             eq(videoTable.id, id),
-//             isNotNull(videoTable.hlsUrl),
-//             isNotNull(videoTable.dashUrl),
-//             or(
-//               eq(videoTable.visibility, VideoVisibility.PUBLIC),
-//               eq(videoTable.visibility, VideoVisibility.PRIVATE),
-//             ),
-//           ),
-//         )
-//         .innerJoin(
-//           channelTable,
-//           eq(videoTable.channelId, channelTable.id),
-//         ),
-//     );
-//     if (!res) {
-//       return yield* Effect.fail(
-//         new DBNotFoundError({ message: "Video not found" }),
-//       );
-//     }
-//     return {
-//       id: res.id,
-//       channelId: res.channelId,
-//       title: res.title,
-//       description: res.description,
-//       hlsUrl: res.hlsUrl,
-//       dashUrl: res.dashUrl,
-//       thumbnailUrl: res.thumbnailUrl,
-//       duration: res.duration,
-//       channel: {
-//         id: res.channelId,
-//         name: res.channelName,
-//         alias: res.channelAlias,
-//         avatarUrl: res.channelAvatarUrl,
-//       },
-//     };
-//   }),
+const getTempVideoKeyById = (id: string, db: DBClient["Type"]) =>
+  Effect.gen(function* () {
+    const [res] = yield* db.run((db) =>
+      db
+        .select({
+          tempVideoKey: videoTable.tempVideoKey,
+        })
+        .from(videoTable)
+        .where(and(eq(videoTable.id, id)))
+        .$withCache(),
+    );
+    if (!res) {
+      return yield* new DBNotFoundError({ message: "Video not found" });
+    }
+    return res.tempVideoKey;
+  });
