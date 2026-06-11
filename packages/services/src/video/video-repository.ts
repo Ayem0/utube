@@ -1,11 +1,16 @@
-import { channel as channelTable, video as videoTable } from "@repo/db/schema";
-import type { Video } from "@repo/db/types";
+import {
+  asset as assetTable,
+  channel as channelTable,
+  video as videoTable,
+} from "@repo/db/schema";
+import type { Asset, Video } from "@repo/db/types";
 import { VideoVisibility } from "@repo/types/enums/video/video-visibility";
 import { PaginationResult } from "@repo/types/types/pagination";
 import { and, eq, isNotNull, or } from "drizzle-orm";
 import { Context, Effect, Layer } from "effect";
 import { DBClient } from "../db/db-client";
 import { DBError, DBNotFoundError } from "../db/db-errors";
+import { InvalidMediaFileNameError } from "../media/media-errors";
 
 export class VideoRepository extends Context.Tag("VideoRepository")<
   VideoRepository,
@@ -17,11 +22,14 @@ export interface VideoRepositoryService {
     id: string,
     data: Partial<Video>,
   ) => Effect.Effect<Video, DBNotFoundError | DBError>;
-  create: (data: {
-    channelId: string;
-    title: string;
-    tempVideoKey: string;
-  }) => Effect.Effect<Video, DBNotFoundError | DBError>;
+
+  create: (
+    data: Pick<Video, "channelId" | "title"> &
+      Pick<Asset, "filename" | "mimeType" | "sizeBytes" | "type">,
+  ) => Effect.Effect<
+    { video: Video; asset: Asset },
+    DBNotFoundError | DBError | InvalidMediaFileNameError
+  >;
   delete: (id: string) => Effect.Effect<void, DBError>;
   getStudioVideosByChannelId: (
     channelId: string,
@@ -30,10 +38,9 @@ export interface VideoRepositoryService {
     size: number,
   ) => Effect.Effect<PaginationResult<Video[]>, DBError | DBNotFoundError>;
   getById: (id: string) => ReturnType<typeof getById>;
-  getTempVideoKeyById: (id: string) => ReturnType<typeof getTempVideoKeyById>;
 }
 
-export const VideoReposistoryLive = Layer.effect(
+export const VideoRepositoryLive = Layer.effect(
   VideoRepository,
   Effect.gen(function* () {
     const db = yield* DBClient;
@@ -121,32 +128,6 @@ export const VideoReposistoryLive = Layer.effect(
 
           return res;
         }),
-      create: (data: {
-        channelId: string;
-        title: string;
-        tempVideoKey: string;
-      }) =>
-        Effect.gen(function* () {
-          const id = crypto.randomUUID();
-          const [res] = yield* db.run((db) =>
-            db
-              .insert(videoTable)
-              .values({
-                id,
-                channelId: data.channelId,
-                title: data.title,
-                tempVideoKey: data.tempVideoKey,
-              })
-              .returning(),
-          );
-          if (!res) {
-            return yield* Effect.fail(
-              new DBNotFoundError({ message: "Error" }),
-            );
-          }
-
-          return res;
-        }),
       delete: (id: string) =>
         Effect.gen(function* () {
           yield* db.run((db) =>
@@ -154,7 +135,52 @@ export const VideoReposistoryLive = Layer.effect(
           );
         }),
       getById: (id) => getById(id, db),
-      getTempVideoKeyById: (id) => getTempVideoKeyById(id, db),
+      create: (data) =>
+        Effect.gen(function* () {
+          const extension = data.filename.split(".").pop();
+          if (!extension) {
+            return yield* Effect.fail(
+              new InvalidMediaFileNameError({
+                message: "Error invalid file name : " + data.filename,
+              }),
+            );
+          }
+          const tx = yield* db.run((db) =>
+            db.transaction(async (tx) => {
+              const [video] = await tx
+                .insert(videoTable)
+                .values({
+                  channelId: data.channelId,
+                  title: data.title,
+                })
+                .returning();
+
+              if (!video) {
+                throw new Error("Video not created");
+              }
+              const [asset] = await tx
+                .insert(assetTable)
+                .values({
+                  videoId: video.id,
+                  filename: data.filename,
+                  mimeType: data.mimeType,
+                  sizeBytes: data.sizeBytes,
+                  type: data.type,
+                  key: `${video.id}-original.${extension}`,
+                })
+                .returning();
+
+              if (!asset) {
+                throw new Error("Asset not created");
+              }
+              return {
+                video,
+                asset,
+              };
+            }),
+          );
+          return tx;
+        }),
     };
   }),
 );
@@ -215,21 +241,4 @@ const getById = (id: string, db: DBClient["Type"]) =>
         avatarUrl: res.channelAvatarUrl,
       },
     };
-  });
-
-const getTempVideoKeyById = (id: string, db: DBClient["Type"]) =>
-  Effect.gen(function* () {
-    const [res] = yield* db.run((db) =>
-      db
-        .select({
-          tempVideoKey: videoTable.tempVideoKey,
-        })
-        .from(videoTable)
-        .where(and(eq(videoTable.id, id)))
-        .$withCache(),
-    );
-    if (!res) {
-      return yield* new DBNotFoundError({ message: "Video not found" });
-    }
-    return res.tempVideoKey;
   });

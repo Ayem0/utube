@@ -6,7 +6,7 @@ import { QueueClientLive } from "@repo/services/queue/queue-client";
 import { SnsClientLive } from "@repo/services/queue/sns-client";
 import { S3ClientLive } from "@repo/services/s3/s3-client";
 import { VideoPublisherLive } from "@repo/services/video/video-publisher";
-import { VideoReposistoryLive } from "@repo/services/video/video-repository";
+import { VideoRepositoryLive } from "@repo/services/video/video-repository";
 import { VideoValidatorLive } from "@repo/services/video/video-validator";
 import { Layer, ManagedRuntime } from "effect";
 
@@ -19,7 +19,7 @@ const infraLayer = Layer.mergeAll(
 );
 
 const domainLayer = Layer.mergeAll(
-  VideoReposistoryLive,
+  VideoRepositoryLive,
   ChannelRepositoryLive,
   MediaValidatorConfigLive,
 );

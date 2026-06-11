@@ -1,3 +1,4 @@
+import { AssetStatus } from "@repo/types/enums/asset/asset-status";
 import { VideoCreationStatus } from "@repo/types/enums/video/video-status";
 import { VideoVisibility } from "@repo/types/enums/video/video-visibility";
 import { relations } from "drizzle-orm";
@@ -9,6 +10,7 @@ import {
   smallint,
   text,
   timestamp,
+  uuid,
 } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
@@ -114,17 +116,13 @@ export const accountRelations = relations(account, ({ one }) => ({
 export const video = pgTable(
   "video",
   {
-    id: text("id").primaryKey(),
+    id: uuid("id").defaultRandom().primaryKey(),
     channelId: text("channel_id")
       .notNull()
       .references(() => channel.id, { onDelete: "no action" }),
     title: text("title").notNull(),
     description: text("description"),
-    visibility: smallint("visibility")
-      .notNull()
-      .default(VideoVisibility.PRIVATE),
-    tempVideoKey: text("temp_video_key").notNull(),
-    tempThumbnailKey: text("temp_thumbnail_key"),
+    visibility: smallint("visibility").notNull().default(VideoVisibility.DRAFT),
     hlsUrl: text("hls_url"),
     dashUrl: text("dash_url"),
     thumbnailUrl: text("thumbnail_url"),
@@ -142,17 +140,47 @@ export const video = pgTable(
   (table) => [index("video_channelId_idx").on(table.channelId)],
 );
 
-export const videoRelations = relations(video, ({ one }) => ({
+export const asset = pgTable(
+  "asset",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    videoId: text("video_id")
+      .notNull()
+      .references(() => video.id, { onDelete: "cascade" }),
+    filename: text("filename").notNull(),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: numeric("size_bytes", { mode: "number" }).notNull(),
+    type: smallint("type").notNull(),
+    status: smallint("status").notNull().default(AssetStatus.PENDING),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    key: text("key").notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index("asset_videoId_idx").on(table.videoId)],
+);
+
+export const videoRelations = relations(video, ({ one, many }) => ({
   channel: one(channel, {
     fields: [video.channelId],
     references: [channel.id],
+  }),
+  assets: many(asset),
+}));
+
+export const assetRelations = relations(asset, ({ one }) => ({
+  video: one(video, {
+    fields: [asset.videoId],
+    references: [video.id],
   }),
 }));
 
 export const channel = pgTable(
   "channel",
   {
-    id: text("id").primaryKey(),
+    id: uuid("id").defaultRandom().primaryKey(),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "no action" }),
@@ -169,11 +197,12 @@ export const channel = pgTable(
   (table) => [index("channel_userId_idx").on(table.userId)],
 );
 
-export const channelRelations = relations(channel, ({ one }) => ({
+export const channelRelations = relations(channel, ({ one, many }) => ({
   user: one(user, {
     fields: [channel.userId],
     references: [user.id],
   }),
+  videos: many(video),
 }));
 
 // #endregion

@@ -20,6 +20,7 @@
         "@repo/types": "workspace:*",
         "effect": "catalog:",
         "elysia": "catalog:",
+        "zod": "catalog:",
       },
       "devDependencies": {
         "@repo/eslint-config": "workspace:*",

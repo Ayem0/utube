@@ -16,7 +16,7 @@ export const getStudioVideosQueryOptions = (
     queryFn: async () =>
       (
         await getApi()
-          .studio.channel({ channelId: channelId })
+          .studio.channels({ channelId: channelId })
           .videos.get({
             query: { index: pagination.pageIndex, size: pagination.pageSize },
           })

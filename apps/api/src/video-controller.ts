@@ -1,9 +1,5 @@
 import { VideoPublisher } from "@repo/services/video/video-publisher";
 import { VideoRepository } from "@repo/services/video/video-repository";
-import {
-  uploadedVideoSchema,
-  uploadVideoSchema,
-} from "@repo/types/schemas/upload-video";
 import { Effect } from "effect";
 import Elysia from "elysia";
 import { authPlugin } from "./auth";
@@ -31,7 +27,7 @@ const getVideo = (id: string) =>
 const startUpload = (channelId: string, fileName: string) =>
   Effect.gen(function* () {
     const videoPublisher = yield* VideoPublisher;
-    const res = yield* videoPublisher.uploadVideo(channelId, fileName);
+    const res = yield* videoPublisher.createDraft(channelId, fileName);
     return res;
   });
 const uploadedVideo = (videoId: string) =>
@@ -43,56 +39,56 @@ const uploadedVideo = (videoId: string) =>
 
 const videoController = new Elysia()
   .use(authPlugin)
-  .post(
-    "/video/upload-video",
-    async ({ body, status }) => {
-      return await apiRuntime.runPromise(
-        startUpload(body.channelId, body.fileName).pipe(
-          Effect.match({
-            onSuccess: (res) => {
-              return status(200, res);
-            },
-            onFailure: (e) => {
-              console.log("ERROR", e);
-              if (e._tag === "InvalidMediaFileNameError") {
-                return status(400, e.message);
-              } else {
-                return status(500);
-              }
-            },
-          }),
-        ),
-      );
-    },
-    {
-      body: uploadVideoSchema,
-    },
-  )
-  .post(
-    "/video/uploaded-video",
-    async ({ body, status }) => {
-      return await apiRuntime.runPromise(
-        uploadedVideo(body.videoId).pipe(
-          Effect.match({
-            onSuccess: (res) => {
-              return status(200, res);
-            },
-            onFailure: (e) => {
-              console.log("ERROR", e);
-              if (e._tag === "VideoUploadError") {
-                return status(400, e.message);
-              } else {
-                return status(500);
-              }
-            },
-          }),
-        ),
-      );
-    },
-    {
-      body: uploadedVideoSchema,
-    },
-  )
+  // .post(
+  //   "/videos",
+  //   async ({ body, status }) => {
+  //     return await apiRuntime.runPromise(
+  //       startUpload(body.channelId, body.fileName).pipe(
+  //         Effect.match({
+  //           onSuccess: (res) => {
+  //             return status(200, res);
+  //           },
+  //           onFailure: (e) => {
+  //             console.log("ERROR", e);
+  //             if (e._tag === "InvalidMediaFileNameError") {
+  //               return status(400, e.message);
+  //             } else {
+  //               return status(500);
+  //             }
+  //           },
+  //         }),
+  //       ),
+  //     );
+  //   },
+  //   {
+  //     body: uploadVideoSchema,
+  //   },
+  // )
+  // .post(
+  //   "/assets/:id",
+  //   async ({ body, status, params }) => {
+  //     return await apiRuntime.runPromise(
+  //       uploadedVideo(body.videoId).pipe(
+  //         Effect.match({
+  //           onSuccess: (res) => {
+  //             return status(200, res);
+  //           },
+  //           onFailure: (e) => {
+  //             console.log("ERROR", e);
+  //             if (e._tag === "VideoUploadError") {
+  //               return status(400, e.message);
+  //             } else {
+  //               return status(500);
+  //             }
+  //           },
+  //         }),
+  //       ),
+  //     );
+  //   },
+  //   {
+  //     body: uploadedVideoSchema,
+  //   },
+  // )
   // .post(
   //   "/video",
   //   async ({ body, status }) => {

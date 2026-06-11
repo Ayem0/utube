@@ -3,19 +3,19 @@ import { VideoRepository } from "@repo/services/video/video-repository";
 import { paginationSchema } from "@repo/types/schemas/pagination";
 import { Effect } from "effect";
 import Elysia from "elysia";
+import { z } from "zod";
 import { authPlugin } from "./auth";
 import { apiRuntime } from "./runtime";
 
 export const studioController = new Elysia()
   .use(authPlugin)
   .get(
-    "/studio/channel/:channelId",
+    "/studio/channels/:channelId",
     async ({ user, status, params }) => {
       return await apiRuntime.runPromise(
         getChannelsByUserId(user.id, params.channelId).pipe(
           Effect.match({
             onSuccess: (res) => {
-              console.log("get studio channel api fn", Date.now());
               return status(200, res);
             },
             onFailure: (e) => {
@@ -31,9 +31,8 @@ export const studioController = new Elysia()
     },
   )
   .get(
-    "/studio/channel/:channelId/videos",
+    "/studio/channels/:channelId/videos",
     async ({ user, status, params, query }) => {
-      console.log("get studio videos api fn", Date.now());
       return await apiRuntime.runPromise(
         getVideosByChannelId(
           params.channelId,
@@ -55,6 +54,43 @@ export const studioController = new Elysia()
     },
     {
       query: paginationSchema,
+      auth: true,
+    },
+  )
+  .post(
+    "/studio/channels/:channelId/videos",
+    async ({ status, user, params }) => {
+      // do things
+      // return {videoId: string}
+    },
+    {
+      auth: true,
+    },
+  )
+  .post(
+    "/studio/channels/:channelId/videos/:videoId/assets",
+    async ({ status, user, params, query }) => {
+      // return {presignUrl: string};
+    },
+    {
+      body: z.object({
+        type: z.literal(["video", "thumbnail"]),
+        filename: z.string(),
+        mimeType: z.string(),
+        sizeBytes: z.number(),
+      }),
+      auth: true,
+    },
+  )
+  .post(
+    "/studio/channels/:channelId/videos/:videoId/assets/:assetId",
+    async ({ status, user, params, query }) => {
+      // return {presignUrl: string};
+    },
+    {
+      body: z.object({
+        status: z.literal(["UPLOADED", "FAILED"]),
+      }),
       auth: true,
     },
   );

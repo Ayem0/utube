@@ -5,5 +5,5 @@ export const getStudioChannelQueryOptions = (channelId: string) =>
   queryOptions({
     queryKey: ['studio-channel', channelId],
     queryFn: async () =>
-      (await getApi().studio.channel({ channelId }).get()).data,
+      (await getApi().studio.channels({ channelId }).get()).data,
   });

@@ -3,26 +3,49 @@ import { getApi } from '@/lib/api/api';
 import { uploadToS3 } from '@/lib/s3/upload-to-s3';
 import { Alert, AlertDescription } from '@repo/ui/components/alert';
 import { Button } from '@repo/ui/components/button';
+import { DialogHeader, DialogTitle } from '@repo/ui/components/dialog';
+import { FieldGroup } from '@repo/ui/components/field';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouteContext } from '@tanstack/react-router';
 import { AlertCircleIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 import z from 'zod';
 
+type UploadedVideoState = {
+  videoId: string;
+  title: string;
+};
+
 export function UploadVideo() {
   const [isUploaded, setIsUploaded] = useState(false);
+  const [uploadedVideoState, setUploadedVideoState] =
+    useState<UploadedVideoState | null>(null);
 
-  return isUploaded ? (
-    <>Uploaded</>
-  ) : (
-    <UploadVideoFile onSuccess={() => setIsUploaded(true)} />
+  const onUploadSuccess = (data: UploadedVideoState) => {
+    setIsUploaded(true);
+    setUploadedVideoState(data);
+  };
+
+  return (
+    <>
+      {isUploaded ? (
+        <>Uploaded</>
+      ) : (
+        <UploadVideoForm onSuccess={onUploadSuccess} />
+      )}
+    </>
   );
 }
 
-const uploadVideoFileSchema = z.object({
+const uploadVideoFormSchema = z.object({
   file: z.file().max(5_000_000_000).mime(['video/mp4', 'video/webm']),
 });
 
-export function UploadVideoFile({ onSuccess }: { onSuccess: () => void }) {
+export function UploadVideoForm({
+  onSuccess,
+}: {
+  onSuccess: (data: UploadedVideoState) => void;
+}) {
   const { channel } = useRouteContext({
     from: '/_studio/studio/$channelId/_content/content/videos',
   });
@@ -31,8 +54,8 @@ export function UploadVideoFile({ onSuccess }: { onSuccess: () => void }) {
       file: undefined as File | undefined,
     },
     validators: {
-      onChange: uploadVideoFileSchema,
-      onSubmit: uploadVideoFileSchema,
+      onChange: uploadVideoFormSchema,
+      onSubmit: uploadVideoFormSchema,
     },
     listeners: {
       onChange: async ({ fieldApi, formApi }) => {
@@ -85,7 +108,7 @@ export function UploadVideoFile({ onSuccess }: { onSuccess: () => void }) {
         return;
       } else {
         console.log('SUCCESFULLY UPLOADED THE FILE');
-        onSuccess();
+        onSuccess({ videoId: res.data.videoId, title: res.data.title });
       }
     },
   });
@@ -99,15 +122,11 @@ export function UploadVideoFile({ onSuccess }: { onSuccess: () => void }) {
   };
 
   return (
-    <div className="flex size-full items-center justify-center min-w-80 min-h-80">
-      <form
-        className="flex flex-col gap-6"
-        id="upload-video-file-form"
-        // onSubmit={(e) => {
-        //   e.preventDefault();
-        //   form.handleSubmit();
-        // }}
-      >
+    <>
+      <DialogHeader>
+        <DialogTitle>Upload video</DialogTitle>
+      </DialogHeader>
+      <form className="flex flex-col gap-6" id="upload-video-file-form">
         {error && (
           <Alert variant="destructive" className="max-w-md">
             <AlertCircleIcon />
@@ -118,7 +137,11 @@ export function UploadVideoFile({ onSuccess }: { onSuccess: () => void }) {
           <form.AppField name="file">
             {(field) => (
               <>
-                <Button type="button" onClick={onButtonClick}>
+                <Button
+                  type="button"
+                  onClick={onButtonClick}
+                  disabled={form.state.isSubmitting}
+                >
                   Select video file
                 </Button>
                 <field.FileInput ref={ref} className="hidden" field={field} />
@@ -127,6 +150,126 @@ export function UploadVideoFile({ onSuccess }: { onSuccess: () => void }) {
           </form.AppField>
         </form.AppForm>
       </form>
-    </div>
+    </>
+  );
+}
+
+const publishVideoFormSchema = z.object({
+  title: z
+    .string()
+    .min(1, 'Title cannot be empty')
+    .max(128, 'Title cannot be longer than 128 characters'),
+  description: z
+    .string()
+    .max(1024, 'Description cannot be longer than 1024 characters'),
+  thumbnail: z
+    .file()
+    .max(5_000_000)
+    .mime(['image/jpeg', 'image/png', 'image/webp']),
+});
+
+export function PublishVideoForm({
+  videoId,
+  defaultTitle,
+  closeButton,
+  onSuccess,
+}: {
+  videoId: string;
+  defaultTitle: string;
+  closeButton?: React.ReactNode;
+  onSuccess?: () => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const { channel } = useRouteContext({
+    from: '/_studio/studio/$channelId/_content/content/videos',
+  });
+  const queryClient = useQueryClient();
+
+  const videoMutation = useMutation({
+    mutationFn: async (value: VideoUpload) => await getApi().video.(value),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === 'studio-videos' &&
+          query.queryKey[1] === channel.id,
+      });
+      onSuccess?.();
+    },
+    onError: (error) => {
+      setError(error.message);
+    },
+  });
+
+  const form = useAppForm({
+    defaultValues: {
+      title: defaultTitle,
+      description: undefined as string | undefined,
+      thumbnail: undefined as File | undefined,
+    },
+    validators: {
+      onChange: publishVideoFormSchema,
+      onSubmit: publishVideoFormSchema,
+    },
+    onSubmit: async ({ value }) => {
+      setError(null);
+      await videoMutation.mutateAsync(value);
+    },
+  });
+
+  return (
+    <form
+      className="flex flex-col gap-6"
+      id="product-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
+    >
+      <FieldGroup>
+        {error && (
+          <Alert variant="destructive" className="max-w-md">
+            <AlertCircleIcon />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        <form.AppField name="title">
+          {(field) => (
+            <field.Input
+              label="Title"
+              placeholder="Title"
+              field={field}
+              type="text"
+              required
+              autofocus
+            />
+          )}
+        </form.AppField>
+        <form.AppField name="description">
+          {(field) => (
+            <field.Textarea
+              label="Description"
+              placeholder="Description"
+              maxLength={1024}
+              field={field}
+            />
+          )}
+        </form.AppField>
+        <form.AppField name="thumbnail">
+          {(field) => (
+            <field.FileInput
+              label="Thumbnail"
+              placeholder="Thumbnail"
+              field={field}
+            />
+          )}
+        </form.AppField>
+        <div className="flex items-center justify-end gap-2">
+          <form.AppForm>
+            <form.SubmitButton label="Upload" className="order-2" />
+          </form.AppForm>
+          {closeButton}
+        </div>
+      </FieldGroup>
+    </form>
   );
 }

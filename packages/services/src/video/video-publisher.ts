@@ -33,7 +33,7 @@ export interface VideoPublisherService {
   //   | S3Error
   //   | QueueError
   // >;
-  uploadVideo: (
+  createDraft: (
     channelId: string,
     fileName: string,
   ) => Effect.Effect<
@@ -42,13 +42,38 @@ export interface VideoPublisherService {
     never
   >;
 
+  uploadVideoThumbnail: (
+    channelId: string,
+    videoId: string,
+    fileName: string,
+  ) => Effect.Effect<
+    { presignedUrl: string },
+    | S3Error
+    | DBError
+    | DBNotFoundError
+    | VideoUploadError
+    | InvalidMediaFileNameError,
+    never
+  >;
+
   uploadedVideo: (
+    channelId: string,
     videoId: string,
   ) => Effect.Effect<
     void,
     S3Error | DBError | DBNotFoundError | VideoUploadError | QueueError,
     never
   >;
+
+  // publishVideo: (
+  //   channelId: string,
+  //   videoId: string,
+  //   data: {
+  //     title: string;
+  //     description: string | undefined;
+  //     visibility: VideoVisibility;
+  //   },
+  // ) => Effect.Effect<void, S3Error | DBError | DBNotFoundError, never>;
 }
 
 export const VideoPublisherLive = Layer.effect(
@@ -136,33 +161,37 @@ export const VideoPublisherLive = Layer.effect(
       //       return created;
       //     }),
       //   ),
-      uploadVideo: (channelId, fileName) =>
+      createDraft: (channelId, fileName) =>
         Effect.gen(function* () {
+          console.log("FILE NAME", fileName);
           const parts = fileName.split(".");
           if (parts.length < 2)
             return yield* new InvalidMediaFileNameError({
               message: `Invalid file name : "${fileName}"`,
             });
           const fileTitle = parts.length > 0 ? parts[0]! : "Title";
-
-          const videoKey =
-            crypto.randomUUID() + "." + fileName.split(".").pop();
+          const videoId = crypto.randomUUID();
+          const videoKey = `${channelId}/${videoId}/original.${fileName.split(".").pop()}`;
           const presignedUrl = yield* s3Client.getPresignedUrl(
             videoKey,
-            "temp-video",
+            "video",
           );
 
           const created = yield* videoRepo.create({
             channelId,
+            videoId,
             tempVideoKey: videoKey,
             title: fileTitle,
           });
 
           return { videoId: created.id, presignedUrl, title: fileTitle };
         }),
-      uploadedVideo: (videoId) =>
+      uploadedVideo: (channelId, videoId) =>
         Effect.gen(function* () {
-          const videoKey = yield* videoRepo.getTempVideoKeyById(videoId);
+          const videoKey = yield* videoRepo.getTempVideoKeyById(
+            channelId,
+            videoId,
+          );
           const exists = yield* s3Client.exists(videoKey, "temp-video");
           if (!exists) {
             yield* videoRepo.delete(videoId);
@@ -184,6 +213,41 @@ export const VideoPublisherLive = Layer.effect(
           );
 
           return;
+        }),
+
+      uploadVideoThumbnail: (channelId, videoId, fileName) =>
+        Effect.gen(function* () {
+          let thumbnailKey = yield* videoRepo.getTempThumbnailKeyById(
+            channelId,
+            videoId,
+          );
+          if (thumbnailKey) {
+            yield* s3Client.deleteFile(thumbnailKey, "temp-video");
+          }
+          const parts = fileName.split(".");
+          if (parts.length < 2)
+            return yield* new InvalidMediaFileNameError({
+              message: `Invalid file name : "${fileName}"`,
+            });
+
+          thumbnailKey = crypto.randomUUID() + "." + fileName.split(".").pop();
+          const presignedUrl = yield* s3Client.getPresignedUrl(
+            thumbnailKey,
+            "image",
+          );
+
+          return { presignedUrl };
+        }),
+      publishVideo: (channelId, videoId, data) =>
+        Effect.gen(function* () {
+          const video = yield* videoRepo.getTempVideoKeyById(videoId);
+          if (video.channelId !== channelId)
+            return yield* new VideoUploadError({
+              message: "Video not found or unauthorized",
+            });
+          yield* videoRepo.update(videoId, {
+            creationStatus: VideoCreationStatus.PUBLISHED,
+          });
         }),
     };
   }),

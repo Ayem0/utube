@@ -1,7 +1,7 @@
 import { Textarea } from '@repo/ui/components/textarea';
 import { BaseField, FieldProps } from './base-field';
 
-interface TextareaFieldProps extends FieldProps<string> {
+interface TextareaFieldProps extends FieldProps<string | undefined> {
   placeholder: string;
   maxLength?: number;
 }
