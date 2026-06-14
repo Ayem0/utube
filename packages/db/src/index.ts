@@ -1,17 +1,10 @@
 import { drizzle } from "drizzle-orm/bun-sql";
-import { BunRedisCache } from "./cache";
-import * as schema from "./schema";
+import { relations } from "./schema/relations";
 
 export const makeDrizzle = (url: string) =>
   drizzle({
     connection: url,
-    schema,
-    cache: new BunRedisCache({
-      defaultTtl: 300,
-      prefix: "drizzle:cache",
-      strategy: "explicit",
-      url: process.env.REDIS_URL,
-    }),
+    relations: relations,
   });
 
 export type DB = ReturnType<typeof makeDrizzle>;

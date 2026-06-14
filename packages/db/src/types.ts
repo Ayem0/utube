@@ -1,5 +1,5 @@
-import { asset, channel, video } from "./schema";
+import { schema } from "./schema/schema";
 
-export type Video = typeof video.$inferSelect;
-export type Channel = typeof channel.$inferSelect;
-export type Asset = typeof asset.$inferSelect;
+export type Video = typeof schema.video.$inferSelect;
+export type Channel = typeof schema.channel.$inferSelect;
+export type Asset = typeof schema.asset.$inferSelect;
