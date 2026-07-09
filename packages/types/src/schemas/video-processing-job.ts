@@ -1,6 +1,6 @@
 import z from "zod";
 
 export const videoProcessingJobSchema = z.object({
-  rowId: z.uuid(),
-  videoKey: z.string(),
+  videoId: z.uuidv7(),
+  assetId: z.uuidv7(),
 });

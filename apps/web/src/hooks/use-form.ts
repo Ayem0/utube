@@ -8,16 +8,17 @@ import { TextareaField } from '../components/form/textarea-field';
 export const { fieldContext, useFieldContext, formContext, useFormContext } =
   createFormHookContexts();
 
-export const { useAppForm, withForm, withFieldGroup } = createFormHook({
-  fieldComponents: {
-    Input: InputField,
-    Password: PasswordField,
-    Textarea: TextareaField,
-    FileInput: FileInputField,
-  },
-  formComponents: {
-    SubmitButton,
-  },
-  fieldContext,
-  formContext,
-});
+export const { useAppForm, withForm, withFieldGroup, useTypedAppFormContext } =
+  createFormHook({
+    fieldComponents: {
+      Input: InputField,
+      Password: PasswordField,
+      Textarea: TextareaField,
+      FileInput: FileInputField,
+    },
+    formComponents: {
+      SubmitButton,
+    },
+    fieldContext,
+    formContext,
+  });

@@ -1,34 +1,12 @@
-import { ChannelRepositoryLive } from "@repo/services/channel/channel-repository";
-import { DBClientLive } from "@repo/services/db/db-client";
-import { FileSystemLive } from "@repo/services/file-system/file-system";
-import { MediaValidatorConfigLive } from "@repo/services/media/media-validator-config";
-import { QueueClientLive } from "@repo/services/queue/queue-client";
-import { SnsClientLive } from "@repo/services/queue/sns-client";
-import { S3ClientLive } from "@repo/services/s3/s3-client";
-import { VideoPublisherLive } from "@repo/services/video/video-publisher";
-import { VideoRepositoryLive } from "@repo/services/video/video-repository";
-import { VideoValidatorLive } from "@repo/services/video/video-validator";
+import { ChannelRepository } from "@repo/services/channel/channel-repository";
+import { VideoRepository } from "@repo/services/video/video-repository";
+import { VideoService } from "@repo/services/video/video-service";
 import { Layer, ManagedRuntime } from "effect";
 
-const infraLayer = Layer.mergeAll(
-  DBClientLive,
-  S3ClientLive,
-  QueueClientLive,
-  FileSystemLive,
-  SnsClientLive,
-);
-
-const domainLayer = Layer.mergeAll(
-  VideoRepositoryLive,
-  ChannelRepositoryLive,
-  MediaValidatorConfigLive,
-);
-
-const mediaValidatorLayer = Layer.provideMerge(VideoValidatorLive, domainLayer);
-
-const appLayer = Layer.provideMerge(
-  VideoPublisherLive,
-  Layer.provideMerge(mediaValidatorLayer, infraLayer),
+const appLayer = Layer.mergeAll(
+  VideoService.Layer,
+  VideoRepository.Layer,
+  ChannelRepository.Layer,
 );
 
 export const apiRuntime = ManagedRuntime.make(appLayer);

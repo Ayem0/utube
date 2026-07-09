@@ -67,8 +67,8 @@ export function HomeCard({ video }: { video: FakeVideo }) {
       <div className="flex flex-row w-full">
         <div className="flex flex-row px-2 pb-2 w-full">
           <Link
-            to="/@{$id}"
-            params={{ id: video.channel.id }}
+            to="/@{$alias}"
+            params={{ alias: video.channel.alias }}
             onClick={(e) => e.stopPropagation()}
           >
             <Image
@@ -88,8 +88,8 @@ export function HomeCard({ video }: { video: FakeVideo }) {
             </h3>
             <div className="text-muted-foreground">
               <Link
-                to="/@{$id}"
-                params={{ id: video.channel.id }}
+                to="/@{$alias}"
+                params={{ alias: video.channel.alias }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <span className="text-muted-foreground hover:text-white">

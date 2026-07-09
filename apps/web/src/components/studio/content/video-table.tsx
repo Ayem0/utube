@@ -27,12 +27,13 @@ export function VideoTable() {
 
   const { data, isFetching, isPending } = useHybridQuery(
     getStudioVideosQueryOptions(channel.id, {
-      pageIndex: search.page,
-      pageSize: search.size,
+      index: search.page,
+      size: search.size,
     }),
   );
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [rowSelection, setRowSelection] = useState({});
 
   const table = useReactTable({
     columns: videoTableColumns,
@@ -57,11 +58,13 @@ export function VideoTable() {
 
     manualPagination: true,
     autoResetPageIndex: false,
+    onRowSelectionChange: setRowSelection,
     state: {
       pagination: {
         pageIndex: search.page,
         pageSize: search.size,
       },
+      rowSelection,
     },
     pageCount: data?.maxPageIndex ? data?.maxPageIndex + 1 : 0,
     rowCount: data?.totalResults,

@@ -6,37 +6,31 @@ import {
 } from "./video-storyboard-config";
 
 interface VideoStoryboardGeneratorService {
-  generate: (
-    originalPath: string,
-    rowId: string,
-    duration: number,
-  ) => Effect.Effect<
-    { key: string; file: Bun.BunFile }[],
-    VideoStoryboardError
-  >;
+  generate: (params: {
+    originalPath: string;
+    outputDir: string;
+    duration: number;
+  }) => Effect.Effect<string[], VideoStoryboardError>;
 }
 
-export class VideoStoryboardGenerator extends Context.Tag(
-  "VideoStoryboardGenerator",
-)<VideoStoryboardGenerator, VideoStoryboardGeneratorService>() {}
-
-export const VideoStoryboardGeneratorLive = Layer.effect(
+export class VideoStoryboardGenerator extends Context.Service<
   VideoStoryboardGenerator,
-  Effect.gen(function* () {
+  VideoStoryboardGeneratorService
+>()("VideoStoryboardGenerator", {
+  make: Effect.gen(function* () {
     const cfg = yield* VideoStoryboardConfig;
     return {
-      generate: (originalPath, rowId, duration) =>
+      generate: ({ originalPath, outputDir, duration }) =>
         Effect.tryPromise({
           try: async () => {
-            console.log("Generating storyboard for", rowId);
-            const outputDir = `/tmp/${rowId}`;
-
             const storyboardArgs = buildStoryboardArgs(
               originalPath,
               outputDir,
               duration,
               cfg,
             );
+
+            await Bun.$`mkdir -p ${outputDir}`;
             const storyboardProc = Bun.spawn(storyboardArgs, {
               stdout: "pipe",
               stderr: "pipe",
@@ -47,18 +41,20 @@ export const VideoStoryboardGeneratorLive = Layer.effect(
               throw new Error(
                 `ffmpeg exited with code ${storyboardExit}: ${stderr}`,
               );
+            } else {
+              const stdout = await new Response(storyboardProc.stdout).text();
+              console.log("Generated storyboard with stdout:", stdout);
             }
 
-            await generateStoryboardVTTFile(outputDir, duration, rowId, cfg);
+            await generateStoryboardVTTFile({ outputDir, duration, cfg });
             const paths = await Array.fromAsync(
-              new Bun.Glob("**/storyboard*.*").scan(outputDir),
+              new Bun.Glob("**/storyboard*.*").scan({
+                cwd: outputDir,
+                absolute: true,
+              }),
             );
-            const entries = paths.map((path) => ({
-              key: `${rowId}/${path.split("/").pop()}`,
-              file: Bun.file(`${outputDir}/${path}`),
-            }));
-            console.log("Generated storyboard", entries.length, "entries");
-            return entries;
+            console.log("Generated storyboard", paths);
+            return paths;
           },
           catch: (e) =>
             new VideoStoryboardError({
@@ -68,6 +64,14 @@ export const VideoStoryboardGeneratorLive = Layer.effect(
         }),
     };
   }),
+}) {
+  static Layer = Layer.effect(this, this.make).pipe(
+    Layer.provide(VideoStoryboardConfig.Layer),
+  );
+}
+
+export const VideoStoryboardGeneratorLive = Layer.effect(
+  VideoStoryboardGenerator,
 );
 
 function getStoryboardInterval(
@@ -85,12 +89,15 @@ function getStoryboardInterval(
   }
 }
 
-async function generateStoryboardVTTFile(
-  outputDir: string,
-  duration: number,
-  rowId: string,
-  cfg: VideoStoryboardConfigService,
-) {
+async function generateStoryboardVTTFile({
+  outputDir,
+  duration,
+  cfg,
+}: {
+  outputDir: string;
+  duration: number;
+  cfg: VideoStoryboardConfigService;
+}) {
   const storyboardInterval = getStoryboardInterval(duration, cfg);
   const thumbsPerSheet = cfg.STORYBOARD_TILE_COLS * cfg.STORYBOARD_TILE_ROWS;
   const totalThumbs = Math.ceil(duration / storyboardInterval);
@@ -112,27 +119,15 @@ async function generateStoryboardVTTFile(
 
     const sheetNumber = sheetIndex + 1;
 
-    // TODO : replace with .env config for url
-    const baseUrl = `http://localhost:8080/videos/${rowId}`;
-
     lines.push(
       `${toVttTimestamp(start)} --> ${toVttTimestamp(end)}`,
-      `${baseUrl}/storyboard_${String(sheetNumber).padStart(3, "0")}.jpg#xywh=${x},${y},${cfg.STORYBOARD_WIDTH},${cfg.STORYBOARD_HEIGHT}`,
+      `${outputDir}/storyboard_${String(sheetNumber).padStart(3, "0")}.jpg#xywh=${x},${y},${cfg.STORYBOARD_WIDTH},${cfg.STORYBOARD_HEIGHT}`,
       "",
     );
   }
 
   await Bun.write(`${outputDir}/storyboard.vtt`, lines.join("\n"));
 }
-
-// TODO : Look if json could be super cool to improve performance over VTT files
-// function generateStoryboardJSON(
-//   duration: number,
-//   rowId: string,
-//   cfg: VideoStoryboardConfigService,
-// ) {
-
-// }
 
 function toVttTimestamp(totalSeconds: number) {
   const ms = Math.floor((totalSeconds % 1) * 1000);

@@ -133,6 +133,8 @@ export function DataTablePagination<TData>({
   hasSelection,
   className,
 }: DataTablePaginationProps<TData>) {
+  'use no memo';
+
   return (
     <div
       className={cn(

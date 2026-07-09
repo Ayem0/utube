@@ -1,16 +1,14 @@
-import { makeDrizzle } from "@repo/db";
-import { channel } from "@repo/db/schema";
-import { redisClient } from "@repo/redis";
+import { db } from "@repo/db";
+import { channel, schema } from "@repo/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { jwt } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 
-const db = makeDrizzle(process.env.DATABASE_URL!);
-
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
+    schema: schema,
   }),
   emailAndPassword: {
     enabled: true,
@@ -28,16 +26,6 @@ export const auth = betterAuth({
   account: {
     storeStateStrategy: "cookie",
   },
-  secondaryStorage: {
-    get: async (key) => await redisClient.get(key),
-    set: async (key, value, ttl) => {
-      if (ttl) return await redisClient.set(key, value, "EX", ttl);
-      return await redisClient.set(key, value);
-    },
-    delete: async (key) => {
-      await redisClient.del(key);
-    },
-  },
   plugins: [jwt(), tanstackStartCookies()],
   baseURL: process.env.BETTER_AUTH_URL!,
   secret: process.env.BETTER_AUTH_SECRET!,
@@ -47,11 +35,9 @@ export const auth = betterAuth({
         after: async (user) => {
           const generatedName = generateRandomNameFromEmail(user.email);
           await db.insert(channel).values({
-            id: crypto.randomUUID(),
             default: true,
             name: generatedName,
             alias: generatedName,
-            avatarUrl: user.image,
             userId: user.id,
           });
         },

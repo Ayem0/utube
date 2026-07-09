@@ -28,9 +28,12 @@ export const storyboardFeature = createFeature({
   }),
   getApi: (ctx) => {
     const onLoad = () => {
-      const cues = ctx.internalState.track?.track.cues;
-      if (!cues) return;
-      ctx.internalState.storyboardVTT = parseTextTrackCueList(cues);
+      const track = ctx.internalState.track;
+      if (!track || !track.track.cues) return;
+      ctx.internalState.storyboardVTT = parseTextTrackCueList(
+        track.track.cues,
+        track.src,
+      );
     };
     const attachTrack = (track: HTMLTrackElement) => {
       track.track.mode = "hidden";
@@ -39,12 +42,13 @@ export const storyboardFeature = createFeature({
         console.log("already loaded");
         ctx.internalState.storyboardVTT = parseTextTrackCueList(
           track.track.cues,
+          track.src,
         );
       }
       track.addEventListener("load", onLoad);
     };
     const detachTrack = () => {
-      ctx.internalState.track?.track.removeEventListener("cuechange", onLoad);
+      ctx.internalState.track?.removeEventListener("cuechange", onLoad);
       ctx.internalState.track = null;
       ctx.internalState.storyboardVTT = null;
     };
@@ -64,7 +68,10 @@ export const storyboardFeature = createFeature({
   },
 });
 
-function parseTextTrackCueList(list: TextTrackCueList): StoryboardVTT {
+function parseTextTrackCueList(
+  list: TextTrackCueList,
+  vttUrl: string,
+): StoryboardVTT {
   const cues: Cue[] = [];
   for (let i = 0; i < list.length; i++) {
     const cue = list[i] as VTTCue;
@@ -80,7 +87,7 @@ function parseTextTrackCueList(list: TextTrackCueList): StoryboardVTT {
     cues.push({
       end: cue.endTime,
       start: cue.startTime,
-      src: img,
+      src: new URL(img, vttUrl).href,
       x,
       y,
       w,

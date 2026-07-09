@@ -10,24 +10,56 @@ services:
       - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:?} # required for Pro
       # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
       - DEBUG=${DEBUG:-0}
-      - PERSISTENCE=${PERSISTENCE:-0}
+      - PERSISTENCE=${PERSISTENCE:-1}
     volumes:
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - app
+
+  # terraform:
+  #   build:
+  #     context: .
+  #     dockerfile: infra/terraform/Dockerfile
+  #   working_dir: /workspace/infra/terraform
+  #   volumes:
+  #     - .:/workspace
+  #     - /var/run/docker.sock:/var/run/docker.sock
+
+  #   environment:
+  #     - AWS_ACCESS_KEY_ID=test
+  #     - AWS_SECRET_ACCESS_KEY=test
+  #     - AWS_DEFAULT_REGION=us-east-1
+  #   # entrypoint: ["/bin/sh", "-c"]
+  #   entrypoint: []
+  #   command:
+  #     - sh
+  #     - -c
+  #     - |
+  #       terraform init
+  #       terraform apply -auto-approve
+  #   depends_on:
+  #     localstack:
+  #       condition: service_healthy
+  #   networks:
+  #     - app
 
   terraform:
-    image: hashicorp/terraform:latest
-    working_dir: /infra/terraform/
+    build:
+      context: .
+      dockerfile: infra/terraform/Dockerfile
+    working_dir: /workspace/infra/terraform
     volumes:
-      - ./infra:/infra
+      - .:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
       - AWS_DEFAULT_REGION=us-east-1
-    # entrypoint: ["/bin/sh", "-c"]
+      - TF_LOG=INFO
     entrypoint: []
     command:
-      - sh
+      - /bin/sh
       - -c
       - |
         terraform init
@@ -35,8 +67,8 @@ services:
     depends_on:
       localstack:
         condition: service_healthy
-    # networks:
-    #   - app
+    networks:
+      - app
 
   redis:
     image: redis
@@ -64,6 +96,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - 5432:5432
+    networks:
+      - app
 
   minio:
     image: minio/minio:latest
@@ -77,6 +111,8 @@ services:
     volumes:
       - minio:/data/minio
     command: minio server /data/minio --console-address ":9001"
+    networks:
+      - app
 
   nginx:
     image: nginx:1.27-alpine
@@ -88,6 +124,8 @@ services:
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - nginx-cache:/var/cache/nginx
+    networks:
+      - app
 
   video-processing-worker:
     build:
@@ -107,6 +145,8 @@ services:
         condition: service_started
       nginx:
         condition: service_started
+    networks:
+      - app
 volumes:
   minio:
     driver: local
@@ -114,3 +154,7 @@ volumes:
     driver: local
   nginx-cache:
     driver: local
+
+networks:
+  app:
+    name: app

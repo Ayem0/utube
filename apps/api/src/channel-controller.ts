@@ -12,7 +12,15 @@ export const channelController = new Elysia()
     "/channel",
     async ({ user, status, selectedChannelId }) => {
       return await apiRuntime.runPromise(
-        getChannelsByUserId(user.id, selectedChannelId).pipe(
+        Effect.gen(function* () {
+          const repo = yield* ChannelRepository;
+          const channels = yield* repo.getChannelsByUserId({
+            userId: user.id,
+            selectedChannelId: selectedChannelId,
+          });
+          console.log("CHANNELS", channels);
+          return channels;
+        }).pipe(
           Effect.match({
             onSuccess: (res) => {
               return status(200, res);
@@ -30,9 +38,3 @@ export const channelController = new Elysia()
       auth: true,
     },
   );
-
-const getChannelsByUserId = (userId: string, selectedChannelId?: string) =>
-  Effect.gen(function* () {
-    const repo = yield* ChannelRepository;
-    return yield* repo.getChannelsByUserId(userId, selectedChannelId);
-  });

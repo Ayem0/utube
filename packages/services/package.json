@@ -16,15 +16,16 @@
     "@aws-sdk/client-s3": "^3.1059.0",
     "@aws-sdk/client-sns": "^3.1059.0",
     "@aws-sdk/client-sqs": "^3.1059.0",
+    "@aws-sdk/s3-request-presigner": "^3.1059.0",
+    "@effect/sql-pg": ">=4.0.0-beta.78 || >=4.0.0",
     "@repo/db": "workspace:*",
     "@repo/queues": "workspace:*",
-    "@repo/redis": "workspace:*",
-    "@repo/s3": "workspace:*",
     "@repo/types": "workspace:*",
     "bullmq": "catalog:",
     "drizzle-kit": "catalog:",
     "drizzle-orm": "catalog:",
-    "@effect/sql-pg": ">=4.0.0-beta.78 || >=4.0.0",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "sharp": "^0.35.2",
+    "uuid": "^14.0.1"
   }
 }

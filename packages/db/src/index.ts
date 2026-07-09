@@ -1,10 +1,14 @@
-import { drizzle } from "drizzle-orm/bun-sql";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import { relations } from "./schema/relations";
 
-export const makeDrizzle = (url: string) =>
-  drizzle({
-    connection: url,
-    relations: relations,
-  });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
-export type DB = ReturnType<typeof makeDrizzle>;
+export const db = drizzle({
+  client: pool,
+  relations: relations,
+});
+
+export type DB = typeof db;

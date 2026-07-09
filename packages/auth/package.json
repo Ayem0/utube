@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "better-auth": "^1.4.18",
-    "@repo/db": "workspace:*",
-    "@repo/redis": "workspace:*"
+    "@repo/db": "workspace:*"
   }
 }

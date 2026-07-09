@@ -1,11 +1,20 @@
 import { useAppForm } from '@/hooks/use-form';
 import { getApi } from '@/lib/api/api';
 import { uploadToS3 } from '@/lib/s3/upload-to-s3';
+import {
+  videoVisibility,
+  type VideoVisibility,
+} from '@repo/types/enums/video/video-visibility';
+import {
+  videoPutSchema,
+  type VideoPutSchema,
+} from '@repo/types/schemas/video-upload';
 import { Alert, AlertDescription } from '@repo/ui/components/alert';
 import { Button } from '@repo/ui/components/button';
 import { DialogHeader, DialogTitle } from '@repo/ui/components/dialog';
 import { FieldGroup } from '@repo/ui/components/field';
-import { useQueryClient } from '@tanstack/react-query';
+import { useForm } from '@tanstack/react-form';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouteContext } from '@tanstack/react-router';
 import { AlertCircleIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -38,7 +47,10 @@ export function UploadVideo() {
 }
 
 const uploadVideoFormSchema = z.object({
-  file: z.file().max(5_000_000_000).mime(['video/mp4', 'video/webm']),
+  file: z
+    .file()
+    .max(5_000_000_000)
+    .mime(['video/mp4', 'video/webm', 'video/ogg']),
 });
 
 export function UploadVideoForm({
@@ -72,10 +84,13 @@ export function UploadVideoForm({
     },
     onSubmit: async ({ value }) => {
       if (!value.file) return;
-      const res = await getApi().video['upload-video'].post({
-        channelId: channel.id,
-        fileName: value.file.name,
-      });
+      const res = await getApi()
+        .studio.channels({ channelId: channel.id })
+        .videos.post({
+          filename: value.file.name,
+          mimeType: value.file.type,
+          sizeBytes: value.file.size,
+        });
       if (res.error) {
         setError(
           typeof res.error.value === 'string'
@@ -84,9 +99,11 @@ export function UploadVideoForm({
         );
         return;
       }
+
       try {
         await uploadToS3(value.file, res.data.presignedUrl);
       } catch (error) {
+        console.log('THE ERROR', error);
         setError(
           error instanceof Error
             ? error.message
@@ -94,22 +111,26 @@ export function UploadVideoForm({
         );
         return;
       }
+      onSuccess({ videoId: res.data.videoId, title: res.data.title });
 
-      const res2 = await getApi().video['uploaded-video'].post({
-        videoId: res.data.videoId,
-      });
+      // const res2 = await getApi()
+      //   .studio.channels({ channelId: channel.id })
+      //   .videos({ videoId: res.data.videoId })
+      //   .assets({ assetId: res.data.assetId })
+      //   .post({
+      //     status: uploadSuccess ? assetStatus.UPLOADED : assetStatus.FAILED,
+      //   });
 
-      if (res2.error) {
-        setError(
-          typeof res2.error.value === 'string'
-            ? res2.error.value
-            : (res2.error.value.message ?? 'Something went wrong, try again.'),
-        );
-        return;
-      } else {
-        console.log('SUCCESFULLY UPLOADED THE FILE');
-        onSuccess({ videoId: res.data.videoId, title: res.data.title });
-      }
+      // if (res2.error) {
+      //   setError(
+      //     typeof res2.error.value === 'string'
+      //       ? res2.error.value
+      //       : (res2.error.value.message ?? 'Something went wrong, try again.'),
+      //   );
+      //   return;
+      // } else {
+      //   console.log('SUCCESFULLY UPLOADED THE FILE');
+      // }
     },
   });
 
@@ -154,18 +175,14 @@ export function UploadVideoForm({
   );
 }
 
-const publishVideoFormSchema = z.object({
-  title: z
-    .string()
-    .min(1, 'Title cannot be empty')
-    .max(128, 'Title cannot be longer than 128 characters'),
-  description: z
-    .string()
-    .max(1024, 'Description cannot be longer than 1024 characters'),
-  thumbnail: z
-    .file()
-    .max(5_000_000)
-    .mime(['image/jpeg', 'image/png', 'image/webp']),
+const videoPublishSchema = z.object({
+  step1: videoPutSchema,
+  step2: z.object({
+    thumbnail: z
+      .file()
+      .mime(['image/jpeg', 'image/png', 'image/webp'])
+      .max(5_000_000),
+  }),
 });
 
 export function PublishVideoForm({
@@ -186,7 +203,15 @@ export function PublishVideoForm({
   const queryClient = useQueryClient();
 
   const videoMutation = useMutation({
-    mutationFn: async (value: VideoUpload) => await getApi().video.(value),
+    mutationFn: async (value: VideoPutSchema) =>
+      await getApi()
+        .studio.channels({ channelId: channel.id })
+        .videos({ videoId: videoId })
+        .put({
+          description: value.description,
+          title: value.title,
+          visibility: value.visibility,
+        }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         predicate: (query) =>
@@ -200,19 +225,31 @@ export function PublishVideoForm({
     },
   });
 
+  const form2 = useForm({
+    defaultValues: {
+      step1: { title: '' },
+      step2: { description: '' },
+    },
+  });
+
   const form = useAppForm({
     defaultValues: {
-      title: defaultTitle,
-      description: undefined as string | undefined,
-      thumbnail: undefined as File | undefined,
+      step1: {
+        title: defaultTitle,
+        description: undefined as string | undefined,
+        visibility: videoVisibility.DRAFT as VideoVisibility,
+      },
+      step2: {
+        thumbnail: undefined as File | undefined,
+      },
     },
     validators: {
-      onChange: publishVideoFormSchema,
-      onSubmit: publishVideoFormSchema,
+      onChange: videoPublishSchema,
+      onSubmit: videoPublishSchema,
     },
     onSubmit: async ({ value }) => {
       setError(null);
-      await videoMutation.mutateAsync(value);
+      await videoMutation.mutateAsync(value.step1);
     },
   });
 
@@ -232,7 +269,7 @@ export function PublishVideoForm({
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        <form.AppField name="title">
+        <form.AppField name="step1.title">
           {(field) => (
             <field.Input
               label="Title"
@@ -244,7 +281,7 @@ export function PublishVideoForm({
             />
           )}
         </form.AppField>
-        <form.AppField name="description">
+        <form.AppField name="step1.description">
           {(field) => (
             <field.Textarea
               label="Description"
@@ -254,7 +291,7 @@ export function PublishVideoForm({
             />
           )}
         </form.AppField>
-        <form.AppField name="thumbnail">
+        <form.AppField name="step2.thumbnail">
           {(field) => (
             <field.FileInput
               label="Thumbnail"

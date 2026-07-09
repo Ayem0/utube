@@ -3,22 +3,24 @@ import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 
 export const getStudioVideosQueryOptions = (
   channelId: string,
-  pagination: { pageIndex: number; pageSize: 10 | 25 | 50 },
+  pagination: { index: number; size: 10 | 25 | 50 },
 ) =>
   queryOptions({
-    queryKey: [
-      'studio-videos',
-      channelId,
-      pagination.pageIndex,
-      pagination.pageSize,
-    ],
+    queryKey: ['studio-videos', channelId, pagination.index, pagination.size],
     placeholderData: keepPreviousData,
-    queryFn: async () =>
-      (
-        await getApi()
-          .studio.channels({ channelId: channelId })
-          .videos.get({
-            query: { index: pagination.pageIndex, size: pagination.pageSize },
-          })
-      ).data,
+    queryFn: async () => (await getStudioVideos(channelId, pagination)).data,
   });
+
+const getStudioVideos = (
+  channelId: string,
+  pagination: { index: number; size: 10 | 25 | 50 },
+) =>
+  getApi()
+    .studio.channels({ channelId: channelId })
+    .videos.get({
+      query: { index: pagination.index, size: pagination.size },
+    });
+
+export type StudioVideo = NonNullable<
+  Awaited<ReturnType<typeof getStudioVideos>>['data']
+>['items'][number];

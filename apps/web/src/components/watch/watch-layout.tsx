@@ -28,8 +28,8 @@ export function WatchLayout({
       <ClientOnly>
         <player.Provider
           source={{
-            hls: video.hlsUrl,
-            dash: video.dashUrl,
+            hls: video.hlsMasterUrl,
+            dash: video.dashManifestUrl,
           }}
           defaultTime={defaultTime}
         >

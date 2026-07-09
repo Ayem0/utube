@@ -1,15 +1,29 @@
-import { AssetStatus } from "@repo/types/enums/asset/asset-status";
-import { VideoCreationStatus } from "@repo/types/enums/video/video-status";
-import { VideoVisibility } from "@repo/types/enums/video/video-visibility";
+import {
+  assetStatus,
+  type AssetStatus,
+} from "@repo/types/enums/asset/asset-status";
+import { type AssetType } from "@repo/types/enums/asset/asset-type";
+import {
+  videoPlaybackStatus,
+  type VideoPlaybackStatus,
+} from "@repo/types/enums/video/video-status";
+import {
+  videoVisibility,
+  type VideoVisibility,
+} from "@repo/types/enums/video/video-visibility";
+import { type AssetVariant } from "@repo/types/schemas/asset-variant";
+import { type VideoRenditions } from "@repo/types/schemas/video-renditions";
 import {
   boolean,
   index,
+  jsonb,
   numeric,
   pgTable,
   smallint,
   text,
   timestamp,
   uuid,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
@@ -96,51 +110,98 @@ export const jwks = pgTable("jwks", {
 export const video = pgTable(
   "video",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    channelId: text("channel_id")
+    id: uuid("id").primaryKey(),
+    channelId: uuid("channel_id")
       .notNull()
       .references(() => channel.id, { onDelete: "no action" }),
+    sourceVideoAssetId: uuid("source_video_asset_id")
+      .notNull()
+      .references(() => asset.id, { onDelete: "no action" }),
+    currentThumbnailAssetId: uuid("current_thumbnail_asset_id").references(
+      () => asset.id,
+      { onDelete: "no action" },
+    ),
+    pendingThumbnailAssetId: uuid("pending_thumbnail_asset_id").references(
+      () => asset.id,
+      { onDelete: "no action" },
+    ),
+    currentPlaybackId: uuid("current_playback_id").references(
+      () => videoPlayback.id,
+      { onDelete: "no action" },
+    ),
     title: text("title").notNull(),
     description: text("description"),
-    visibility: smallint("visibility").notNull().default(VideoVisibility.DRAFT),
-    hlsUrl: text("hls_url"),
-    dashUrl: text("dash_url"),
-    thumbnailUrl: text("thumbnail_url"),
-    storyboardUrl: text("storyboard_url"),
+    visibility: smallint("visibility")
+      .notNull()
+      .default(videoVisibility.DRAFT)
+      .$type<VideoVisibility>(),
     duration: numeric("duration", { mode: "number" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     publishedAt: timestamp("published_at"),
-    creationStatus: smallint("creation_status")
-      .notNull()
-      .default(VideoCreationStatus.UPLOADING),
+
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
-  (table) => [index("video_channelId_idx").on(table.channelId)],
+  (table) => [
+    index("video_channelId_idx").on(table.channelId),
+    index("video_sourceVideoAssetId_idx").on(table.sourceVideoAssetId),
+    index("video_currentThumbnailAssetId_idx").on(
+      table.currentThumbnailAssetId,
+    ),
+    index("video_currentPlaybackId_idx").on(table.currentPlaybackId),
+  ],
+);
+
+export const videoPlayback = pgTable(
+  "video_playback",
+  {
+    id: uuid("id").primaryKey(),
+    videoId: uuid("video_id")
+      .notNull()
+      .references((): AnyPgColumn => video.id, { onDelete: "no action" }),
+    hlsMasterKey: text("hls_master_key"),
+    dashManifestKey: text("dash_manifest_key"),
+    storyboardKey: text("storyboard_key"),
+    status: smallint("status")
+      .notNull()
+      .default(videoPlaybackStatus.VALIDATING)
+      .$type<VideoPlaybackStatus>(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    renditions: jsonb("renditions").$type<VideoRenditions>(),
+  },
+  (table) => [index("video_playback_videoId_idx").on(table.videoId)],
 );
 
 export const asset = pgTable(
   "asset",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    videoId: text("video_id")
+    id: uuid("id").primaryKey(),
+    ownerUserId: text("owner_user_id")
       .notNull()
-      .references(() => video.id, { onDelete: "cascade" }),
-    filename: text("filename").notNull(),
+      .references(() => user.id, { onDelete: "no action" }),
     mimeType: text("mime_type").notNull(),
     sizeBytes: numeric("size_bytes", { mode: "number" }).notNull(),
-    type: smallint("type").notNull(),
-    status: smallint("status").notNull().default(AssetStatus.PENDING),
+    type: smallint("type").notNull().$type<AssetType>(),
+    status: smallint("status")
+      .notNull()
+      .default(assetStatus.PENDING)
+      .$type<AssetStatus>(),
+    variants: jsonb("variants").$type<AssetVariant>(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    key: text("key").notNull(),
+    originalStorageKey: text("original_storage_key").notNull(),
+    originalStorageKeyDeletedAt: timestamp("original_storage_key_deleted_at"),
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
-  (table) => [index("asset_videoId_idx").on(table.videoId)],
+  (table) => [index("asset_ownerUserId_idx").on(table.ownerUserId)],
 );
 
 export const channel = pgTable(
@@ -152,7 +213,14 @@ export const channel = pgTable(
       .references(() => user.id, { onDelete: "no action" }),
     name: text("name").notNull(),
     alias: text("alias").notNull().unique(),
-    avatarUrl: text("avatar_url"),
+    currentAvatarAssetId: uuid("current_avatar_asset_id").references(
+      () => asset.id,
+      { onDelete: "no action" },
+    ),
+    pendingAvatarAssetId: uuid("pending_avatar_asset_id").references(
+      () => asset.id,
+      { onDelete: "no action" },
+    ),
     default: boolean().default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
@@ -160,7 +228,11 @@ export const channel = pgTable(
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
-  (table) => [index("channel_userId_idx").on(table.userId)],
+  (table) => [
+    index("channel_userId_idx").on(table.userId),
+    index("channel_currentAvatarAssetId_idx").on(table.currentAvatarAssetId),
+    index("channel_pendingAvatarAssetId_idx").on(table.pendingAvatarAssetId),
+  ],
 );
 
 // #endregion
@@ -174,6 +246,7 @@ export const schema = {
   video,
   asset,
   channel,
+  videoPlayback,
 } as const;
 
 export type Schema = typeof schema;

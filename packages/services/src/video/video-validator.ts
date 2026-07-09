@@ -1,6 +1,8 @@
 import { Context, Effect, Layer, Schema } from "effect";
-import { ParseError } from "effect/ParseResult";
-import { MediaValidatorConfig } from "../media/media-validator-config";
+import {
+  MediaValidatorConfig,
+  type MediaValidatorConfigService,
+} from "../media/media-validator-config";
 import { VideoMetadata, videoMetadataSchema } from "./video";
 import { VideoValidationError } from "./video-errors";
 
@@ -8,20 +10,17 @@ interface VideoValidatorService {
   validateVideo: (
     path: string,
   ) => Effect.Effect<
-    { rawMetadata: VideoMetadata; parsedFPS: number; duration: number },
-    VideoValidationError | ParseError,
+    { videoMetadata: VideoMetadata; parsedFPS: number; duration: number },
+    VideoValidationError,
     never
   >;
 }
 
-export class VideoValidator extends Context.Tag("VideoValidator")<
+export class VideoValidator extends Context.Service<
   VideoValidator,
   VideoValidatorService
->() {}
-
-export const VideoValidatorLive = Layer.effect(
-  VideoValidator,
-  Effect.gen(function* () {
+>()("VideoValidator", {
+  make: Effect.gen(function* () {
     const mediaConfig = yield* MediaValidatorConfig;
     return {
       validateVideo: (path) =>
@@ -33,14 +32,18 @@ export const VideoValidatorLive = Layer.effect(
             metadata,
           );
           return {
-            rawMetadata: metadata,
+            videoMetadata: metadata,
             parsedFPS: parsedFPS,
             duration: duration,
           };
         }),
     };
   }),
-);
+}) {
+  static Layer = Layer.effect(this, this.make).pipe(
+    Layer.provide(MediaValidatorConfig.Layer),
+  );
+}
 
 const probeVideo = (path: string) =>
   Effect.tryPromise({
@@ -71,7 +74,7 @@ const probeVideo = (path: string) =>
   });
 
 const validateMetadata = (
-  cfg: MediaValidatorConfig["Type"],
+  cfg: MediaValidatorConfigService,
   metadata: VideoMetadata,
 ) =>
   Effect.gen(function* () {
@@ -112,7 +115,7 @@ const validateMetadata = (
 
     const formats = metadata.format.format_name.split(",");
 
-    if (!cfg.allowedVideoTypes.some((f) => formats.includes(f))) {
+    if (!cfg.allowedVideoFormats.some((f) => formats.includes(f))) {
       return yield* new VideoValidationError({
         cause: `Format ${metadata.format.format_name} not allowed`,
         message: "Format not allowed",
@@ -144,7 +147,7 @@ const validateMetadata = (
   });
 
 const validateVideoStream = (
-  cfg: MediaValidatorConfig["Type"],
+  cfg: MediaValidatorConfigService,
   streams: VideoMetadata["streams"],
 ) =>
   Effect.gen(function* () {
@@ -220,7 +223,7 @@ const validateVideoStream = (
   });
 
 const validateAudioStream = (
-  cfg: MediaValidatorConfig["Type"],
+  cfg: MediaValidatorConfigService,
   streams: VideoMetadata["streams"],
 ) =>
   Effect.gen(function* () {

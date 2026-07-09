@@ -8,14 +8,14 @@ export class InvalidMediaSizeError extends Data.TaggedError(
   "InvalidMediaSizeError",
 )<{ readonly message: string }> {}
 
-export class WriteFileError extends Data.TaggedError("WriteFileError")<{
-  readonly cause: unknown;
-}> {}
+export class InvalidMediaDimensionError extends Data.TaggedError(
+  "InvalidMediaDimensionError",
+)<{ readonly message: string }> {}
 
-export class InvalidVideoError extends Data.TaggedError("InvalidVideoError")<{
-  readonly cause: unknown;
-  readonly message: string;
-}> {}
+// export class InvalidVideoError extends Data.TaggedError("InvalidVideoError")<{
+//   readonly cause: unknown;
+//   readonly message: string;
+// }> {}
 
 export class InvalidMediaFileNameError extends Data.TaggedError(
   "InvalidMediaFileNameError",

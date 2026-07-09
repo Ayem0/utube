@@ -28,6 +28,7 @@ function RouteComponent() {
   const video = Route.useLoaderData();
   const { t } = Route.useSearch();
   if (!video) return <div>Video not found</div>;
-  const defaultTime = t > video.duration ? video.duration : t;
+  const videoDuration = video.duration ?? 0;
+  const defaultTime = t > videoDuration ? videoDuration : t;
   return <WatchLayout video={video} defaultTime={defaultTime} />;
 }

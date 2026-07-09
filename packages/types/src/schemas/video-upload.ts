@@ -1,12 +1,16 @@
 import { z } from "zod";
+import { videoVisibility } from "../enums/video/video-visibility";
 
-export const videoUploadSchema = z.object({
-  channelId: z.uuid(),
-  title: z.string().min(1).max(128),
-  description: z.string().min(1).max(1024),
-  image: z
-    .file()
-    .max(5_000_000)
-    .mime(["image/jpeg", "image/png", "image/webp"]),
-  video: z.file().mime(["video/mp4", "video/webm"]),
+export const videoPutSchema = z.object({
+  title: z
+    .string()
+    .min(1, "Title cannot be empty")
+    .max(128, "Title cannot be longer than 128 characters"),
+  description: z
+    .string()
+    .max(1024, "Description cannot be longer than 1024 characters")
+    .or(z.undefined()),
+  visibility: z.enum(videoVisibility, "Invalid visibility"),
 });
+
+export type VideoPutSchema = z.infer<typeof videoPutSchema>;

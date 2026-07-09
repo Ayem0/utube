@@ -1,10 +1,9 @@
-export enum VideoCreationStatus {
-  UPLOADING = 1,
-  UPLOADED = 2,
-  VALIDATING = 3,
-  VALIDATION_FAILED = 4,
-  VALIDATED = 5,
-  PROCESSING = 6,
-  PROCESSED = 7,
-  FAILED = 8,
-}
+export const videoPlaybackStatus = {
+  VALIDATING: 1,
+  PROCESSING: 2,
+  READY: 3,
+  FAILED: 4,
+} as const;
+
+export type VideoPlaybackStatus =
+  (typeof videoPlaybackStatus)[keyof typeof videoPlaybackStatus];

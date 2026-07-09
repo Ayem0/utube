@@ -1,0 +1,19 @@
+{
+  "name": "image-processing-lambda",
+  "private": true,
+  "scripts": {
+    "build": "bun --bun build src/index.ts"
+  },
+  "dependencies": {
+    "@repo/services": "workspace:*",
+    "@repo/types": "workspace:*",
+    "effect": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/bun": "^1.3.9",
+    "@types/aws-lambda": "^8.10.162"
+  }
+}

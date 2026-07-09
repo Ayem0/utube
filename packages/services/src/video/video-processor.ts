@@ -6,151 +6,272 @@ import {
   VideoProcessorConfigService,
 } from "./video-processor-config";
 
+import { stat } from "node:fs/promises";
+
+async function assertDirectoryExists(dir: string) {
+  try {
+    const s = await stat(dir);
+
+    if (!s.isDirectory()) {
+      throw new Error(`Path exists but is not a directory: ${dir}`);
+    }
+
+    console.log(`OK directory exists: ${dir}`);
+  } catch (err) {
+    throw new Error(`Missing directory: ${dir}`, { cause: err });
+  }
+}
+
 interface VideoProcessorService {
-  transcode: (
-    originalPath: string,
-    rowId: string,
-    rawMetadata: VideoMetadata,
-    parsedFPS: number,
-    duration: number,
-  ) => Effect.Effect<
-    { key: string; file: Bun.BunFile }[],
+  transcode: (params: {
+    originalPath: string;
+    outputDir: string;
+    videoMetadata: VideoMetadata;
+    parsedFPS: number;
+    duration: number;
+  }) => Effect.Effect<
+    { ladder: LadderEntry[]; paths: string[] },
     VideoProcessingError
   >;
 }
 
-export class VideoProcessor extends Context.Tag("VideoProcessor")<
+export class VideoProcessor extends Context.Service<
   VideoProcessor,
   VideoProcessorService
->() {}
+>()("VideoProcessor", {
+  make: Effect.gen(function* () {
+    const config = yield* VideoProcessorConfig;
+    return {
+      transcode: ({
+        originalPath,
+        outputDir,
+        videoMetadata,
+        parsedFPS,
+        duration,
+      }) =>
+        Effect.tryPromise({
+          try: async () => {
+            const { args, ladder } = buildFfmpegArgs({
+              inputPath: originalPath,
+              outputDir,
+              metadata: videoMetadata,
+              parsedFPS,
+              config,
+            });
+
+            for (const sub of ["cmaf", "hls", "dash"]) {
+              const dir = `${outputDir}/${sub}`;
+              await Bun.$`mkdir -p ${dir}`;
+              await assertDirectoryExists(dir);
+            }
+
+            console.log("created folders cmaf, hls, dash");
+            for (const entry of ladder) {
+              const dir = `${outputDir}/cmaf/${entry.representationId}`;
+              await Bun.$`mkdir -p ${dir}`;
+              await assertDirectoryExists(dir);
+            }
+
+            // audio cmaf
+            await Bun.$`mkdir -p ${outputDir}/cmaf/${ladder.length}`;
+            console.log("created folders for cmaf ladder");
+
+            const proc = Bun.spawn(args, {
+              stdout: "pipe",
+              stderr: "pipe",
+            });
+
+            const exitCode = await proc.exited;
+            if (exitCode !== 0) {
+              const stderr = await new Response(proc.stderr).text();
+              throw new Error(`ffmpeg exited with code ${exitCode}: ${stderr}`);
+            }
+
+            await addFrameRateToMasterM3u8(outputDir, ladder);
+
+            const paths = await Array.fromAsync(
+              new Bun.Glob("**/{cmaf,hls,dash}/**").scan({
+                cwd: outputDir,
+                absolute: true,
+              }),
+            );
+            return {
+              paths: paths,
+              ladder: ladder,
+            };
+          },
+          catch: (e) =>
+            new VideoProcessingError({
+              cause: e,
+              message: "Error transcoding video",
+            }),
+        }),
+    };
+  }),
+}) {
+  static Layer = Layer.effect(this, this.make).pipe(
+    Layer.provide(VideoProcessorConfig.Layer),
+  );
+}
 
 type LadderEntry = {
   height: number;
+  width: number;
   fps: 30 | 60;
   bitrate: string;
   maxrate: string;
   bufsize: string;
-  name: string;
   level: string;
+  label:
+    | "144p"
+    | "240p"
+    | "360p"
+    | "480p"
+    | "720p"
+    | "720p60"
+    | "1080p"
+    | "1080p60"
+    | "1440p"
+    | "1440p60"
+    | "2160p"
+    | "2160p60";
 };
 
 const ABR_LADDER: LadderEntry[] = [
   {
     height: 2160,
+    width: 3840,
     fps: 60,
     bitrate: "48M",
     maxrate: "72M",
     bufsize: "96M",
-    name: "2160p60",
     level: "5.2",
+    label: "2160p60",
   },
   {
     height: 2160,
+    width: 3840,
     fps: 30,
     bitrate: "32M",
     maxrate: "48M",
     bufsize: "64M",
-    name: "2160p30",
     level: "5.1",
+    label: "2160p",
   },
   {
     height: 1440,
+    width: 2560,
     fps: 60,
     bitrate: "24M",
     maxrate: "32M",
     bufsize: "48M",
-    name: "1440p60",
     level: "5.1",
+    label: "1440p60",
   },
   {
     height: 1440,
+    width: 2560,
     fps: 30,
     bitrate: "16M",
     maxrate: "24M",
     bufsize: "32M",
-    name: "1440p30",
     level: "5.0",
+    label: "1440p",
   },
   {
     height: 1080,
+    width: 1920,
     fps: 60,
     bitrate: "12M",
     maxrate: "18M",
     bufsize: "24M",
-    name: "1080p60",
     level: "4.2",
+    label: "1080p60",
   },
   {
     height: 1080,
+    width: 1920,
     fps: 30,
     bitrate: "8M",
     maxrate: "12M",
     bufsize: "16M",
-    name: "1080p30",
     level: "4.1",
+    label: "1080p",
   },
   {
     height: 720,
+    width: 1280,
     fps: 60,
     bitrate: "8M",
     maxrate: "12M",
     bufsize: "16M",
-    name: "720p60",
     level: "4.0",
+    label: "720p60",
   },
   {
     height: 720,
+    width: 1280,
     fps: 30,
     bitrate: "5M",
     maxrate: "8M",
     bufsize: "10M",
-    name: "720p30",
     level: "3.1",
+    label: "720p",
   },
   {
     height: 480,
+    width: 854,
     fps: 30,
     bitrate: "2.5M",
     maxrate: "4M",
     bufsize: "5M",
-    name: "480p30",
     level: "3.0",
+    label: "480p",
   },
   {
     height: 360,
+    width: 640,
     fps: 30,
     bitrate: "1M",
     maxrate: "1.5M",
     bufsize: "2M",
-    name: "360p30",
     level: "3.0",
+    label: "360p",
   },
   {
     height: 240,
+    width: 426,
     fps: 30,
     bitrate: "400k",
     maxrate: "500k",
     bufsize: "1M",
-    name: "240p30",
     level: "3.0",
+    label: "240p",
   },
   {
     height: 144,
+    width: 256,
     fps: 30,
     bitrate: "200k",
     maxrate: "300k",
     bufsize: "500k",
-    name: "144p30",
     level: "3.0",
+    label: "144p",
   },
 ] as const;
 
-function buildLadder(inputHeight: number, inputFPS: number): LadderEntry[] {
+function buildLadder(
+  inputHeight: number,
+  inputFPS: number,
+): (LadderEntry & { representationId: string })[] {
   const maxFPS: 30 | 60 = inputFPS > 50 ? 60 : 30;
 
   return ABR_LADDER.filter(
     (r) => inputHeight >= r.height && (maxFPS === r.fps || r.height <= 480),
-  );
+  ).map((r, i) => ({
+    ...r,
+    representationId: String(i),
+  }));
 }
 
 function getVideoStream(metadata: VideoMetadata) {
@@ -217,15 +338,19 @@ function buildNormalizationFilters(metadata: VideoMetadata) {
   return vfArr.join(",");
 }
 
-function buildFfmpegArgs(params: {
+function buildFfmpegArgs({
+  inputPath,
+  outputDir,
+  metadata,
+  parsedFPS,
+  config,
+}: {
   inputPath: string;
   outputDir: string;
   metadata: VideoMetadata;
   parsedFPS: number;
   config: VideoProcessorConfigService;
 }) {
-  const { inputPath, outputDir, metadata, parsedFPS, config } = params;
-
   const { height, width } = getEffectiveDimensions(metadata);
   const ladder = buildLadder(height, parsedFPS);
 
@@ -305,6 +430,7 @@ function buildFfmpegArgs(params: {
     "0",
     // "-movflags",
     // "+faststart",
+    // "+cmaf",
     "-flags",
     "+cgop",
     // "-force_key_frames",
@@ -330,14 +456,14 @@ function buildFfmpegArgs(params: {
     "-remove_at_exit",
     "0",
     "-init_seg_name",
-    "init_$RepresentationID$.m4s",
+    "../cmaf/$RepresentationID$/init.m4s",
     "-media_seg_name",
-    "chunk_$RepresentationID$_$Number%05d$.m4s",
+    "../cmaf/$RepresentationID$/chunk_$Number%05d$.m4s",
     "-hls_playlist",
     "1",
     "-hls_master_name",
-    "master.m3u8",
-    `${outputDir}/manifest.mpd`,
+    "../hls/master.m3u8",
+    `${outputDir}/dash/manifest.mpd`,
     // storyboard map
     // "-map",
     // "[storyboard]",
@@ -355,66 +481,13 @@ function buildFfmpegArgs(params: {
   return { args: args, ladder: ladder };
 }
 
-export const VideoProcessorLive = Layer.effect(
-  VideoProcessor,
-  Effect.gen(function* () {
-    const config = yield* VideoProcessorConfig;
-    return {
-      transcode: (originalPath, rowId, rawMetadata, parsedFPS, duration) =>
-        Effect.tryPromise({
-          try: async () => {
-            const outputDir = `/tmp/${rowId}`;
-            await Bun.$`mkdir -p ${outputDir}`;
-
-            const { args, ladder } = buildFfmpegArgs({
-              inputPath: originalPath,
-              outputDir,
-              metadata: rawMetadata,
-              parsedFPS,
-              config,
-            });
-
-            // for (const entry of ladder) {
-            //   await Bun.$`mkdir -p ${outputDir}/${entry.name}`;
-            // }
-
-            const proc = Bun.spawn(args, {
-              stdout: "pipe",
-              stderr: "pipe",
-            });
-
-            const exitCode = await proc.exited;
-            if (exitCode !== 0) {
-              const stderr = await new Response(proc.stderr).text();
-              throw new Error(`ffmpeg exited with code ${exitCode}: ${stderr}`);
-            }
-
-            await addFrameRateToMasterM3u8(outputDir, ladder);
-
-            const paths = await Array.fromAsync(
-              new Bun.Glob("**/*").scan(outputDir),
-            );
-            const entries = paths.map((path) => ({
-              key: `${rowId}/${path.split("/").pop()}`,
-              file: Bun.file(`${outputDir}/${path}`),
-            }));
-            return entries;
-          },
-          catch: (e) =>
-            new VideoProcessingError({
-              cause: e,
-              message: "Error transcoding video",
-            }),
-        }),
-    };
-  }),
-);
+export const VideoProcessorLive = Layer.effect(VideoProcessor);
 
 async function addFrameRateToMasterM3u8(
   outputDir: string,
   ladder: LadderEntry[],
 ) {
-  const masterPath = `${outputDir}/master.m3u8`;
+  const masterPath = `${outputDir}/hls/master.m3u8`;
   const text = await Bun.file(masterPath).text();
 
   const lines = text.split("\n");

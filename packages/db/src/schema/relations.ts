@@ -23,17 +23,20 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.video.channelId,
       to: r.channel.id,
     }),
-    asset: r.many.asset({
-      from: r.video.id,
-      to: r.asset.videoId,
+    playback: r.one.videoPlayback({
+      from: r.video.currentPlaybackId,
+      to: r.videoPlayback.videoId,
+    }),
+    currentThumbnailAsset: r.one.asset({
+      from: r.video.currentThumbnailAssetId,
+      to: r.asset.id,
+    }),
+    pendingThumbnailAsset: r.one.asset({
+      from: r.video.pendingThumbnailAssetId,
+      to: r.asset.id,
     }),
   },
-  asset: {
-    video: r.one.video({
-      from: r.asset.videoId,
-      to: r.video.id,
-    }),
-  },
+  asset: {},
   channel: {
     video: r.many.video({
       from: r.channel.id,
@@ -45,45 +48,3 @@ export const relations = defineRelations(schema, (r) => ({
     }),
   },
 }));
-
-// export const userRelations = relations(user, ({ many }) => ({
-//   sessions: many(session),
-//   accounts: many(account),
-// }));
-
-// export const sessionRelations = relations(session, ({ one }) => ({
-//   user: one(user, {
-//     fields: [session.userId],
-//     references: [user.id],
-//   }),
-// }));
-
-// export const accountRelations = relations(account, ({ one }) => ({
-//   user: one(user, {
-//     fields: [account.userId],
-//     references: [user.id],
-//   }),
-// }));
-
-// export const videoRelations = defineRelations(video, ({ one, many }) => ({
-//   channel: one(channel, {
-//     fields: [video.channelId],
-//     references: [channel.id],
-//   }),
-//   assets: many(asset),
-// }));
-
-// export const assetRelations = relations(asset, ({ one }) => ({
-//   video: one(video, {
-//     fields: [asset.videoId],
-//     references: [video.id],
-//   }),
-// }));
-
-// export const channelRelations = relations(channel, ({ one, many }) => ({
-//   user: one(user, {
-//     fields: [channel.userId],
-//     references: [user.id],
-//   }),
-//   videos: many(video),
-// }));

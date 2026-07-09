@@ -24,8 +24,8 @@ export const Route = createFileRoute(
   loader: ({ context, params, deps }) => {
     context.queryClient.ensureQueryData(
       getStudioVideosQueryOptions(params.channelId, {
-        pageIndex: deps.page,
-        pageSize: deps.size,
+        index: deps.page,
+        size: deps.size,
       }),
     );
   },

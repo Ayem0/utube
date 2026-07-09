@@ -5,6 +5,6 @@ export class DBError extends Data.TaggedError("DBError")<{
   readonly cause: unknown;
 }> {}
 
-export class DBNotFoundError extends Data.TaggedError("NotFoundError")<{
+export class DBNotFoundError extends Data.TaggedError("DBNotFoundError")<{
   readonly message: string;
 }> {}
