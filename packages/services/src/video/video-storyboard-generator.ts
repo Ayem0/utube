@@ -121,7 +121,7 @@ async function generateStoryboardVTTFile({
 
     lines.push(
       `${toVttTimestamp(start)} --> ${toVttTimestamp(end)}`,
-      `${outputDir}/storyboard_${String(sheetNumber).padStart(3, "0")}.jpg#xywh=${x},${y},${cfg.STORYBOARD_WIDTH},${cfg.STORYBOARD_HEIGHT}`,
+      `storyboard_${String(sheetNumber).padStart(3, "0")}.jpg#xywh=${x},${y},${cfg.STORYBOARD_WIDTH},${cfg.STORYBOARD_HEIGHT}`,
       "",
     );
   }

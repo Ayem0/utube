@@ -1,4 +1,5 @@
 import { InputField } from '@/components/form/input-field';
+import { SelectField } from '@/components/form/select-field';
 import { SubmitButton } from '@/components/form/submit-button';
 import { createFormHook, createFormHookContexts } from '@tanstack/react-form';
 import { FileInputField } from '../components/form/file-input-field';
@@ -15,6 +16,7 @@ export const { useAppForm, withForm, withFieldGroup, useTypedAppFormContext } =
       Password: PasswordField,
       Textarea: TextareaField,
       FileInput: FileInputField,
+      Select: SelectField,
     },
     formComponents: {
       SubmitButton,

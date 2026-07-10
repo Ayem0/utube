@@ -7,7 +7,6 @@ interface InputFieldProps extends FieldProps<string> {
   placeholder: string;
   max?: number;
   ref?: RefObject<HTMLInputElement | null>;
-  required?: boolean;
   autofocus?: boolean;
 }
 
@@ -25,6 +24,7 @@ export function InputField({
     <BaseField
       field={field}
       {...props}
+      required
       children={({ field, isInvalid, isSubmitting }) => (
         <Input
           ref={ref}

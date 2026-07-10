@@ -6,7 +6,7 @@ import {
   FieldLabel,
 } from '@repo/ui/components/field';
 import type { FieldApi } from '@tanstack/react-form';
-import { useStore } from '@tanstack/react-form';
+import { useSelector } from '@tanstack/react-form';
 import type { ReactNode } from 'react';
 import { memo } from 'react';
 
@@ -17,6 +17,7 @@ export interface FieldProps<T> {
   descriptionBefore?: boolean;
   field: TypedFieldApi<T>;
   contentClassName?: string;
+  required?: boolean;
 }
 
 type TypedFieldApi<T> = FieldApi<
@@ -62,16 +63,17 @@ function BaseFieldImpl<T>({
   orientation,
   field,
   contentClassName,
+  required,
   children,
 }: BaseFieldProps<T>) {
-  const isSubmitting = useStore(
+  const isSubmitting = useSelector(
     field.form.store,
     (state) => state.isSubmitting,
   );
 
-  const errors = useStore(field.store, (state) => state.meta.errors);
+  const errors = useSelector(field.store, (state) => state.meta.errors);
 
-  const isInvalid = useStore(
+  const isInvalid = useSelector(
     field.store,
     (state) => state.meta.isTouched && !state.meta.isValid,
   );
@@ -85,7 +87,9 @@ function BaseFieldImpl<T>({
   ) : null;
 
   const labelElem = label ? (
-    <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+    <FieldLabel htmlFor={field.name}>
+      {label} {required && <span className="text-destructive">*</span>}
+    </FieldLabel>
   ) : null;
 
   const errorElem = isInvalid && <FieldError errors={errors} />;

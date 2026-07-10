@@ -15,6 +15,7 @@ export function VideoPlayerQuality() {
   const { currentQuality, qualities, isAuto } = player.usePlayerState(
     (s) => s.quality,
   );
+  console.log('video player quality', { currentQuality, qualities, isAuto });
   const { setQuality } = player.usePlayerApi('quality');
   if (!currentQuality) return null;
   return (

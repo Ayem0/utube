@@ -13,7 +13,6 @@ import { Alert, AlertDescription } from '@repo/ui/components/alert';
 import { Button } from '@repo/ui/components/button';
 import { DialogHeader, DialogTitle } from '@repo/ui/components/dialog';
 import { FieldGroup } from '@repo/ui/components/field';
-import { useForm } from '@tanstack/react-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouteContext } from '@tanstack/react-router';
 import { AlertCircleIcon } from 'lucide-react';
@@ -25,20 +24,22 @@ type UploadedVideoState = {
   title: string;
 };
 
-export function UploadVideo() {
-  const [isUploaded, setIsUploaded] = useState(false);
+export function UploadVideo({ onSuccess }: { onSuccess?: () => void }) {
   const [uploadedVideoState, setUploadedVideoState] =
     useState<UploadedVideoState | null>(null);
 
   const onUploadSuccess = (data: UploadedVideoState) => {
-    setIsUploaded(true);
     setUploadedVideoState(data);
   };
 
   return (
     <>
-      {isUploaded ? (
-        <>Uploaded</>
+      {uploadedVideoState ? (
+        <PublishVideoForm
+          videoId={uploadedVideoState.videoId}
+          defaultTitle={uploadedVideoState.title}
+          onSuccess={onSuccess}
+        />
       ) : (
         <UploadVideoForm onSuccess={onUploadSuccess} />
       )}
@@ -112,25 +113,6 @@ export function UploadVideoForm({
         return;
       }
       onSuccess({ videoId: res.data.videoId, title: res.data.title });
-
-      // const res2 = await getApi()
-      //   .studio.channels({ channelId: channel.id })
-      //   .videos({ videoId: res.data.videoId })
-      //   .assets({ assetId: res.data.assetId })
-      //   .post({
-      //     status: uploadSuccess ? assetStatus.UPLOADED : assetStatus.FAILED,
-      //   });
-
-      // if (res2.error) {
-      //   setError(
-      //     typeof res2.error.value === 'string'
-      //       ? res2.error.value
-      //       : (res2.error.value.message ?? 'Something went wrong, try again.'),
-      //   );
-      //   return;
-      // } else {
-      //   console.log('SUCCESFULLY UPLOADED THE FILE');
-      // }
     },
   });
 
@@ -188,12 +170,10 @@ const videoPublishSchema = z.object({
 export function PublishVideoForm({
   videoId,
   defaultTitle,
-  closeButton,
   onSuccess,
 }: {
   videoId: string;
   defaultTitle: string;
-  closeButton?: React.ReactNode;
   onSuccess?: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
@@ -201,6 +181,7 @@ export function PublishVideoForm({
     from: '/_studio/studio/$channelId/_content/content/videos',
   });
   const queryClient = useQueryClient();
+  const [currentStep, setCurrentStep] = useState(1);
 
   const videoMutation = useMutation({
     mutationFn: async (value: VideoPutSchema) =>
@@ -225,13 +206,6 @@ export function PublishVideoForm({
     },
   });
 
-  const form2 = useForm({
-    defaultValues: {
-      step1: { title: '' },
-      step2: { description: '' },
-    },
-  });
-
   const form = useAppForm({
     defaultValues: {
       step1: {
@@ -247,18 +221,33 @@ export function PublishVideoForm({
       onChange: videoPublishSchema,
       onSubmit: videoPublishSchema,
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: async ({ value, formApi }) => {
+      console.log('FORM SUBIMITTED', formApi.state.isValid);
       setError(null);
       await videoMutation.mutateAsync(value.step1);
     },
   });
 
+  const visibilityOptions: { label: string; value: VideoVisibility }[] = [
+    { label: 'Private', value: videoVisibility.PRIVATE },
+    { label: 'Unlisted', value: videoVisibility.UNLISTED },
+    { label: 'Public', value: videoVisibility.PUBLIC },
+    { label: 'Draft', value: videoVisibility.DRAFT },
+  ];
+
   return (
     <form
       className="flex flex-col gap-6"
-      id="product-form"
+      id="update-video-form"
       onSubmit={(e) => {
         e.preventDefault();
+        console.log('SUBMIT ON FORM');
+        console.log('FORM STATE', {
+          values: form.state.values,
+          isValid: form.state.isValid,
+          errors: form.state.errors,
+        });
+
         form.handleSubmit();
       }}
     >
@@ -269,43 +258,93 @@ export function PublishVideoForm({
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        <form.AppField name="step1.title">
-          {(field) => (
-            <field.Input
-              label="Title"
-              placeholder="Title"
-              field={field}
-              type="text"
-              required
-              autofocus
-            />
-          )}
-        </form.AppField>
-        <form.AppField name="step1.description">
-          {(field) => (
-            <field.Textarea
-              label="Description"
-              placeholder="Description"
-              maxLength={1024}
-              field={field}
-            />
-          )}
-        </form.AppField>
-        <form.AppField name="step2.thumbnail">
-          {(field) => (
-            <field.FileInput
-              label="Thumbnail"
-              placeholder="Thumbnail"
-              field={field}
-            />
-          )}
-        </form.AppField>
-        <div className="flex items-center justify-end gap-2">
-          <form.AppForm>
-            <form.SubmitButton label="Upload" className="order-2" />
-          </form.AppForm>
-          {closeButton}
-        </div>
+        {currentStep === 1 && (
+          <form.FormGroup
+            name="step1"
+            onGroupSubmit={(value) => {
+              console.log('STEP 1 SUBMITTED', value.value);
+              setCurrentStep((prev) => prev + 1);
+            }}
+            children={(groupApi) => (
+              <FieldGroup>
+                <form.AppField name="step1.title">
+                  {(field) => (
+                    <field.Input
+                      label="Title"
+                      placeholder="Title"
+                      field={field}
+                      type="text"
+                      required
+                      autofocus
+                    />
+                  )}
+                </form.AppField>
+                <form.AppField name="step1.description">
+                  {(field) => (
+                    <field.Textarea
+                      label="Description"
+                      placeholder="Description"
+                      maxLength={1024}
+                      field={field}
+                    />
+                  )}
+                </form.AppField>
+                <form.AppField name="step1.visibility">
+                  {(field) => (
+                    <field.Select
+                      label="Visiblity"
+                      placeholder="Visibility"
+                      defaultValue={videoVisibility.DRAFT}
+                      items={visibilityOptions}
+                      field={field}
+                      required
+                    />
+                  )}
+                </form.AppField>
+                <Button
+                  type="button"
+                  disabled={!groupApi.state.meta.isValid}
+                  onClick={groupApi.handleSubmit}
+                >
+                  Next
+                </Button>
+              </FieldGroup>
+            )}
+          />
+        )}
+        {currentStep === 2 && (
+          <form.FormGroup
+            name="step2"
+            onGroupSubmit={(value) => {
+              console.log('STEP 2 SUBMITTED', value);
+            }}
+            children={(groupApi) => (
+              <FieldGroup>
+                <form.AppField name="step2.thumbnail">
+                  {(field) => (
+                    <field.FileInput
+                      label="Thumbnail"
+                      placeholder="Thumbnail"
+                      field={field}
+                      required
+                    />
+                  )}
+                </form.AppField>
+                <div className="flex items-center justify-end gap-2">
+                  <form.AppForm>
+                    <form.SubmitButton label="Save" className="order-2" />
+                  </form.AppForm>
+                  <Button
+                    type="button"
+                    onClick={() => setCurrentStep((prev) => prev - 1)}
+                  >
+                    Back
+                  </Button>
+                </div>
+              </FieldGroup>
+            )}
+          />
+        )}
       </FieldGroup>
     </form>
   );

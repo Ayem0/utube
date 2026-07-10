@@ -19,7 +19,7 @@ export function VideoTableDialog({
           }
           onSuccess={() => onOpenChange(false)}
         /> */}
-        <UploadVideo />
+        <UploadVideo onSuccess={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
   );

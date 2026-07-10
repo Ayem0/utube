@@ -11,9 +11,18 @@ export function SubmitButton({
 }) {
   const form = useFormContext();
   return (
-    <form.Subscribe selector={(state) => state.isSubmitting}>
-      {(isSubmitting) => (
-        <Button disabled={isSubmitting} type="submit" className={className}>
+    <form.Subscribe
+      selector={(state) => ({
+        isSubmitting: state.isSubmitting,
+        isValid: state.isValid,
+      })}
+    >
+      {({ isSubmitting, isValid }) => (
+        <Button
+          disabled={isSubmitting || !isValid}
+          type="submit"
+          className={className}
+        >
           {isSubmitting ? <Spinner /> : label}
         </Button>
       )}

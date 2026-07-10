@@ -56,10 +56,29 @@ export class HlsEngine extends Engine {
 
   /** Set quality to specific quality index */
   public setQuality = (qualityIndex: number) => {
+    console.log(
+      "qualityIndex",
+      qualityIndex,
+      "current hls level",
+      this.hls.currentLevel,
+      "auto level enabled",
+      this.hls.autoLevelEnabled,
+    );
     if (qualityIndex < -1 || qualityIndex >= this.hls.levels.length) return;
-    if (this.hls.currentLevel === qualityIndex) return;
+
+    const wasAuto = this.hls.autoLevelEnabled;
+
+    if (qualityIndex === -1 && wasAuto) return;
+    if (!wasAuto && qualityIndex === this.hls.currentLevel) return;
 
     this.hls.currentLevel = qualityIndex;
+    if (wasAuto && qualityIndex !== -1) {
+      this.emitQualityChange(qualityIndex);
+    }
+    if (!wasAuto && qualityIndex === -1) {
+      this.emitQualityChange(this.hls.currentLevel);
+    }
+
     // Trigger a seek to avoid Chromium browsers freezing the video until next keyframe
     // https://github.com/video-dev/hls.js/issues/3596
     this.hls.once(Hls.Events.BUFFER_APPENDED, () => {
@@ -71,11 +90,12 @@ export class HlsEngine extends Engine {
   };
 
   /** Get current quality index */
-  public getCurrentQuality = (): VideoQuality | null => {
-    const level = this.hls.levels[this.hls.currentLevel];
+  public getCurrentQuality = (manualLevel?: number): VideoQuality | null => {
+    const index = manualLevel ?? this.hls.currentLevel;
+    const level = this.hls.levels[index];
     if (!level) return null;
     return {
-      index: this.hls.currentLevel,
+      index: index,
       height: level.height,
       frameRate: level.frameRate,
     };
@@ -189,7 +209,11 @@ export class HlsEngine extends Engine {
     _: Events.LEVEL_SWITCHED,
     data: LevelSwitchedData,
   ) => {
-    const quality = this.getCurrentQuality();
+    this.emitQualityChange();
+  };
+
+  private emitQualityChange = (manualLevel?: number) => {
+    const quality = this.getCurrentQuality(manualLevel);
     if (quality) {
       this.emit("qualityChanged", quality);
     }
@@ -200,6 +224,9 @@ function getMaxBufferedEnd(video: HTMLVideoElement) {
   let maxEnd = 0;
   for (let i = 0; i < video.buffered.length; i++) {
     maxEnd = Math.max(maxEnd, video.buffered.end(i));
+  }
+  if (video.duration - maxEnd < 0.1) {
+    return video.duration;
   }
   return maxEnd;
 }

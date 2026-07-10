@@ -5,7 +5,6 @@ import { BaseField } from './base-field';
 
 interface FileInputFieldProps extends FieldProps<File | undefined> {
   placeholder?: string;
-  max?: number;
   ref?: RefObject<HTMLInputElement | null>;
   required?: boolean;
   autofocus?: boolean;
@@ -14,7 +13,6 @@ interface FileInputFieldProps extends FieldProps<File | undefined> {
 
 export function FileInputField({
   placeholder,
-  max,
   ref,
   field,
   required,
@@ -26,10 +24,10 @@ export function FileInputField({
     <BaseField
       field={field}
       {...props}
+      required
       children={({ field, isInvalid, isSubmitting }) => (
         <Input
           ref={ref}
-          max={max}
           type="file"
           id={field.name}
           name={field.name}

@@ -72,6 +72,7 @@ export const qualityFeature = createFeature({
       ctx.state.qualities([...qualities].reverse());
     });
     ctx.events.engine("qualityChanged", (quality) => {
+      console.log("QUALITY CHANGED", quality);
       ctx.batch(() => {
         ctx.state.currentQuality(quality);
         ctx.state.isAuto(ctx.engine.getIsAuto());
