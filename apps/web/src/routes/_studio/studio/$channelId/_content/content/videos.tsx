@@ -6,6 +6,8 @@ import z from 'zod';
 const searchSchema = z.object({
   page: z.number().default(0).catch(0),
   size: z.literal(10).or(z.literal(25)).or(z.literal(50)).default(10).catch(10),
+  videoId: z.uuidv7().optional().catch(undefined),
+  up: z.boolean().optional().default(false).catch(false),
 });
 
 export const Route = createFileRoute(
@@ -17,6 +19,8 @@ export const Route = createFileRoute(
       stripSearchParams({
         page: 0,
         size: 10,
+        videoId: undefined,
+        up: false,
       }),
     ],
   },

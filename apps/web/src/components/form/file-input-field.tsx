@@ -1,7 +1,7 @@
 import { Input } from '@repo/ui/components/input';
+import { BaseField } from './base-field';
 import type { RefObject } from 'react';
 import type { FieldProps } from './base-field';
-import { BaseField } from './base-field';
 
 interface FileInputFieldProps extends FieldProps<File | undefined> {
   placeholder?: string;

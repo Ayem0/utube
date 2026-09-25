@@ -12,10 +12,7 @@ export const channelMacro = new Elysia({ name: "channel" }).macro({
   },
 });
 
-export function getCookie(
-  name: string,
-  cookieHeader: string | undefined | null,
-) {
+function getCookie(name: string, cookieHeader: string | undefined | null) {
   if (!cookieHeader) return undefined;
   return cookieHeader
     .split("; ")

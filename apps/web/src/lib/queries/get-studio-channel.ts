@@ -1,5 +1,5 @@
-import { getApi } from '@/lib/api/api';
 import { queryOptions } from '@tanstack/react-query';
+import { getApi } from '@/lib/api/api';
 
 export const getStudioChannelQueryOptions = (channelId: string) =>
   queryOptions({

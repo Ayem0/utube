@@ -1,6 +1,7 @@
 import { Input } from '@repo/ui/components/input';
-import { InputHTMLAttributes, RefObject } from 'react';
-import { BaseField, FieldProps } from './base-field';
+import { BaseField } from './base-field';
+import type { InputHTMLAttributes, RefObject } from 'react';
+import type { FieldProps } from './base-field';
 
 interface InputFieldProps extends FieldProps<string> {
   type: InputHTMLAttributes<HTMLInputElement>['type'];

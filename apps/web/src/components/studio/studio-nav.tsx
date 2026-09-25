@@ -1,8 +1,10 @@
-import { routeTree } from '@/routeTree.gen';
-import { LinkProps, useRouteContext } from '@tanstack/react-router';
-import { FilePlay, LayoutDashboard, LucideIcon } from 'lucide-react';
+import { useRouteContext } from '@tanstack/react-router';
+import { FilePlay, LayoutDashboard } from 'lucide-react';
 import { useMemo } from 'react';
 import { SidebarSection } from '../sidebar/sidebar-section';
+import type { LucideIcon } from 'lucide-react';
+import type { LinkProps} from '@tanstack/react-router';
+import type { routeTree } from '@/routeTree.gen';
 
 type AppLink = LinkProps<typeof routeTree>;
 

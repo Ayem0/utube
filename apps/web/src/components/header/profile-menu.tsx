@@ -1,5 +1,3 @@
-import type { User } from '@repo/auth/user';
-import type { Channel } from '@repo/db/types';
 import {
   Avatar,
   AvatarFallback,
@@ -19,6 +17,8 @@ import { Link } from '@tanstack/react-router';
 import { LayoutDashboard, Settings2 } from 'lucide-react';
 import { LogoutButton } from '../auth/logout-button';
 import { ChannelSwitcher } from './channel-switcher';
+import type { Channel } from '@repo/db/types';
+import type { User } from '@repo/auth/user';
 
 export function ProfileMenu({
   user,

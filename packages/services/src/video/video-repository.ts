@@ -1,10 +1,4 @@
-import {
-  asset,
-  channel as channelTable,
-  video,
-  videoPlayback,
-  video as videoTable,
-} from "@repo/db/schema";
+import { asset, channel, video, videoPlayback } from "@repo/db/schema";
 import type {
   Asset,
   Channel,
@@ -12,18 +6,23 @@ import type {
   VideoInsert,
   VideoPlayback,
 } from "@repo/db/types";
+import { videoPlaybackStatus } from "@repo/types/enums/video/video-playback-status";
 import { videoVisibility } from "@repo/types/enums/video/video-visibility";
-import { PaginationResult } from "@repo/types/types/pagination";
-import { and, eq, exists, isNotNull, or } from "drizzle-orm";
+import type {
+  PaginationRequest,
+  PaginationResult,
+} from "@repo/types/types/pagination";
+import { and, count, desc, eq, exists, isNotNull, or, sql } from "drizzle-orm";
 import type { EffectDrizzleQueryError } from "drizzle-orm/effect-core";
-import { Context, Effect, Layer } from "effect";
-import { DB, repoFn, type RepoFn } from "../db/db";
+import { alias } from "drizzle-orm/pg-core";
+import { Context, Effect, Layer, UndefinedOr } from "effect";
+import { DB } from "../db/db";
 import { DBNotFoundError } from "../db/db-errors";
 import { InvalidMediaTypeError } from "../media/media-errors";
 
-type WatchVideo = Pick<
+type WatchLightVideo = Pick<
   Video,
-  "id" | "description" | "title" | "publishedAt" | "duration" | "visibility"
+  "id" | "description" | "title" | "publishedAt" | "duration"
 > & {
   channel: Pick<Channel, "alias" | "name"> & Pick<Asset, "variants">;
   playback: Pick<
@@ -32,67 +31,102 @@ type WatchVideo = Pick<
   >;
 };
 
-export type StudioVideo = Pick<
-  Video,
-  | "id"
-  | "title"
-  | "description"
-  | "visibility"
-  | "duration"
-  | "createdAt"
-  | "publishedAt"
->;
+type WatchFullVideo = WatchLightVideo &
+  Pick<Video, "visibility"> & { playback: Pick<VideoPlayback, "id"> };
 
-type PublicLightVideo = Pick<
-  Video,
-  "id" | "title" | "duration" | "publishedAt"
-> & { channel: Pick<Channel, "alias" | "currentAvatarAssetId" | "name"> };
-
-type PublicFullVideo = PublicLightVideo & Pick<Video, "description">;
-
-const publicLightVideo = {
-  id: videoTable.id,
-  title: videoTable.title,
-  duration: videoTable.duration,
-  publishedAt: videoTable.publishedAt,
+const watchLightVideo = {
+  id: video.id,
+  title: video.title,
+  description: video.description,
+  publishedAt: video.publishedAt,
+  duration: video.duration,
   channel: {
-    name: channelTable.name,
-    alias: channelTable.alias,
-    currentAvatarAssetId: channelTable.currentAvatarAssetId,
+    name: channel.name,
+    alias: channel.alias,
+    variants: asset.variants,
+  },
+  playback: {
+    dashManifestKey: videoPlayback.dashManifestKey,
+    hlsMasterKey: videoPlayback.hlsMasterKey,
+    storyboardKey: videoPlayback.storyboardKey,
+    renditions: videoPlayback.renditions,
   },
 } as const;
 
-const publicFullVideo = {
-  ...publicLightVideo,
-  description: videoTable.description,
+export type StudioLightVideo = Pick<
+  Video,
+  "id" | "title" | "description" | "visibility" | "duration" | "publishedAt"
+> & {
+  thumbnail: {
+    variants: Asset["variants"];
+  } | null;
+};
+
+const studioLightVideo = {
+  id: video.id,
+  title: video.title,
+  description: video.description,
+  visibility: video.visibility,
+  duration: video.duration,
+  publishedAt: video.publishedAt,
+  thumbnail: {
+    variants: asset.variants,
+  },
 } as const;
 
-const studioVideo = {
-  id: videoTable.id,
-  title: videoTable.title,
-  description: videoTable.description,
-  visibility: videoTable.visibility,
-  duration: videoTable.duration,
-  createdAt: videoTable.createdAt,
-  publishedAt: videoTable.publishedAt,
+export type StudioFullVideo = Pick<
+  Video,
+  "id" | "title" | "description" | "visibility" | "duration" | "publishedAt"
+> & {
+  playback: Pick<
+    VideoPlayback,
+    | "dashManifestKey"
+    | "hlsMasterKey"
+    | "renditions"
+    | "status"
+    | "storyboardKey"
+  > | null;
+  sourceVideoAsset: Pick<Asset, "status">;
+  currentThumbnail: Pick<Asset, "variants" | "status"> | null;
+  pendingThumbnail: Pick<Asset, "variants" | "status"> | null;
+};
+
+const studioFullVideo = {
+  ...studioLightVideo,
+  playback: {
+    dashManifestKey: videoPlayback.dashManifestKey,
+    hlsMasterKey: videoPlayback.hlsMasterKey,
+    storyboardKey: videoPlayback.storyboardKey,
+    renditions: videoPlayback.renditions,
+    status: videoPlayback.status,
+  },
 } as const;
 
 export interface VideoRepositoryService {
-  // createStudio: (params: {
-  //   userId: string;
-  //   channelId: string;
-  //   data: Pick<Video, "title"> &
-  //     Pick<Asset, "filename" | "mimeType" | "sizeBytes" | "type">;
-  // }) => Effect.Effect<
-  //   { video: Video; asset: Asset },
-  //   DBNotFoundError | InvalidMediaTypeError | EffectDrizzleQueryError
-  // >;
+  create: (
+    params: VideoInsert,
+  ) => Effect.Effect<Video, EffectDrizzleQueryError | DBNotFoundError>;
 
-  create: RepoFn<VideoInsert, Video, EffectDrizzleQueryError | DBNotFoundError>;
+  getWatchById: (params: {
+    id: string;
+    userId?: string;
+  }) => Effect.Effect<
+    WatchFullVideo,
+    EffectDrizzleQueryError | DBNotFoundError
+  >;
 
-  getWatchById: RepoFn<
-    { id: string },
-    WatchVideo,
+  canRefreshPlaybackToken: (params: {
+    userId?: string;
+    videoId: string;
+  }) => Effect.Effect<
+    { videoId: string; playbackId: string; durationSeconds: number },
+    EffectDrizzleQueryError | DBNotFoundError
+  >;
+
+  getStudioByChannelId: (
+    params: PaginationRequest<{}, {}> & { channelId: string; userId: string },
+  ) => Effect.Effect<
+    PaginationResult<StudioLightVideo[]>,
     EffectDrizzleQueryError | DBNotFoundError
   >;
 
@@ -102,74 +136,84 @@ export interface VideoRepositoryService {
     videoId: string;
     data: Pick<Video, "title" | "description" | "visibility">;
   }) => Effect.Effect<
-    StudioVideo,
-    DBNotFoundError | InvalidMediaTypeError | EffectDrizzleQueryError
-  >;
-
-  updateInternal: RepoFn<
-    {
-      videoId: string;
-      data: Partial<Video>;
-    },
-    Video,
-    EffectDrizzleQueryError | DBNotFoundError
-  >;
-
-  // getByIdJoinVideoAsset: (
-  //   videoId: string,
-  // ) => Effect.Effect<
-  //   Video & { asset: Asset },
-  //   EffectDrizzleQueryError | DBNotFoundError
-  // >;
-
-  deleteStudio: (params: {
-    userId: string;
-    channelId: string;
-    videoId: string;
-  }) => Effect.Effect<
     { id: string },
-    EffectDrizzleQueryError | DBNotFoundError
-  >;
-
-  getPublicByChannelId: (params: {
-    channelId: string;
-    index: number;
-    size: number;
-  }) => Effect.Effect<
-    PaginationResult<PublicLightVideo[]>,
-    EffectDrizzleQueryError
-  >;
-
-  getPublicById: (
-    id: string,
-  ) => Effect.Effect<
-    PublicFullVideo,
-    EffectDrizzleQueryError | DBNotFoundError
-  >;
-
-  getStudioByChannelId: (params: {
-    userId: string;
-    channelId: string;
-    index: number;
-    size: number;
-  }) => Effect.Effect<
-    PaginationResult<StudioVideo[]>,
-    EffectDrizzleQueryError | DBNotFoundError
+    DBNotFoundError | InvalidMediaTypeError | EffectDrizzleQueryError
   >;
 
   getStudioById: (params: {
     userId: string;
     channelId: string;
     videoId: string;
-  }) => Effect.Effect<StudioVideo, EffectDrizzleQueryError | DBNotFoundError>;
+  }) => Effect.Effect<
+    StudioFullVideo,
+    EffectDrizzleQueryError | DBNotFoundError
+  >;
 
-  getBySourceVideoAssetId: (
-    sourceVideoAssetId: string,
-  ) => Effect.Effect<Video, EffectDrizzleQueryError | DBNotFoundError>;
+  updateInternal: (params: {
+    videoId: string;
+    values: Partial<
+      Pick<
+        VideoInsert,
+        | "visibility"
+        | "currentPlaybackId"
+        | "currentThumbnailAssetId"
+        | "pendingThumbnailAssetId"
+        | "description"
+        | "title"
+        | "duration"
+        | "publishedAt"
+      >
+    >;
+  }) => Effect.Effect<Video, EffectDrizzleQueryError | DBNotFoundError>;
 
-  getByCurrentThumbnailAssetId: (
-    currentThumbnailAssetId: string,
-  ) => Effect.Effect<Video, EffectDrizzleQueryError | DBNotFoundError>;
+  // deleteStudio: (params: {
+  //   userId: string;
+  //   channelId: string;
+  //   videoId: string;
+  // }) => Effect.Effect<
+  //   { id: string },
+  //   EffectDrizzleQueryError | DBNotFoundError
+  // >;
+
+  // getPublicByChannelId: (params: {
+  //   channelId: string;
+  //   index: number;
+  //   size: number;
+  // }) => Effect.Effect<
+  //   PaginationResult<PublicLightVideo[]>,
+  //   EffectDrizzleQueryError
+  // >;
+
+  // getPublicById: (
+  //   id: string,
+  // ) => Effect.Effect<
+  //   PublicFullVideo,
+  //   EffectDrizzleQueryError | DBNotFoundError
+  // >;
+
+  // getStudioByChannelId: (params: {
+  //   userId: string;
+  //   channelId: string;
+  //   index: number;
+  //   size: number;
+  // }) => Effect.Effect<
+  //   PaginationResult<StudioVideo[]>,
+  //   EffectDrizzleQueryError | DBNotFoundError
+  // >;
+
+  // getStudioById: (params: {
+  //   userId: string;
+  //   channelId: string;
+  //   videoId: string;
+  // }) => Effect.Effect<StudioVideo, EffectDrizzleQueryError | DBNotFoundError>;
+
+  getBySourceVideoAssetId: (params: {
+    sourceVideoAssetId: string;
+  }) => Effect.Effect<Video, EffectDrizzleQueryError | DBNotFoundError>;
+
+  getByCurrentThumbnailAssetId: (params: {
+    currentThumbnailAssetId: string;
+  }) => Effect.Effect<Video, EffectDrizzleQueryError | DBNotFoundError>;
 }
 
 export class VideoRepository extends Context.Service<
@@ -178,332 +222,381 @@ export class VideoRepository extends Context.Service<
 >()("VideoRepository", {
   make: Effect.gen(function* () {
     const db = yield* DB;
+
+    const currentThumbnailAsset = alias(asset, "current_thumbnail_asset");
+    const pendingThumbnailAsset = alias(asset, "pending_thumbnail_asset");
+    const sourceVideoAsset = alias(asset, "source_video_asset");
+
     return {
-      getWatchById: repoFn(
-        ({ id }, db) =>
+      canRefreshPlaybackToken: ({ videoId, userId }) =>
+        db.run((db) =>
+          db
+            .select({
+              videoId: video.id,
+              playbackId: videoPlayback.id,
+              durationSeconds: video.duration,
+            })
+            .from(video)
+            .innerJoin(videoPlayback, eq(video.id, videoPlayback.videoId))
+            .innerJoin(channel, eq(video.channelId, channel.id))
+            .where(
+              and(
+                eq(video.id, videoId),
+                eq(videoPlayback.status, videoPlaybackStatus.READY),
+                isNotNull(video.duration),
+                isNotNull(videoPlayback.hlsMasterKey),
+                isNotNull(videoPlayback.dashManifestKey),
+                isNotNull(videoPlayback.storyboardKey),
+                userId
+                  ? or(
+                      or(
+                        eq(video.visibility, videoVisibility.UNLISTED),
+                        eq(video.visibility, videoVisibility.PUBLIC),
+                      ),
+                      and(
+                        eq(video.visibility, videoVisibility.PRIVATE),
+                        eq(channel.userId, userId),
+                      ),
+                    )
+                  : or(
+                      eq(video.visibility, videoVisibility.UNLISTED),
+                      eq(video.visibility, videoVisibility.PUBLIC),
+                    ),
+              ),
+            )
+            .pipe(
+              Effect.flatMap(([row]) =>
+                UndefinedOr.match(row, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Video not found" }),
+                  onDefined: (row) =>
+                    Effect.succeed({
+                      ...row,
+                      durationSeconds: row.durationSeconds!,
+                    }),
+                }),
+              ),
+            ),
+        ),
+
+      // TODO later add filters, sort, search
+      getStudioByChannelId: ({ channelId, userId, index, size }) =>
+        db.run((db) =>
           Effect.gen(function* () {
-            const [row] = yield* db
+            const filters = and(
+              eq(video.channelId, channelId),
+              eq(channel.userId, userId),
+            );
+
+            const totalStartTime = performance.now();
+            const total = yield* db
+              .select({
+                total: count(),
+              })
+              .from(video)
+              .innerJoin(channel, eq(video.channelId, channel.id))
+              .where(filters)
+              .pipe(Effect.map(([row]) => row?.total ?? 0));
+
+            console.log(
+              "getStudioByChannelId total time: ",
+              performance.now() - totalStartTime,
+            );
+
+            if (total === 0)
+              return {
+                index: 0,
+                size: size,
+                totalResults: total,
+                items: [],
+                maxPageIndex: 0,
+              };
+
+            const maxPageIndex = Math.ceil(total / size) - 1;
+            const normalizedIndex =
+              index > maxPageIndex || index < 0 ? 0 : index;
+
+            const rowsStartTime = performance.now();
+
+            const rows = yield* db
               .select({
                 id: video.id,
-                description: video.description,
-                publishedAt: video.publishedAt,
                 title: video.title,
-                duration: video.duration,
+                description: video.description,
                 visibility: video.visibility,
-                channel: {
-                  name: channelTable.name,
-                  alias: channelTable.alias,
-                  currentAvatarAssetId: channelTable.currentAvatarAssetId,
+                duration: video.duration,
+                createdAt: video.createdAt,
+                publishedAt: video.publishedAt,
+                thumbnail: {
                   variants: asset.variants,
-                },
-                playback: {
-                  dashManifestKey: videoPlayback.dashManifestKey,
-                  hlsMasterKey: videoPlayback.hlsMasterKey,
-                  storyboardKey: videoPlayback.storyboardKey,
-                  renditions: videoPlayback.renditions,
                 },
               })
               .from(video)
-              .innerJoin(videoPlayback, eq(video.id, videoPlayback.videoId))
-              .innerJoin(channelTable, eq(video.channelId, channelTable.id))
-              .innerJoin(asset, eq(channelTable.currentAvatarAssetId, asset.id))
-              .where(
-                and(
-                  eq(video.id, id),
-                  or(
-                    eq(video.visibility, videoVisibility.UNLISTED),
-                    eq(video.visibility, videoVisibility.PUBLIC),
-                  ),
-                ),
-              );
+              .innerJoin(channel, eq(video.channelId, channel.id))
+              .leftJoin(asset, eq(video.currentThumbnailAssetId, asset.id))
+              .where(filters)
+              .offset(normalizedIndex * size)
+              .limit(size)
+              .orderBy(desc(video.createdAt));
 
-            if (!row)
-              return yield* new DBNotFoundError({ message: "Video not found" });
+            console.log(
+              "getStudioByChannelId rows time: ",
+              performance.now() - rowsStartTime,
+            );
 
-            return row;
+            return {
+              index: normalizedIndex,
+              size: size,
+              totalResults: total,
+              items: rows,
+              maxPageIndex: maxPageIndex,
+            };
           }),
-        db,
-      ),
+        ),
+
+      getWatchById: ({ id, userId }) =>
+        db.run((db) =>
+          db
+            .select({
+              id: video.id,
+              description: video.description,
+              publishedAt: video.publishedAt,
+              title: video.title,
+              duration: video.duration,
+              visibility: video.visibility,
+              channel: {
+                name: channel.name,
+                alias: channel.alias,
+                currentAvatarAssetId: channel.currentAvatarAssetId,
+                variants: asset.variants,
+              },
+              playback: {
+                id: videoPlayback.id,
+                dashManifestKey: videoPlayback.dashManifestKey,
+                hlsMasterKey: videoPlayback.hlsMasterKey,
+                storyboardKey: videoPlayback.storyboardKey,
+                renditions: videoPlayback.renditions,
+              },
+            })
+            .from(video)
+            .innerJoin(videoPlayback, eq(video.id, videoPlayback.videoId))
+            .innerJoin(channel, eq(video.channelId, channel.id))
+            .leftJoin(asset, eq(channel.currentAvatarAssetId, asset.id))
+            .where(
+              and(
+                eq(video.id, id),
+                eq(videoPlayback.status, videoPlaybackStatus.READY),
+                isNotNull(video.duration),
+                isNotNull(videoPlayback.hlsMasterKey),
+                isNotNull(videoPlayback.dashManifestKey),
+                isNotNull(videoPlayback.storyboardKey),
+                userId
+                  ? or(
+                      or(
+                        eq(video.visibility, videoVisibility.UNLISTED),
+                        eq(video.visibility, videoVisibility.PUBLIC),
+                      ),
+                      and(
+                        eq(video.visibility, videoVisibility.PRIVATE),
+                        eq(channel.userId, userId),
+                      ),
+                    )
+                  : or(
+                      eq(video.visibility, videoVisibility.UNLISTED),
+                      eq(video.visibility, videoVisibility.PUBLIC),
+                    ),
+              ),
+            )
+            .pipe(
+              Effect.flatMap(([row]) =>
+                UndefinedOr.match(row, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Video not found" }),
+                  onDefined: (row) => Effect.succeed(row),
+                }),
+              ),
+            ),
+        ),
 
       updateStudio: ({ userId, channelId, videoId, data }) =>
-        Effect.gen(function* () {
-          const isPublished = data.visibility !== videoVisibility.DRAFT;
-          const [updateded] = yield* db
-            .update(videoTable)
+        db.run((db) =>
+          db
+            .update(video)
             .set({
               title: data.title,
               description: data.description,
               visibility: data.visibility,
-              publishedAt: isPublished ? new Date() : null,
+              publishedAt:
+                data.visibility !== videoVisibility.DRAFT
+                  ? sql<Date>`coalesce(${video.publishedAt}, now())`
+                  : undefined,
             })
             .where(
               and(
-                eq(videoTable.id, videoId),
-                eq(videoTable.channelId, channelId),
+                eq(video.id, videoId),
+                eq(video.channelId, channelId),
                 exists(
                   db
-                    .select({ id: channelTable.id })
-                    .from(channelTable)
+                    .select({ id: channel.id })
+                    .from(channel)
                     .where(
                       and(
-                        eq(channelTable.id, channelId),
-                        eq(channelTable.userId, userId),
+                        eq(channel.id, channelId),
+                        eq(channel.userId, userId),
                       ),
                     )
                     .limit(1),
                 ),
               ),
             )
-            .returning(studioVideo);
-
-          if (!updateded)
-            return yield* new DBNotFoundError({
-              message: "Video not found or unauthorize to update",
-            });
-
-          return updateded;
-        }),
-
-      deleteStudio: ({ userId, channelId, videoId }) =>
-        Effect.gen(function* () {
-          const deleted = yield* db
-            .delete(videoTable)
-            .where(
-              and(
-                eq(videoTable.id, videoId),
-                eq(videoTable.channelId, channelId),
-                exists(
-                  db
-                    .select({ id: channelTable.id })
-                    .from(channelTable)
-                    .where(
-                      and(
-                        eq(channelTable.id, channelId),
-                        eq(channelTable.userId, userId),
-                      ),
-                    )
-                    .limit(1),
-                ),
-              ),
-            )
-            .returning({ id: videoTable.id });
-
-          if (deleted.length > 0) return deleted[0]!;
-
-          return yield* new DBNotFoundError({
-            message: "Video not found",
-          });
-        }),
-
-      getPublicByChannelId: ({ channelId, index, size }) =>
-        Effect.gen(function* () {
-          const publicVideoFilter = and(
-            eq(videoTable.channelId, channelId),
-            eq(videoTable.visibility, videoVisibility.PUBLIC),
-            isNotNull(videoTable.publishedAt),
-          );
-          const count = yield* db.$count(videoTable, publicVideoFilter);
-
-          if (count === 0)
-            return {
-              pageIndex: 0,
-              pageSize: size,
-              totalResults: count,
-              items: [],
-              maxPageIndex: 0,
-            };
-
-          const maxPageIndex = Math.ceil(count / size) - 1;
-
-          if (index > maxPageIndex || index < 0) {
-            index = 0;
-          }
-
-          const rows = yield* db
-            .select(publicLightVideo)
-            .from(videoTable)
-            .where(publicVideoFilter)
-            .innerJoin(channelTable, eq(videoTable.channelId, channelTable.id))
-            .offset(index * size)
-            .limit(size);
-
-          return {
-            pageIndex: index,
-            pageSize: size,
-            totalResults: count,
-            items: rows,
-            maxPageIndex: maxPageIndex,
-          };
-        }),
-
-      updateInternal: repoFn(
-        ({ videoId, data }, db) =>
-          Effect.gen(function* () {
-            const [updated] = yield* db
-              .update(videoTable)
-              .set(data)
-              .where(and(eq(videoTable.id, videoId)))
-              .returning();
-
-            if (!updated)
-              return yield* new DBNotFoundError({
-                message: "Video not updated",
-              });
-
-            return updated;
-          }),
-        db,
-      ),
-
-      getPublicById: (id) =>
-        Effect.gen(function* () {
-          const [row] = yield* db
-            .select(publicFullVideo)
-            .from(videoTable)
-            .innerJoin(channelTable, eq(videoTable.channelId, channelTable.id))
-            .where(
-              and(
-                eq(videoTable.id, id),
-                or(
-                  eq(videoTable.visibility, videoVisibility.PUBLIC),
-                  eq(videoTable.visibility, videoVisibility.UNLISTED),
-                ),
-                isNotNull(videoTable.publishedAt),
-              ),
-            )
-            .limit(1);
-
-          if (!row)
-            return yield* new DBNotFoundError({ message: "Video not found" });
-          return row;
-        }),
-
-      getStudioByChannelId: ({ userId, channelId, index, size }) =>
-        Effect.gen(function* () {
-          const count = yield* db.$count(
-            videoTable,
-            and(
-              eq(videoTable.channelId, channelId),
-              exists(
-                db
-                  .select({ id: channelTable.id })
-                  .from(channelTable)
-                  .where(
-                    and(
-                      eq(channelTable.id, channelId),
-                      eq(channelTable.userId, userId),
-                    ),
-                  ),
+            .returning({ id: video.id })
+            .pipe(
+              Effect.flatMap(([res]) =>
+                UndefinedOr.match(res, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Video not found" }),
+                  onDefined: (res) => Effect.succeed(res),
+                }),
               ),
             ),
-          );
+        ),
 
-          if (count === 0)
-            return {
-              pageIndex: 0,
-              pageSize: size,
-              totalResults: count,
-              items: [],
-              maxPageIndex: 0,
-            };
-
-          const maxPageIndex = Math.ceil(count / size) - 1;
-
-          if (index > maxPageIndex || index < 0) {
-            index = 0;
-          }
-
-          const rows = yield* db
-            .select(studioVideo)
-            .from(videoTable)
-            .innerJoin(channelTable, eq(videoTable.channelId, channelTable.id))
-            .where(
-              and(
-                eq(channelTable.id, channelId),
-                eq(channelTable.userId, userId),
+      updateInternal: ({ videoId, values }) =>
+        db.run((db) =>
+          db
+            .update(video)
+            .set(values)
+            .where(and(eq(video.id, videoId)))
+            .returning()
+            .pipe(
+              Effect.flatMap(([res]) =>
+                UndefinedOr.match(res, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Video not found" }),
+                  onDefined: (res) => Effect.succeed(res),
+                }),
               ),
-            )
-            .offset(index * size)
-            .limit(size);
+            ),
+        ),
 
-          return {
-            pageIndex: index,
-            pageSize: size,
-            totalResults: count,
-            items: rows,
-            maxPageIndex: maxPageIndex,
-          };
-        }),
+      create: (input) =>
+        db.run((db) =>
+          db
+            .insert(video)
+            .values(input)
+            .returning()
+            .pipe(
+              Effect.flatMap(([res]) =>
+                UndefinedOr.match(res, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Video not found" }),
+                  onDefined: (res) => Effect.succeed(res),
+                }),
+              ),
+            ),
+        ),
+
+      getBySourceVideoAssetId: ({ sourceVideoAssetId }) =>
+        db.run((db) =>
+          db
+            .select()
+            .from(video)
+            .where(eq(video.sourceVideoAssetId, sourceVideoAssetId))
+            .limit(1)
+            .pipe(
+              Effect.flatMap(([res]) =>
+                UndefinedOr.match(res, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Video not found" }),
+                  onDefined: (res) => Effect.succeed(res),
+                }),
+              ),
+            ),
+        ),
+
+      getByCurrentThumbnailAssetId: ({ currentThumbnailAssetId }) =>
+        db.run((db) =>
+          db
+            .select()
+            .from(video)
+            .where(eq(video.currentThumbnailAssetId, currentThumbnailAssetId))
+            .limit(1)
+            .pipe(
+              Effect.flatMap(([res]) =>
+                UndefinedOr.match(res, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Video not found" }),
+                  onDefined: (res) => Effect.succeed(res),
+                }),
+              ),
+            ),
+        ),
 
       getStudioById: ({ userId, channelId, videoId }) =>
-        Effect.gen(function* () {
-          const [row] = yield* db
-            .select(studioVideo)
-            .from(videoTable)
-            .innerJoin(channelTable, eq(videoTable.channelId, channelTable.id))
+        db.run((db) =>
+          db
+            .select({
+              id: video.id,
+              title: video.title,
+              description: video.description,
+              visibility: video.visibility,
+              duration: video.duration,
+              publishedAt: video.publishedAt,
+              sourceVideoAsset: {
+                status: sourceVideoAsset.status,
+              },
+              currentThumbnail: {
+                variants: currentThumbnailAsset.variants,
+                status: currentThumbnailAsset.status,
+              },
+              pendingThumbnail: {
+                variants: pendingThumbnailAsset.variants,
+                status: pendingThumbnailAsset.status,
+              },
+              playback: {
+                dashManifestKey: videoPlayback.dashManifestKey,
+                hlsMasterKey: videoPlayback.hlsMasterKey,
+                storyboardKey: videoPlayback.storyboardKey,
+                renditions: videoPlayback.renditions,
+                status: videoPlayback.status,
+              },
+            })
+            .from(video)
+            .innerJoin(channel, eq(video.channelId, channel.id))
+            .leftJoin(
+              currentThumbnailAsset,
+              eq(video.currentThumbnailAssetId, currentThumbnailAsset.id),
+            )
+            .leftJoin(
+              pendingThumbnailAsset,
+              eq(video.pendingThumbnailAssetId, pendingThumbnailAsset.id),
+            )
+            .leftJoin(
+              videoPlayback,
+              eq(video.currentPlaybackId, videoPlayback.id),
+            )
+            .innerJoin(
+              sourceVideoAsset,
+              eq(video.sourceVideoAssetId, sourceVideoAsset.id),
+            )
             .where(
               and(
-                eq(channelTable.id, channelId),
-                eq(videoTable.id, videoId),
-                eq(channelTable.userId, userId),
+                eq(video.id, videoId),
+                eq(channel.userId, userId),
+                eq(channel.id, channelId),
               ),
             )
-            .limit(1);
-
-          if (!row)
-            return yield* new DBNotFoundError({
-              message: "Video not found or unauthorize to access",
-            });
-          return row;
-        }),
-
-      getBySourceVideoAssetId: (sourceVideoAssetId) =>
-        Effect.gen(function* () {
-          const [row] = yield* db
-            .select()
-            .from(videoTable)
-            .where(eq(videoTable.sourceVideoAssetId, sourceVideoAssetId))
-            .limit(1);
-
-          if (!row)
-            return yield* new DBNotFoundError({
-              message: "Video not found",
-            });
-          return row;
-        }),
-
-      getByCurrentThumbnailAssetId: (currentThumbnailAssetId) =>
-        Effect.gen(function* () {
-          const [row] = yield* db
-            .select()
-            .from(videoTable)
-            .where(
-              eq(videoTable.currentThumbnailAssetId, currentThumbnailAssetId),
-            )
-            .limit(1);
-
-          if (!row)
-            return yield* new DBNotFoundError({
-              message: "Video not found",
-            });
-          return row;
-        }),
-
-      create: repoFn(
-        (input, db) =>
-          Effect.gen(function* () {
-            const [row] = yield* db
-              .insert(videoTable)
-              .values(input)
-              .returning();
-            if (!row)
-              return yield* new DBNotFoundError({
-                message: "Video not found",
-              });
-            return row;
-          }),
-        db,
-      ),
+            .limit(1)
+            .pipe(
+              Effect.flatMap(([res]) =>
+                UndefinedOr.match(res, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Video not found" }),
+                  onDefined: (res) => Effect.succeed(res),
+                }),
+              ),
+            ),
+        ),
     };
   }),
 }) {
@@ -511,90 +604,3 @@ export class VideoRepository extends Context.Service<
     Layer.provide(DB.Layer),
   );
 }
-// createStudio: ({ userId, channelId, data }) =>
-//   Effect.gen(function* () {
-//     const extension = getVideoExtensionFromMimeType(data.mimeType);
-//     if (!extension) {
-//       return yield* new InvalidMediaTypeError({
-//         message: "Error invalid file",
-//       });
-//     }
-
-//     const [result] = yield* db.execute<{
-//       video: Video;
-//       asset: Asset;
-//     }>(sql`
-//       WITH created_video AS (
-//         INSERT INTO video (
-//           channel_id,
-//           title
-//         )
-//         SELECT
-//           c.id,
-//           ${data.title}
-//         FROM channel AS c
-//         WHERE c.id = ${channelId}
-//           AND c.user_id = ${userId}
-//         LIMIT 1
-//         RETURNING *
-//       ),
-
-//       created_asset AS (
-//         INSERT INTO asset (
-//           video_id,
-//           filename,
-//           mime_type,
-//           size_bytes,
-//           type,
-//           key
-//         )
-//         SELECT
-//           v.id,
-//           ${data.filename},
-//           ${data.mimeType},
-//           ${data.sizeBytes},
-//           ${data.type},
-//           concat(v.id, '/original.', ${extension}::text)
-//         FROM created_video AS v
-//         RETURNING *
-//       )
-
-//       SELECT
-//         row_to_json(created_video) AS video,
-//         row_to_json(created_asset) AS asset
-//       FROM created_video
-//       INNER JOIN created_asset
-//         ON created_asset.video_id = created_video.id;
-//     `);
-
-//     if (!result)
-//       return yield* new DBNotFoundError({
-//         message: "Channel not found or unauthorize to create video",
-//       });
-
-//     return result;
-//   }),
-
-//  getByIdJoinVideoAsset: (videoId) =>
-//   Effect.gen(function* () {
-//     const [row] = yield* db
-//       .select()
-//       .from(videoTable)
-//       .innerJoin(assetTable, eq(videoTable.id, assetTable.videoId))
-//       .where(
-//         and(
-//           eq(videoTable.id, videoId),
-//           eq(assetTable.type, assetType.VIDEO),
-//         ),
-//       )
-//       .limit(1);
-
-//     if (!row)
-//       return yield* new DBNotFoundError({
-//         message: "Video not found",
-//       });
-//     return {
-//       ...row.video,
-//       asset: row.asset,
-//     };
-//   }),

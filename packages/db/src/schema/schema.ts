@@ -6,7 +6,7 @@ import { type AssetType } from "@repo/types/enums/asset/asset-type";
 import {
   videoPlaybackStatus,
   type VideoPlaybackStatus,
-} from "@repo/types/enums/video/video-status";
+} from "@repo/types/enums/video/video-playback-status";
 import {
   videoVisibility,
   type VideoVisibility,
@@ -166,7 +166,7 @@ export const videoPlayback = pgTable(
     storyboardKey: text("storyboard_key"),
     status: smallint("status")
       .notNull()
-      .default(videoPlaybackStatus.VALIDATING)
+      .default(videoPlaybackStatus.PROCESSING)
       .$type<VideoPlaybackStatus>(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")

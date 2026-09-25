@@ -1,4 +1,9 @@
-import { Engine, EngineOptions, type EngineEvents } from "../engine/engine";
+import {
+  Engine,
+  EngineOptions,
+  type EngineEvents,
+  type LoadSourceOptions,
+} from "../engine/engine";
 import { createEngine } from "../engine/factory";
 import {
   FeatureContext,
@@ -24,6 +29,13 @@ import {
 } from "../store/store";
 import { Disposer, VideoSource } from "../types";
 
+export type ControllerContext<T extends Features> = {
+  apis: FeatureRegistry<T>["api"];
+  state: ReadOnlyDeepSignal<FeatureRegistry<T>["state"]>;
+  effect: Store<FeatureRegistry<T>["state"]>["effect"];
+  computed: Store<FeatureRegistry<T>["state"]>["computed"];
+};
+
 export class Player<const T extends Features> {
   private _store: Store<FeatureRegistry<T>["state"]>;
   private featuresInternalState: FeatureRegistry<T>["internalState"];
@@ -38,10 +50,10 @@ export class Player<const T extends Features> {
 
   constructor(
     features: T,
-    defaultState: EngineOptions,
+    engineOptions: EngineOptions,
     featureOptions: PlayerFeatureOptions<T> = {},
   ) {
-    this.engine = createEngine(defaultState);
+    this.engine = createEngine(engineOptions);
     this.features = features;
     this.featureOptions = featureOptions;
     this._store = createStore(this.createFeatureState(features));
@@ -63,6 +75,10 @@ export class Player<const T extends Features> {
     );
   }
 
+  public setToken = (token: string) => {
+    this.engine.setToken(token);
+  };
+
   public detach() {
     this.videoEl = null;
     this.engine.detachMedia();
@@ -71,15 +87,21 @@ export class Player<const T extends Features> {
     );
   }
 
-  public loadSource(source: VideoSource) {
-    this.engine.loadSource(source);
+  public loadSource(source: VideoSource, options: LoadSourceOptions = {}) {
+    this.features.forEach((feature) => {
+      feature.onBeforeSourceLoad?.(this.getFeatureContext(feature));
+    });
+    this.engine.loadSource(source, options);
+    this.features.forEach((feature) => {
+      feature.onSourceLoad?.(this.getFeatureContext(feature));
+    });
   }
 
-  public setStartPosition(time: number) {
-    this.engine.setStartPosition(time);
-  }
+  // public setStartPosition(time: number) {
+  //   this.engine.setStartPosition(time);
+  // }
 
-  public getControllerContext = () => {
+  public getControllerContext = (): ControllerContext<T> => {
     return {
       apis: this.apis,
       state: this._store.state as ReadOnlyDeepSignal<
@@ -90,7 +112,7 @@ export class Player<const T extends Features> {
     };
   };
 
-  public get store(): Pick<typeof this._store, "use"> {
+  public get store(): Pick<typeof this._store, "select" | "subscribe"> {
     return this._store;
   }
 

@@ -1,30 +1,61 @@
 import type { Asset, Channel, Video, VideoPlayback } from "@repo/db/types";
 import { assetType } from "@repo/types/enums/asset/asset-type";
+import type {
+  PaginationRequest,
+  PaginationResult,
+} from "@repo/types/types/pagination";
 import type { EffectDrizzleQueryError } from "drizzle-orm/effect-core";
 import { Context, Effect, Layer } from "effect";
 import type { SqlError } from "effect/unstable/sql/SqlError";
 import { AssetRepository } from "../asset/asset-repository";
 import { AssetUploadFactory } from "../asset/asset-upload-factory";
+import { CDN } from "../cdn/cdn";
 import { DB } from "../db/db";
 import { DBNotFoundError } from "../db/db-errors";
 import {
   InvalidMediaTypeError,
   type InvalidMediaSizeError,
 } from "../media/media-errors";
-import { S3 } from "../s3/s3";
 import type { S3Error } from "../s3/s3-errors";
 import { newId } from "../utils/id";
-import { VideoRepository, type StudioVideo } from "./video-repository";
+import type { VideoPlaybackError } from "./video-errors";
+import { VideoPlayback as VideoPlaybackService } from "./video-playback";
+import { VideoRepository, type StudioLightVideo } from "./video-repository";
 
 type WatchVideo = Pick<
   Video,
   "id" | "description" | "title" | "publishedAt" | "duration" | "visibility"
 > & {
-  channel: Pick<Channel, "alias" | "name"> & { variants: Asset["variants"] };
+  channel: Pick<Channel, "alias" | "name"> & {
+    variants: NonNullable<Asset["variants"]>["variants"] | null;
+  };
   hlsMasterUrl: string;
   dashManifestUrl: string;
   storyboardUrl: string;
   renditions: VideoPlayback["renditions"];
+};
+
+type StudioVideo = Pick<
+  Video,
+  "id" | "description" | "title" | "visibility" | "duration"
+> & {
+  source: Pick<Asset, "status">;
+  thumbnail: {
+    current: {
+      status: Asset["status"];
+      variants: NonNullable<Asset["variants"]>["variants"] | null;
+    } | null;
+    pending: {
+      status: Asset["status"];
+      variants: NonNullable<Asset["variants"]>["variants"] | null;
+    } | null;
+  };
+  playback: {
+    status: VideoPlayback["status"];
+    hlsMasterUrl: string | null;
+    dashManifestUrl: string | null;
+    storyboardUrl: string | null;
+  } | null;
 };
 
 export interface VideoServiceApi {
@@ -41,25 +72,50 @@ export interface VideoServiceApi {
       presignedUrl: string;
       title: string;
     },
-    | DBNotFoundError
-    | InvalidMediaTypeError
-    | EffectDrizzleQueryError
     | InvalidMediaSizeError
+    | InvalidMediaTypeError
+    | DBNotFoundError
+    | EffectDrizzleQueryError
     | SqlError
     | S3Error
   >;
 
   getWatchById: (params: {
     id: string;
-  }) => Effect.Effect<WatchVideo, DBNotFoundError | EffectDrizzleQueryError>;
+    userId?: string;
+  }) => Effect.Effect<
+    WatchVideo & { token: string; exp: number },
+    DBNotFoundError | EffectDrizzleQueryError | VideoPlaybackError
+  >;
 
-  updateVideo: (params: {
+  refreshPlaybackToken: (params: {
+    userId?: string;
+    videoId: string;
+  }) => Effect.Effect<
+    { token: string; exp: number },
+    EffectDrizzleQueryError | VideoPlaybackError | DBNotFoundError
+  >;
+
+  getStudioByChannelId: (
+    params: PaginationRequest<{}, {}> & { channelId: string; userId: string },
+  ) => Effect.Effect<
+    PaginationResult<StudioLightVideo[]>,
+    EffectDrizzleQueryError | DBNotFoundError
+  >;
+
+  getStudioById: (params: {
+    userId: string;
+    channelId: string;
+    videoId: string;
+  }) => Effect.Effect<StudioVideo, EffectDrizzleQueryError | DBNotFoundError>;
+
+  updateDraft: (params: {
     userId: string;
     channelId: string;
     videoId: string;
     data: Pick<Video, "title" | "description" | "visibility">;
   }) => Effect.Effect<
-    StudioVideo,
+    { id: string },
     DBNotFoundError | InvalidMediaTypeError | EffectDrizzleQueryError
   >;
 }
@@ -73,7 +129,37 @@ export class VideoService extends Context.Service<
     const assetRepo = yield* AssetRepository;
     const db = yield* DB;
     const assetUploadFactory = yield* AssetUploadFactory;
+    const cdn = yield* CDN;
+    const cdnBaseUrl = yield* cdn.getBaseUrl();
+    const videoPlayback = yield* VideoPlaybackService;
+
+    const mapAssetVariants = (
+      obj: Asset["variants"],
+    ): NonNullable<Asset["variants"]>["variants"] | null => {
+      if (obj === null) return null;
+
+      switch (obj.type) {
+        case assetType.VIDEO_THUMBNAIL:
+          return {
+            "1280x720": `${cdnBaseUrl}/thumbnail/${obj.variants["1280x720"]}`,
+            "640x360": `${cdnBaseUrl}/thumbnail/${obj.variants["640x360"]}`,
+          };
+        case assetType.CHANNEL_AVATAR:
+          return {
+            "160x160": `${cdnBaseUrl}/avatar/${obj.variants["160x160"]}`,
+            "64x64": `${cdnBaseUrl}/avatar/${obj.variants["64x64"]}`,
+          };
+      }
+    };
     return {
+      refreshPlaybackToken: ({ userId, videoId }) =>
+        Effect.gen(function* () {
+          const res = yield* videoRepo.canRefreshPlaybackToken({
+            userId,
+            videoId,
+          });
+          return yield* videoPlayback.createPlaybackToken(res);
+        }),
       createDraft: ({ userId, channelId, filename, mimeType, sizeBytes }) =>
         Effect.gen(function* () {
           const title = filename.split(".")[0] ?? "Title";
@@ -97,51 +183,56 @@ export class VideoService extends Context.Service<
             mimeType: mimeType,
           });
 
-          return yield* db.transaction((tx) =>
-            Effect.gen(function* () {
-              const asset = yield* assetRepo.create(
-                {
-                  id: assetId,
-                  ownerUserId: userId,
-                  originalStorageKey: storageKey,
-                  sizeBytes: sizeBytes,
-                  type: assetType.VIDEO,
-                  mimeType: mimeType,
-                },
-                tx,
-              );
-              const video = yield* videoRepo.create(
-                {
-                  id: videoId,
-                  channelId: channelId,
-                  title: title,
-                  sourceVideoAssetId: asset.id,
-                },
-                tx,
-              );
+          return yield* Effect.gen(function* () {
+            const asset = yield* assetRepo.create({
+              id: assetId,
+              ownerUserId: userId,
+              originalStorageKey: storageKey,
+              sizeBytes: sizeBytes,
+              type: assetType.VIDEO,
+              mimeType: mimeType,
+            });
+            const video = yield* videoRepo.create({
+              id: videoId,
+              channelId: channelId,
+              title: title,
+              sourceVideoAssetId: asset.id,
+            });
 
-              return {
-                assetId: asset.id,
-                videoId: video.id,
-                presignedUrl: presignedUrl,
-                title: video.title,
-              };
-            }),
-          );
+            return {
+              assetId: asset.id,
+              videoId: video.id,
+              presignedUrl: presignedUrl,
+              title: video.title,
+            };
+          }).pipe(db.withTransaction);
         }),
-      updateVideo: ({ userId, channelId, videoId, data }) =>
+      updateDraft: ({ userId, channelId, videoId, data }) =>
+        videoRepo.updateStudio({
+          userId,
+          channelId,
+          videoId,
+          data,
+        }),
+      getStudioByChannelId: ({ userId, channelId, index, size }) =>
+        videoRepo.getStudioByChannelId({
+          filters: {},
+          sort: {},
+          desc: true,
+          search: "",
+          userId,
+          channelId,
+          index,
+          size,
+        }),
+      getWatchById: ({ id, userId }) =>
         Effect.gen(function* () {
-          const updated = yield* videoRepo.updateStudio({
-            userId,
-            channelId,
-            videoId,
-            data,
+          const row = yield* videoRepo.getWatchById({ id, userId });
+          const { token, exp } = yield* videoPlayback.createPlaybackToken({
+            durationSeconds: row.duration || 0,
+            playbackId: row.playback.id,
+            videoId: row.id,
           });
-          return updated;
-        }),
-      getWatchById: ({ id }) =>
-        Effect.gen(function* () {
-          const row = yield* videoRepo.getWatchById({ id });
           return {
             id: row.id,
             description: row.description,
@@ -152,12 +243,63 @@ export class VideoService extends Context.Service<
             channel: {
               alias: row.channel.alias,
               name: row.channel.name,
-              variants: row.channel.variants,
+              variants: mapAssetVariants(row.channel.variants),
             },
-            hlsMasterUrl: `http://localhost:8080/videos/${row.playback.hlsMasterKey}`, // TODO: replace with .env variable from a dedicated service
-            dashManifestUrl: `http://localhost:8080/videos/${row.playback.dashManifestKey}`, // TODO: replace with .env variable from a dedicated service
-            storyboardUrl: `http://localhost:8080/videos/${row.playback.storyboardKey}`, // TODO: replace with .env variable from a dedicated service
+            token: token,
+            exp: exp,
+            hlsMasterUrl: `${cdnBaseUrl}/videos/${row.playback.hlsMasterKey}`,
+            dashManifestUrl: `${cdnBaseUrl}/videos/${row.playback.dashManifestKey}`,
+            storyboardUrl: `${cdnBaseUrl}/videos/${row.playback.storyboardKey}`,
             renditions: row.playback.renditions,
+          };
+        }),
+
+      getStudioById: ({ userId, channelId, videoId }) =>
+        Effect.gen(function* () {
+          const row = yield* videoRepo.getStudioById({
+            userId,
+            channelId,
+            videoId,
+          });
+          return {
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            visibility: row.visibility,
+            source: {
+              status: row.sourceVideoAsset.status,
+            },
+            thumbnail: {
+              current: row.currentThumbnail
+                ? {
+                    status: row.currentThumbnail.status,
+                    variants: mapAssetVariants(row.currentThumbnail.variants),
+                  }
+                : null,
+              pending: row.pendingThumbnail
+                ? {
+                    status: row.pendingThumbnail.status,
+                    variants: mapAssetVariants(row.pendingThumbnail.variants),
+                  }
+                : null,
+            },
+            publishedAt: row.publishedAt,
+            duration: row.duration,
+            playback: row.playback
+              ? {
+                  status: row.playback.status,
+                  hlsMasterUrl: row.playback.hlsMasterKey
+                    ? `${cdnBaseUrl}/videos/${row.playback.hlsMasterKey}`
+                    : null,
+                  dashManifestUrl: row.playback.dashManifestKey
+                    ? `${cdnBaseUrl}/videos/${row.playback.dashManifestKey}`
+                    : null,
+                  storyboardUrl: row.playback.storyboardKey
+                    ? `${cdnBaseUrl}/videos/${row.playback.storyboardKey}`
+                    : null,
+                  renditions: row.playback.renditions,
+                }
+              : null,
           };
         }),
     };
@@ -165,223 +307,37 @@ export class VideoService extends Context.Service<
 }) {
   static Layer = Layer.effect(this, this.make).pipe(
     Layer.provide(VideoRepository.Layer),
-    Layer.provide(S3.Layer),
     Layer.provide(AssetRepository.Layer),
     Layer.provide(DB.Layer),
     Layer.provide(AssetUploadFactory.Layer),
+    Layer.provide(CDN.Layer),
   );
 }
 
-//   uploadVideoThumbnail: (
-//     channelId: string,
-//     videoId: string,
-//     fileName: string,
-//   ) => Effect.Effect<
-//     { presignedUrl: string },
-//     | S3Error
-//     | DBError
-//     | DBNotFoundError
-//     | VideoUploadError
-//     | InvalidMediaFileNameError,
-//     never
-//   >;
+function mapPlayback(
+  obj: Pick<
+    VideoPlayback,
+    | "dashManifestKey"
+    | "hlsMasterKey"
+    | "storyboardKey"
+    | "renditions"
+    | "status"
+  > | null,
+  cdnBaseUrl: string,
+) {
+  if (!obj) return null;
 
-//   uploadedVideo: (
-//     channelId: string,
-//     videoId: string,
-//   ) => Effect.Effect<
-//     void,
-//     S3Error | DBError | DBNotFoundError | VideoUploadError | QueueError,
-//     never
-//   >;
-
-// publishVideo: (
-//   channelId: string,
-//   videoId: string,
-//   data: {
-//     title: string;
-//     description: string | undefined;
-//     visibility: VideoVisibility;
-//   },
-// ) => Effect.Effect<void, S3Error | DBError | DBNotFoundError, never>;
-
-// publishVideo: (
-//   channelId: string,
-//   title: string,
-//   description: string,
-//   image: File,
-//   video: File,
-// ) => Effect.Effect<
-//   Video,
-//   | InvalidMediaTypeError
-//   | InvalidMediaSizeError
-//   | DBError
-//   | DBNotFoundError
-//   | S3Error
-//   | QueueError
-// >;
-
-// publishVideo: (
-//   channelId: string,
-//   title: string,
-//   description: string,
-//   image: File,
-//   video: File,
-// ) =>
-//   Effect.scoped(
-//     Effect.gen(function* () {
-//       // const { type: imgType } =
-//       //   yield* mediaValidator.prevalidateImage(image);
-//       // const { type: videoType } =
-//       //   yield* mediaValidator.prevalidateVideo(video);
-//       const imageId = `${crypto.randomUUID()}.${image.type.slice("image/".length)}`;
-//       const videoId = `${crypto.randomUUID()}.${video.type.slice("video/".length)}`;
-
-//       const bucketImg = "temp-image";
-//       const bucketVideo = "temp-video";
-
-//       yield* Effect.acquireRelease(
-//         s3Client.uploadFile(videoId, video, bucketVideo),
-//         (_, exit) =>
-//           Exit.isFailure(exit)
-//             ? s3Client.deleteFile(videoId, bucketVideo).pipe(
-//                 Effect.catchAll((e) => {
-//                   console.log(e);
-//                   return Effect.void;
-//                 }),
-//               )
-//             : Effect.void,
-//       );
-
-//       yield* Effect.acquireRelease(
-//         s3Client.uploadFile(imageId, image, bucketImg),
-//         (_, exit) =>
-//           Exit.isFailure(exit)
-//             ? s3Client.deleteFile(imageId, bucketImg).pipe(
-//                 Effect.catchAll((e) => {
-//                   console.log(e);
-//                   return Effect.void;
-//                 }),
-//               )
-//             : Effect.void,
-//       );
-
-//       const created = yield* Effect.acquireRelease(
-//         videoRepo.create({
-//           channelId,
-//           title,
-//           description,
-//           tempVideoKey: videoId,
-//           tempThumbnailKey: imageId,
-//         }),
-//         (row, exit) =>
-//           Exit.isFailure(exit)
-//             ? videoRepo.delete(row.id).pipe(
-//                 Effect.catchAll((e) => {
-//                   console.log(e);
-//                   return Effect.void;
-//                 }),
-//               )
-//             : Effect.void,
-//       );
-
-//       const message: VideoProcessingJob = {
-//         rowId: created.id,
-//         imageKey: imageId,
-//         videoKey: videoId,
-//       };
-//       yield* snsClient.send(
-//         process.env.VIDEO_PROCESSING_TOPIC_ARN!,
-//         message,
-//       );
-//       return created;
-//     }),
-//   ),
-
-// addAsset: (params: {
-//   userId: string;
-//   channelId: string;
-//   videoId: string;
-//   data: AssetInsert;
-// }) => Effect.Effect<
-//   {
-//     assetId: string;
-//     presignedUrl: string;
-//   },
-//   DBNotFoundError | InvalidMediaTypeError | EffectDrizzleQueryError
-// >;
-
-// updateAsset: (params: {
-//   assetId: string;
-//   userId: string;
-//   channelId: string;
-//   videoId: string;
-//   status: AssetStatus;
-// }) => Effect.Effect<
-//   void,
-//   DBNotFoundError | EffectDrizzleQueryError | QueueError
-// >;
-
-// addAsset: ({ userId, channelId, videoId, data }) =>
-//   Effect.gen(function* () {
-//     const bucket = assetTypeToBucket(data.type);
-//     if (!bucket) {
-//       return yield* new InvalidMediaTypeError({
-//         message: "Invalid media type",
-//       });
-//     }
-
-//     if (data.type === assetType.VIDEO) {
-//       const existing = yield* assetRepo.getVideoAssetByVideoId({
-//         videoId: videoId,
-//       });
-//       if (existing && existing.status === assetStatus.UPLOADED) {
-//         return yield* new InvalidMediaTypeError({
-//           message: "Video already exists",
-//         });
-//       }
-//     }
-//     const created = yield* assetRepo.create({
-//       userId,
-//       channelId,
-//       videoId,
-//       data,
-//     });
-//     const presignedUrl = yield* s3.getPresignedUrl(created.key, bucket);
-//     return {
-//       assetId: created.id,
-//       presignedUrl,
-//     };
-//   }),
-
-// updateAsset: ({ userId, channelId, videoId, assetId, status }) =>
-//   Effect.gen(function* () {
-//     const updatedAsset = yield* assetRepo.update({
-//       userId,
-//       channelId,
-//       videoId,
-//       assetId,
-//       status,
-//     });
-//     if (
-//       updatedAsset.type === assetType.VIDEO &&
-//       updatedAsset.status === assetStatus.UPLOADED
-//     ) {
-//       const message: VideoProcessingJob = {
-//         rowId: videoId,
-//         videoKey: updatedAsset.key,
-//       };
-//       yield* sns.send("videoProcessingTopicArn", message);
-//     }
-
-//     if (
-//       updatedAsset.type === assetType.VIDEO_THUMBNAIL &&
-//       updatedAsset.status === assetStatus.UPLOADED
-//     ) {
-//       const message: ImageProcessingJob = {
-//         key: updatedAsset.key,
-//       };
-//       yield* sns.send("imageProcessingTopicArn", message);
-//     }
-//     return;
-//   }),
+  return {
+    dashManifestUrl: obj.dashManifestKey
+      ? `${cdnBaseUrl}/videos/${obj.dashManifestKey}`
+      : null,
+    hlsMasterUrl: obj.hlsMasterKey
+      ? `${cdnBaseUrl}/videos/${obj.hlsMasterKey}`
+      : null,
+    storyboardUrl: obj.storyboardKey
+      ? `${cdnBaseUrl}/videos/${obj.storyboardKey}`
+      : null,
+    renditions: obj.renditions,
+    status: obj.status,
+  };
+}

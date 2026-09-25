@@ -56,7 +56,10 @@ export const qualityFeature = createFeature({
     isAuto: false,
   }),
   getApi: (ctx) => ({
-    setQuality: (index: number) => ctx.engine.setQuality(index),
+    setQuality: (index: number) => {
+      console.log("in setQuality");
+      ctx.engine.setQuality(index);
+    },
   }),
   onSourceLoad: (ctx) => {
     const currentQuality = ctx.state.currentQuality();

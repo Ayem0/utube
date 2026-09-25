@@ -1,3 +1,4 @@
+import { authzFeature } from "./authz";
 import { displayFeature } from "./display";
 import { interactionFeature } from "./interaction";
 import { playbackFeature } from "./playback";
@@ -14,4 +15,5 @@ export const videoFeatures = [
   interactionFeature,
   qualityFeature,
   storyboardFeature,
+  authzFeature,
 ] as const;

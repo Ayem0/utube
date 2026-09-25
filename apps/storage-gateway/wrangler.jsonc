@@ -1,0 +1,26 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "storage-gateway",
+    "main": "./src/index.ts",
+    "compatibility_date": "2026-05-12",
+    "compatibility_flags": [
+        "nodejs_compat"
+    ],
+    "observability": {
+        "enabled": true
+    },
+    "r2_buckets": [
+        {
+            "binding": "VIDEOS",
+            "bucket_name": "videos"
+        }
+    ],
+    "queues": {
+        "producers": [
+        {
+            "queue": "video-processing-queue",
+            "binding": "VIDEO_PROCESSING_QUEUE"
+        }
+        ]
+    }
+}

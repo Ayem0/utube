@@ -1,0 +1,18 @@
+{
+    "name": "@repo/storage-gateway",
+    "private": true,
+    "scripts": {
+        "dev": "wrangler dev -c wrangler.jsonc --port 8790 --inspector-port 9233 --persist-to ../../.cloudflare-dev",
+        "cf-typegen": "wrangler types"
+    },
+    "dependencies": {
+        "@repo/services": "workspace:*",
+        "@repo/types": "workspace:*",
+        "effect": "catalog:"
+    },
+    "devDependencies": {
+        "@repo/eslint-config": "workspace:*",
+        "@repo/typescript-config": "workspace:*",
+        "wrangler": "catalog:"
+    }
+}

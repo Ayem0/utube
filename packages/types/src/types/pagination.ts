@@ -1,14 +1,14 @@
 export type PaginationResult<T> = {
-  pageIndex: number;
-  pageSize: number;
+  index: number;
+  size: number;
   totalResults: number;
   items: T;
   maxPageIndex: number;
 };
 
 export type PaginationRequest<TSort, TFilters> = {
-  pageSize: number;
-  pageIndex: number;
+  size: number;
+  index: number;
   sort: TSort;
   desc: boolean;
   search: string;

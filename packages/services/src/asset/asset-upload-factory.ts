@@ -49,6 +49,8 @@ export class AssetUploadFactory extends Context.Service<
           bucket: "assets",
           mimeType,
           path: assetStorageKey,
+          method: "PUT",
+          expiresIn: 3600,
         }),
       validate: ({ mimeType, sizeBytes, assetType: type }) =>
         Effect.gen(function* () {
@@ -57,5 +59,5 @@ export class AssetUploadFactory extends Context.Service<
     };
   }),
 }) {
-  static Layer = Layer.effect(this, this.make).pipe(Layer.provide(S3.Layer));
+  static Layer = Layer.effect(this, this.make);
 }

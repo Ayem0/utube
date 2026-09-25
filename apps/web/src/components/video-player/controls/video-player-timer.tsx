@@ -1,12 +1,14 @@
-import { player } from '@/lib/video-player/player';
+import { usePlayerState } from '@/lib/video-player/create-player';
 import { Button } from '@repo/ui/components/button';
+import { timeFeature } from '@repo/video-player/feature/core/time';
 import { useLayoutEffect, useRef, useState } from 'react';
 
 export function VideoPlayerTimer() {
-  const currentTimeStr = player.usePlayerState((s) => s.time.currentTimeStr);
-  const durationStr = player.usePlayerState((s) => s.time.durationStr);
-  const remainingTimeStr = player.usePlayerState(
-    (s) => s.time.remainingTimeStr,
+  const currentTimeStr = usePlayerState(timeFeature, (s) => s.currentTimeStr);
+  const durationStr = usePlayerState(timeFeature, (s) => s.durationStr);
+  const remainingTimeStr = usePlayerState(
+    timeFeature,
+    (s) => s.remainingTimeStr,
   );
   const [remainingMode, setRemainingMode] = useState(false);
   const timeRef = useRef<HTMLTimeElement>(null);

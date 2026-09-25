@@ -1,8 +1,9 @@
 import { Sidebar, SidebarContent } from '@repo/ui/components/sidebar';
 import {
-  SidebarSection,
-  SidebarSectionProps,
+  SidebarSection
 } from '../sidebar/sidebar-section';
+import type {
+  SidebarSectionProps} from '../sidebar/sidebar-section';
 
 const nav: SidebarSectionProps = {
   label: 'Settings',

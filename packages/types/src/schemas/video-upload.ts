@@ -9,7 +9,7 @@ export const videoPutSchema = z.object({
   description: z
     .string()
     .max(1024, "Description cannot be longer than 1024 characters")
-    .or(z.undefined()),
+    .or(z.null()),
   visibility: z.enum(videoVisibility, "Invalid visibility"),
 });
 

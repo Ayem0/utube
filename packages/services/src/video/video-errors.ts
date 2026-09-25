@@ -15,3 +15,8 @@ export class VideoStoryboardError extends Data.TaggedError(
 export class VideoUploadError extends Data.TaggedError("VideoUploadError")<{
   message: string;
 }> {}
+
+export class VideoPlaybackError extends Data.TaggedError("VideoPlaybackError")<{
+  cause: unknown;
+  message: string;
+}> {}

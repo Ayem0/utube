@@ -1,120 +1,134 @@
-// import cors from "@elysiajs/cors";
-// import { auth } from "@repo/auth/auth";
-// import { Server as Engine } from "@socket.io/bun-engine";
-// import { Elysia } from "elysia";
-// import { Server } from "socket.io";
+import { makeAuth } from "@repo/auth/auth";
+import { makeDb } from "@repo/db";
+import type { WSEvent } from "@repo/types/schemas/ws-events";
+import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 
-// const io = new Server();
-// const engine = new Engine({
+// Worker
+export default class WS extends WorkerEntrypoint<Env> {
+  async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
 
-// });
+    // Only /ws is a WebSocket endpoint.
+    if (url.pathname !== "/ws") {
+      return new Response("Not found", {
+        status: 404,
+      });
+    }
 
-// io.bind(engine);
+    // Require WebSocket upgrade.
+    const upgradeHeader = request.headers.get("Upgrade");
+    if (!upgradeHeader || upgradeHeader !== "websocket") {
+      return new Response("Worker expected Upgrade: websocket", {
+        status: 426,
+      });
+    }
 
-// io.on("connection", (socket) => {
-//   console.log("socket ");
-// });
+    const auth = makeAuth(
+      makeDb(this.env.HYPERDRIVE.connectionString),
+      this.env.BETTER_AUTH_URL,
+      this.env.BETTER_AUTH_SECRET,
+    );
 
-// const app = new Elysia()
-//   .use(
-//     cors({
-//       origin: "http://localhost:3000",
-//       credentials: true,
-//       methods: ["*"],
-//     }),
-//   )
-//   .macro({
-//     auth: {
-//       async resolve({ status, request: { headers } }) {
-//         const session = await auth.api.getSession({
-//           headers,
-//         });
-//         if (!session) {
-//           return status(401);
-//         }
-//         return {
-//           user: session.user,
-//           session: session.session,
-//         };
-//       },
-//     },
-//   })
-//   .all(
-//     "/socket.io/",
-//     ({ request, server }) => {
-//       if (!server) {
-//         console.log("no server");
-//         return;
-//       }
-//       console.log("called", request);
-//       return engine.handleRequest(request, server);
-//     },
-//     { auth: true },
-//   )
-//   .listen({
-//     port: 3002,
-//     ...engine.handler(),
-//   });
-
-// console.log(
-//   `🦊 Elysia Websocket Server SOCKETIO is running at ${app.server?.hostname}:${app.server?.port}`,
-// );
-import cors from "@elysiajs/cors";
-import { auth } from "@repo/auth/auth";
-import { Server as Engine } from "@socket.io/bun-engine";
-import { Elysia } from "elysia";
-import { Server } from "socket.io";
-
-const io = new Server({});
-
-const engine = new Engine({
-  path: "/socket.io/",
-  cors: {
-    origin: "http://localhost:3000",
-    credentials: true,
-  },
-
-  async allowRequest(request) {
     const session = await auth.api.getSession({
       headers: request.headers,
     });
 
-    if (!session) {
-      throw "Unauthorized";
+    if (!session)
+      return new Response("Unauthorized", {
+        status: 401,
+      });
+
+    const obj = this.env.WEBSOCKET_SERVER.getByName(session.user.id);
+
+    return obj.fetch(request);
+  }
+
+  async sendToUser(userId: string, message: WSEvent): Promise<number> {
+    const obj = this.env.WEBSOCKET_SERVER.getByName(userId);
+    return obj.sendMessage(JSON.stringify(message));
+  }
+}
+
+// DO
+export class WebsocketServer extends DurableObject<Env> {
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env);
+
+    // this.ctx.setWebSocketAutoResponse(
+    //   new WebSocketRequestResponsePair("ping", "pong"),
+    // );
+  }
+
+  /**
+   * Accept a new WebSocket connection.
+   */
+  async fetch(request: Request): Promise<Response> {
+    const webSocketPair = new WebSocketPair();
+    const [client, server] = Object.values(webSocketPair);
+
+    if (!server) throw new Error("WebSocket server not found");
+
+    this.ctx.acceptWebSocket(server);
+
+    const id = crypto.randomUUID();
+
+    server.serializeAttachment({ id });
+
+    return new Response(null, {
+      status: 101,
+      webSocket: client,
+    });
+  }
+
+  /**
+   * RPC method used by the ws-gateway to send message from server to clients
+   * @param message Already JSON stringified @type {WSEvent}
+   * @returns the number of messages successfully sent to clients
+   */
+  async sendMessage(message: string): Promise<number> {
+    let sent = 0;
+
+    console.log("sending msg to ws", message);
+    for (const ws of this.ctx.getWebSockets()) {
+      try {
+        ws.send(message);
+        sent++;
+      } catch (error) {
+        // If the ws closed between loop iteration and send call
+        console.error("Failed to send message to websocket:", error);
+        continue;
+      }
     }
-  },
-});
+    return sent;
+  }
 
-io.bind(engine);
+  webSocketClose(
+    ws: WebSocket,
+    code: number,
+    reason: string,
+    wasClean: boolean,
+  ): void {
+    console.log("SERVER webSocketClose", {
+      time: Date.now(),
+      readyState: ws.readyState,
+      code,
+      reason,
+      wasClean,
+    });
+    // not required but in wrangler dev it is
+    ws.close();
+  }
 
-io.on("connection", (socket) => {
-  console.log("socket connected", socket.id);
-});
+  /**
+   * Called if Cloudflare encounters a WebSocket error.
+   */
+  async webSocketError(ws: WebSocket, error: unknown): Promise<void> {
+    console.error("WebSocket error:", error);
 
-io.engine.on("connection_error", (err) => {
-  console.error("Socket.IO connection error:", err);
-});
-
-const app = new Elysia()
-  .use(
-    cors({
-      origin: "http://localhost:3000",
-      credentials: true,
-      methods: ["GET", "POST", "OPTIONS"],
-    }),
-  )
-  .all("/socket.io/", ({ request, server }) => {
-    if (!server) {
-      return new Response("Internal server error", { status: 500 });
+    try {
+      ws.close(1011, "WebSocket server error");
+    } catch {
+      // Socket may already be closed.
     }
-
-    return engine.handleRequest(request, server);
-  })
-  .listen({
-    port: 3002,
-    ...engine.handler(),
-  });
-
-console.log(
-  `🦊 Elysia Socket.IO server running at ${app.server?.hostname}:${app.server?.port}`,
-);
+  }
+}

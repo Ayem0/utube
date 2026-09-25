@@ -1,10 +1,11 @@
-import authClient from '@repo/auth/auth-client';
 import { DropdownMenuItem } from '@repo/ui/components/dropdown-menu';
 import { Spinner } from '@repo/ui/components/spinner';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { LogOut } from 'lucide-react';
 import { useState } from 'react';
+import { getAuthQueryOptions } from '@/lib/auth/auth-query-options';
+import { authClient } from '@/lib/auth/auth-client';
 
 export function LogoutButton() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -13,7 +14,7 @@ export function LogoutButton() {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     await authClient.signOut();
-    queryClient.setQueryData(['auth-session'], null);
+    queryClient.setQueryData(getAuthQueryOptions().queryKey, null);
     await router.invalidate();
     setIsLoggingOut(false);
   };

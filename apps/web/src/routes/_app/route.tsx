@@ -12,6 +12,7 @@ export const Route = createFileRoute('/_app')({
         selectedChannel: undefined,
       };
     }
+  
     const { channels, selectedChannel } =
       await context.queryClient.ensureQueryData(getChannelsQueryOptions());
     return {

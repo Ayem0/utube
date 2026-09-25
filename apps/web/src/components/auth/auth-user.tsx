@@ -1,6 +1,3 @@
-import authClient from '@repo/auth/auth-client';
-
-import type { User } from '@repo/auth/user';
 import {
   Avatar,
   AvatarFallback,
@@ -21,6 +18,8 @@ import { Link, useRouter } from '@tanstack/react-router';
 import { LogOut, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 import { ChannelSwitcher } from '../header/channel-switcher';
+import type { User } from '@repo/auth/user';
+import { authClient } from '@/lib/auth/auth-client';
 
 export function AuthUser({ user }: { user: User }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -37,12 +36,9 @@ export function AuthUser({ user }: { user: User }) {
         render={
           <Button variant="secondary" size="icon" className="rounded-2xl">
             <Avatar className="h-8 w-8 rounded-lg">
-              <AvatarImage
-                src={user.image ?? undefined}
-                alt={user.name ?? undefined}
-              />
+              <AvatarImage src={user.image ?? undefined} alt={user.name} />
               <AvatarFallback className="rounded-4xl">
-                {user.email?.[0]?.toUpperCase() ?? 'U'}
+                {user.email[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
           </Button>
@@ -57,12 +53,9 @@ export function AuthUser({ user }: { user: User }) {
           <DropdownMenuLabel className="p-0 font-normal text-primary">
             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage
-                  src={user.image ?? undefined}
-                  alt={user.name ?? undefined}
-                />
+                <AvatarImage src={user.image ?? undefined} alt={user.name} />
                 <AvatarFallback className="rounded-4xl">
-                  {user.email?.[0]?.toUpperCase() ?? 'U'}
+                  {user.email[0].toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">

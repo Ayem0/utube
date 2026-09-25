@@ -1,7 +1,8 @@
 import { Textarea } from '@repo/ui/components/textarea';
-import { BaseField, FieldProps } from './base-field';
+import { BaseField } from './base-field';
+import type { FieldProps } from './base-field';
 
-interface TextareaFieldProps extends FieldProps<string | undefined> {
+interface TextareaFieldProps extends FieldProps<string | null> {
   placeholder: string;
   maxLength?: number;
 }
@@ -21,7 +22,7 @@ export function TextareaField({
           maxLength={maxLength}
           id={field.name}
           name={field.name}
-          value={field.state.value}
+          value={field.state.value ?? undefined}
           onBlur={field.handleBlur}
           onChange={(e) => field.handleChange(e.target.value)}
           aria-invalid={isInvalid}

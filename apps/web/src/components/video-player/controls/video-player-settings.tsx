@@ -1,4 +1,4 @@
-import { player } from '@/lib/video-player/player';
+import { usePlayerRefs } from '@/lib/video-player/create-player';
 import { Button } from '@repo/ui/components/button';
 import {
   DropdownMenu,
@@ -13,7 +13,7 @@ export function VideoPlayerSettings({
 }: {
   children: React.ReactNode;
 }) {
-  const { containerRef } = player.usePlayerContext();
+  const { containerRef } = usePlayerRefs();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger

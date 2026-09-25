@@ -6,6 +6,12 @@ import { Context, Effect } from "effect";
 import { AssetRepository } from "../asset/asset-repository";
 import type { DBNotFoundError } from "../db/db-errors";
 import { FileSystem } from "../file-system/file-system";
+import type { FSError } from "../file-system/file-system-errors";
+import type {
+  InvalidMediaDimensionError,
+  InvalidMediaSizeError,
+  InvalidMediaTypeError,
+} from "../media/media-errors";
 import { S3 } from "../s3/s3";
 import type { S3Error } from "../s3/s3-errors";
 import { ImageProcessingError, InvalidAssetTypeError } from "./image-errors";
@@ -22,6 +28,10 @@ export interface ImagePipelineService {
     | S3Error
     | ImageProcessingError
     | InvalidAssetTypeError
+    | FSError
+    | InvalidMediaTypeError
+    | InvalidMediaSizeError
+    | InvalidMediaDimensionError
   >;
 }
 
@@ -57,7 +67,7 @@ export class ImagePipeline extends Context.Service<
               message: `Invalid asset type`,
             });
           }
-          const file = yield* s3.getFile(asset.storageKey, "assets");
+          const file = yield* s3.getFile(asset.originalStorageKey, "assets");
           const outputdir = yield* fs.createDirectory(`/tmp/${asset.id}`);
           const originalPath = `${outputdir}/original`;
           yield* fs.writeFile(originalPath, file);
@@ -67,9 +77,10 @@ export class ImagePipeline extends Context.Service<
             outputdir,
             asset.type,
           );
-          yield* s3.uploadFiles(
-            genFilePaths.map((g) => ({ file: Bun.file(g), key: `` })),
-          );
+          // yield* s3.uploadFiles(
+          //   genFilePaths.map((g) => ({ file: Bun.file(g).bytes(), key: `` })),
+          //   "test",
+          // );
         }),
     };
   }),

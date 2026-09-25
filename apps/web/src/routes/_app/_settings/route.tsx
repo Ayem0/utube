@@ -1,5 +1,5 @@
+import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 import { SettingsNav } from '@/components/settings/settings-nav';
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_app/_settings')({
   component: RouteComponent,

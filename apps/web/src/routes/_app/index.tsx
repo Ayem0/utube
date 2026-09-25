@@ -1,9 +1,10 @@
-import { FakeVideo, HomeFeed } from '@/components/home/home-feed';
 import { createFileRoute } from '@tanstack/react-router';
+import type { FakeVideo } from '@/components/home/home-feed';
+import { HomeFeed } from '@/components/home/home-feed';
 
 export const Route = createFileRoute('/_app/')({ component: App });
 
-const videos: FakeVideo[] = [
+const videos: Array<FakeVideo> = [
   {
     id: '1',
     img: 'https://picsum.photos/seed/video1/800/450',

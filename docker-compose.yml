@@ -1,21 +1,21 @@
 services:
-  localstack:
-    image: localstack/localstack-pro # required for Pro
-    ports:
-      - "127.0.0.1:4566:4566" # LocalStack Gateway
-      - "127.0.0.1:4510-4559:4510-4559" # external services port range
-      # - "127.0.0.1:443:443" # LocalStack HTTPS Gateway (Pro)
-    environment:
-      # Activate LocalStack for AWS: https://docs.localstack.cloud/getting-started/auth-token/
-      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:?} # required for Pro
-      # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
-      - DEBUG=${DEBUG:-0}
-      - PERSISTENCE=${PERSISTENCE:-1}
-    volumes:
-      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
-    networks:
-      - app
+  # localstack:
+  #   image: localstack/localstack-pro # required for Pro
+  #   ports:
+  #     - "127.0.0.1:4566:4566" # LocalStack Gateway
+  #     - "127.0.0.1:4510-4559:4510-4559" # external services port range
+  #     # - "127.0.0.1:443:443" # LocalStack HTTPS Gateway (Pro)
+  #   environment:
+  #     # Activate LocalStack for AWS: https://docs.localstack.cloud/getting-started/auth-token/
+  #     - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:?} # required for Pro
+  #     # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
+  #     - DEBUG=${DEBUG:-0}
+  #     - PERSISTENCE=${PERSISTENCE:-1}
+  #   volumes:
+  #     - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+  #     - "/var/run/docker.sock:/var/run/docker.sock"
+  #   networks:
+  #     - app
 
   # terraform:
   #   build:
@@ -44,31 +44,31 @@ services:
   #   networks:
   #     - app
 
-  terraform:
-    build:
-      context: .
-      dockerfile: infra/terraform/Dockerfile
-    working_dir: /workspace/infra/terraform
-    volumes:
-      - .:/workspace
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - AWS_DEFAULT_REGION=us-east-1
-      - TF_LOG=INFO
-    entrypoint: []
-    command:
-      - /bin/sh
-      - -c
-      - |
-        terraform init
-        terraform apply -auto-approve
-    depends_on:
-      localstack:
-        condition: service_healthy
-    networks:
-      - app
+  # terraform:
+  #   build:
+  #     context: .
+  #     dockerfile: infra/terraform/Dockerfile
+  #   working_dir: /workspace/infra/terraform
+  #   volumes:
+  #     - .:/workspace
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   environment:
+  #     - AWS_ACCESS_KEY_ID=test
+  #     - AWS_SECRET_ACCESS_KEY=test
+  #     - AWS_DEFAULT_REGION=us-east-1
+  #     - TF_LOG=INFO
+  #   entrypoint: []
+  #   command:
+  #     - /bin/sh
+  #     - -c
+  #     - |
+  #       terraform init
+  #       terraform apply -auto-approve
+  #   depends_on:
+  #     localstack:
+  #       condition: service_healthy
+  #   networks:
+  #     - app
 
   redis:
     image: redis
@@ -105,6 +105,8 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_NOTIFY_WEBHOOK_ENABLE_PROCESSING: "on"
+      MINIO_NOTIFY_WEBHOOK_ENDPOINT_PROCESSING: "http://host.docker.internal:8788/__dev/minio-event"
     ports:
       - 9000:9000
       - 9001:9001
@@ -114,46 +116,46 @@ services:
     networks:
       - app
 
-  nginx:
-    image: nginx:1.27-alpine
-    restart: always
-    depends_on:
-      - minio
-    ports:
-      - "8080:80"
-    volumes:
-      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - nginx-cache:/var/cache/nginx
-    networks:
-      - app
+  # nginx:
+  #   image: nginx:1.27-alpine
+  #   restart: always
+  #   depends_on:
+  #     - minio
+  #   ports:
+  #     - "8080:80"
+  #   volumes:
+  #     - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - nginx-cache:/var/cache/nginx
+  #   networks:
+  #     - app
 
-  video-processing-worker:
-    build:
-      context: .
-      dockerfile: apps/video-processing-worker/Dockerfile
-    env_file:
-      - ./apps/video-processing-worker/.env
-    restart: always
-    depends_on:
-      terraform:
-        condition: service_completed_successfully
-      redis:
-        condition: service_started
-      db:
-        condition: service_started
-      minio:
-        condition: service_started
-      nginx:
-        condition: service_started
-    networks:
-      - app
+  # video-processing-worker:
+  #   build:
+  #     context: .
+  #     dockerfile: apps/video-processing-worker/Dockerfile
+  #   env_file:
+  #     - ./apps/video-processing-worker/.env
+  #   restart: always
+  #   depends_on:
+  #     terraform:
+  #       condition: service_completed_successfully
+  #     redis:
+  #       condition: service_started
+  #     db:
+  #       condition: service_started
+  #     minio:
+  #       condition: service_started
+  #     nginx:
+  #       condition: service_started
+  #   networks:
+  #     - app
 volumes:
   minio:
     driver: local
   redis:
     driver: local
-  nginx-cache:
-    driver: local
+  # nginx-cache:
+  #   driver: local
 
 networks:
   app:

@@ -68,6 +68,17 @@ export class Store<T extends Record<PropertyKey, unknown>> {
     selector(this.state)(value);
   }
 
+  public subscribe<S>(signal: DeepSignal<S>, listener: () => void) {
+    let current = signal();
+    return this.runtime.effect(() => {
+      const next = signal();
+      if (!Object.is(current, next)) {
+        current = next;
+        listener();
+      }
+    });
+  }
+
   /**
    * Bridge for react useSyncExternalStore
    * @param selector selector of the signal tree

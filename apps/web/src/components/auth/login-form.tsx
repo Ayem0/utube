@@ -1,5 +1,3 @@
-import { useAppForm } from '@/hooks/use-form';
-import authClient from '@repo/auth/auth-client';
 import { Alert, AlertDescription } from '@repo/ui/components/alert';
 import { Button } from '@repo/ui/components/button';
 import {
@@ -13,6 +11,8 @@ import { Link, useSearch } from '@tanstack/react-router';
 import { AlertCircleIcon } from 'lucide-react';
 import { useState } from 'react';
 import * as z from 'zod';
+import { authClient } from '@/lib/auth/auth-client';
+import { useAppForm } from '@/hooks/use-form';
 
 const majRegex = /[A-Z]/;
 const minRegex = /[a-z]/;
@@ -67,7 +67,7 @@ export function LoginForm() {
         },
         {
           onError: ({ error }) => {
-            setError(error.message ?? 'Unkown error occured please try again.');
+            setError(error.message);
           },
         },
       );

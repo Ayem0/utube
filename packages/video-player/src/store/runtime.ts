@@ -1,3 +1,8 @@
+/**
+ * CODE IMPORTED AND MODIFIED FROM https://github.com/stackblitz/alien-signals
+ * TO MAKE A REACTIVESYSTEM SCOPED TO A STORE INSTANCE
+ */
+
 import { createReactiveSystem, ReactiveFlags, ReactiveNode } from "./alien";
 
 interface EffectScopeNode extends ReactiveNode {}

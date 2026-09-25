@@ -6,35 +6,27 @@ import {
 } from "@repo/types/enums/asset/asset-status";
 import { and, eq } from "drizzle-orm";
 import type { EffectDrizzleQueryError } from "drizzle-orm/effect-core";
-import { Context, Effect, Layer } from "effect";
-import { DB, repo, type RepoFn } from "../db/db";
+import { Context, Effect, Layer, UndefinedOr } from "effect";
+import { DB } from "../db/db";
 import { DBNotFoundError } from "../db/db-errors";
 
 export interface AssetRepositoryApi {
-  getById: RepoFn<
-    {
-      assetId: string;
-    },
-    Asset,
-    EffectDrizzleQueryError | DBNotFoundError
-  >;
+  getById: (params: {
+    assetId: string;
+  }) => Effect.Effect<Asset, EffectDrizzleQueryError | DBNotFoundError>;
 
-  create: RepoFn<AssetInsert, Asset, EffectDrizzleQueryError | DBNotFoundError>;
+  create: (
+    params: AssetInsert,
+  ) => Effect.Effect<Asset, EffectDrizzleQueryError | DBNotFoundError>;
 
-  updateAssetStatus: RepoFn<
-    {
-      assetId: string;
-      status: AssetStatus;
-    },
-    Asset,
-    EffectDrizzleQueryError | DBNotFoundError
-  >;
+  updateAssetStatus: (params: {
+    assetId: string;
+    status: AssetStatus;
+  }) => Effect.Effect<Asset, EffectDrizzleQueryError | DBNotFoundError>;
 
-  claimForProcessing: RepoFn<
-    { assetId: string },
-    Asset,
-    EffectDrizzleQueryError | DBNotFoundError
-  >;
+  claimForProcessing: (params: {
+    assetId: string;
+  }) => Effect.Effect<Asset, EffectDrizzleQueryError | DBNotFoundError>;
 }
 
 export class AssetRepository extends Context.Service<
@@ -43,65 +35,85 @@ export class AssetRepository extends Context.Service<
 >()("AssetRepository", {
   make: Effect.gen(function* () {
     const db = yield* DB;
-    return repo<AssetRepositoryApi>(db, {
-      getById: ({ assetId }, db) =>
-        Effect.gen(function* () {
-          const [foundAsset] = yield* db
+    return {
+      getById: ({ assetId }) =>
+        db.run((cl) =>
+          cl
             .select()
             .from(asset)
             .where(eq(asset.id, assetId))
-            .limit(1);
-
-          if (!foundAsset) {
-            return yield* new DBNotFoundError({ message: "Asset not found" });
-          }
-
-          return foundAsset;
-        }),
-      create: (values, db) =>
-        Effect.gen(function* () {
-          const [row] = yield* db.insert(asset).values(values).returning();
-          if (!row) {
-            return yield* new DBNotFoundError({ message: "Asset not found" });
-          }
-          return row;
-        }),
-      updateAssetStatus: ({ assetId, status }, db) =>
-        Effect.gen(function* () {
-          const [updated] = yield* db
+            .limit(1)
+            .pipe(
+              Effect.flatMap(([res]) =>
+                UndefinedOr.match(res, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Asset not found" }),
+                  onDefined: (res) => Effect.succeed(res),
+                }),
+              ),
+            ),
+        ),
+      create: (values) =>
+        db.run((cl) =>
+          cl
+            .insert(asset)
+            .values(values)
+            .returning()
+            .pipe(
+              Effect.flatMap(([res]) =>
+                UndefinedOr.match(res, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Asset not found" }),
+                  onDefined: (res) => Effect.succeed(res),
+                }),
+              ),
+            ),
+        ),
+      updateAssetStatus: ({ assetId, status }) =>
+        db.run((cl) =>
+          cl
             .update(asset)
             .set({
               status: status,
             })
             .where(eq(asset.id, assetId))
-            .returning();
-          if (!updated) {
-            return yield* new DBNotFoundError({ message: "Asset not found" });
-          }
-          return updated;
-        }),
+            .returning()
+            .pipe(
+              Effect.flatMap(([res]) =>
+                UndefinedOr.match(res, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Asset not found" }),
+                  onDefined: (res) => Effect.succeed(res),
+                }),
+              ),
+            ),
+        ),
 
-      claimForProcessing: ({ assetId }, db) =>
-        Effect.gen(function* () {
-          const [updated] = yield* db
+      claimForProcessing: ({ assetId }) =>
+        db.run((cl) =>
+          cl
             .update(asset)
             .set({
               status: assetStatus.PROCESSING,
             })
             .where(
-              and(
-                eq(asset.id, assetId),
-                eq(asset.status, assetStatus.UPLOADED),
-              ),
+              and(eq(asset.id, assetId), eq(asset.status, assetStatus.PENDING)),
             )
-            .returning();
-          if (!updated) {
-            return yield* new DBNotFoundError({ message: "Asset not found" });
-          }
-          return updated;
-        }),
-    });
+            .returning()
+            .pipe(
+              Effect.flatMap(([res]) =>
+                UndefinedOr.match(res, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Asset not found" }),
+                  onDefined: (res) => Effect.succeed(res),
+                }),
+              ),
+            ),
+        ),
+    };
   }),
 }) {
-  static Layer = Layer.effect(this, this.make).pipe(Layer.provide(DB.Layer));
+  static readonly Layer = Layer.effect(this, this.make).pipe(
+    Layer.provide(DB.Layer),
+  );
 }

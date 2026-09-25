@@ -1,7 +1,7 @@
-import { player } from '@/lib/video-player/player';
+import { usePlayerRefs } from '@/lib/video-player/create-player';
 
 export function Video({ children }: { children?: React.ReactNode }) {
-  const { videoRef } = player.usePlayerContext();
+  const { videoRef } = usePlayerRefs();
 
   return (
     <video

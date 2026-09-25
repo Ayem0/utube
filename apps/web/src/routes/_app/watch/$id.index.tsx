@@ -1,7 +1,7 @@
-import { WatchLayout } from '@/components/watch/watch-layout';
-import { getWatchVideoQueryOptions } from '@/lib/queries/get-watch-video';
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router';
 import z from 'zod';
+import { WatchLayout } from '@/components/watch/watch-layout';
+import { getWatchVideoQueryOptions } from '@/lib/queries/get-watch-video';
 
 const searchSchema = z.object({
   t: z.coerce.number().int().nonnegative().catch(0).default(0),

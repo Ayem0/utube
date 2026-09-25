@@ -1,15 +1,16 @@
 import {
   useQuery,
-  useSuspenseQuery,
-  UseSuspenseQueryOptions,
+  useSuspenseQuery
 } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
+import type {
+  UseSuspenseQueryOptions} from '@tanstack/react-query';
 
 export function useHybridQuery<
   TQueryFnData,
   TError,
   TData,
-  TQueryKey extends readonly unknown[],
+  TQueryKey extends ReadonlyArray<unknown>,
 >(
   queryOptions: UseSuspenseQueryOptions<TQueryFnData, TError, TData, TQueryKey>,
 ) {

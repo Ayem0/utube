@@ -5,6 +5,6 @@ import { getRequestHeaders } from '@tanstack/react-start/server';
 export const getApi = createIsomorphicFn()
   .server(() => {
     const headers = getRequestHeaders();
-    return api(headers);
+    return api(import.meta.env.VITE_API_URL!, headers);
   })
-  .client(() => api());
+  .client(() => api(import.meta.env.VITE_API_URL!));

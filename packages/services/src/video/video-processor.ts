@@ -76,6 +76,7 @@ export class VideoProcessor extends Context.Service<
             await Bun.$`mkdir -p ${outputDir}/cmaf/${ladder.length}`;
             console.log("created folders for cmaf ladder");
 
+            console.log("ffmpeg command: ", args.join(" "));
             const proc = Bun.spawn(args, {
               stdout: "pipe",
               stderr: "pipe",
@@ -379,6 +380,8 @@ function buildFfmpegArgs({
     return [
       "-map",
       `[v${i}]`,
+      `-threads:v:${i}`,
+      "2",
       `-c:v:${i}`,
       "libx264",
       `-b:v:${i}`,
@@ -398,7 +401,7 @@ function buildFfmpegArgs({
       `-pix_fmt:v:${i}`,
       "yuv420p",
       `-x264-params:v:${i}`,
-      "ref=2:bframes=2:b-pyramid=none:weightp=1:rc-lookahead=40:force-cfr=1",
+      "ref=2:bframes=2:b-pyramid=none:weightp=1:rc-lookahead=10:force-cfr=1",
     ];
   });
 
@@ -420,6 +423,8 @@ function buildFfmpegArgs({
     "+genpts",
     "-filter_complex",
     filterComplex,
+    "-filter_complex_threads",
+    "2",
     ...videoArgs,
     ...audioArgs,
     "-preset",

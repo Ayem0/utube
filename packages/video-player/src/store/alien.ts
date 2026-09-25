@@ -1,3 +1,7 @@
+/**
+ * CODE IMPORTED FROM https://github.com/stackblitz/alien-signals
+ */
+
 export interface ReactiveNode {
   deps?: Link;
   depsTail?: Link;

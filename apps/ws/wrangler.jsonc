@@ -1,0 +1,33 @@
+{
+    "$schema": "./node_modules/wrangler/config-schema.json",
+
+    "name": "ws",
+    "main": "src/index.ts",
+    "compatibility_date": "2026-09-10",
+    "compatibility_flags": ["nodejs_compat"],
+
+    "durable_objects": {
+        "bindings": [
+        {
+            "name": "WEBSOCKET_SERVER",
+            "class_name": "WebsocketServer"
+        }
+        ]
+    },
+    "hyperdrive": [
+        {
+            "binding": "HYPERDRIVE",
+            "id": "your-hyperdrive-config-id",
+
+            // Only used by local `wrangler dev`
+            "localConnectionString": "postgresql://root:root@localhost:5432/mydb"
+        }
+    ],
+    
+    "exports": {
+        "WebsocketServer": {
+            "type": "durable-object",
+            "storage": "sqlite"
+        }
+    }
+}

@@ -25,8 +25,8 @@ import {
 } from 'lucide-react';
 import { Fragment } from 'react/jsx-runtime';
 import { SidebarLogin } from './sidebar-login';
-import type { SidebarSectionProps } from './sidebar-section';
 import { SidebarSection } from './sidebar-section';
+import type { SidebarSectionProps } from './sidebar-section';
 
 const loggedInSidebarData: Array<SidebarSectionProps> = [
   {

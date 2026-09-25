@@ -1,11 +1,9 @@
 import type { interactionFeature } from '@repo/video-player/feature/core/interaction';
 import type { playbackFeature } from '@repo/video-player/feature/core/playback';
 import type { storyboardFeature } from '@repo/video-player/feature/core/storyboard';
-import {
-  formatTime,
-  type timeFeature,
-} from '@repo/video-player/feature/core/time';
-import type { Player } from '@repo/video-player/player/player';
+import type { timeFeature } from '@repo/video-player/feature/core/time';
+import { formatTime } from '@repo/video-player/feature/core/time';
+import type { ControllerContext } from '@repo/video-player/player/player';
 
 interface TimelineControllerElements {
   timelineContainer: HTMLDivElement;
@@ -34,15 +32,13 @@ export class TimelineController {
   private observer: ResizeObserver | null = null;
 
   constructor(
-    context: ReturnType<
-      Player<
-        [
-          typeof timeFeature,
-          typeof interactionFeature,
-          typeof playbackFeature,
-          typeof storyboardFeature,
-        ]
-      >['getControllerContext']
+    context: ControllerContext<
+      [
+        typeof timeFeature,
+        typeof interactionFeature,
+        typeof playbackFeature,
+        typeof storyboardFeature,
+      ]
     >,
   ) {
     this.ctx = context;

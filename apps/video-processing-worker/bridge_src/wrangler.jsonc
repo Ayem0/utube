@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "video-processing-worker-bridge",
+  "main": "./index.ts",
+  "compatibility_date": "2026-05-12",
+  "observability": {
+    "enabled": true
+  },
+  "queues": {
+    "producers": [
+      {
+        "queue": "video-processing-queue",
+        "binding": "VIDEO_PROCESSING_QUEUE"
+      }
+    ]
+  }
+}

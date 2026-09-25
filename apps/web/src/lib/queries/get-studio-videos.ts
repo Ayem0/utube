@@ -1,5 +1,5 @@
-import { getApi } from '@/lib/api/api';
 import { keepPreviousData, queryOptions } from '@tanstack/react-query';
+import { getApi } from '@/lib/api/api';
 
 export const getStudioVideosQueryOptions = (
   channelId: string,
@@ -21,6 +21,25 @@ const getStudioVideos = (
       query: { index: pagination.index, size: pagination.size },
     });
 
-export type StudioVideo = NonNullable<
+export type StudioLightVideo = NonNullable<
   Awaited<ReturnType<typeof getStudioVideos>>['data']
 >['items'][number];
+
+export const getStudioVideoQueryOptions = (
+  channelId: string,
+  videoId: string,
+) =>
+  queryOptions({
+    queryKey: ['studio-video', channelId, videoId],
+    queryFn: async () => (await getStudioVideo(channelId, videoId)).data,
+  });
+
+const getStudioVideo = (channelId: string, videoId: string) =>
+  getApi()
+    .studio.channels({ channelId: channelId })
+    .videos({ videoId: videoId })
+    .get();
+
+export type StudioFullVideo = NonNullable<
+  Awaited<ReturnType<typeof getStudioVideo>>['data']
+>;

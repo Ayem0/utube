@@ -1,5 +1,7 @@
+import { getApi } from '@/lib/api/api';
 import type { WatchVideo } from '@/lib/queries/get-watch-video';
-import { player } from '@/lib/video-player/player';
+import { PlayerProvider } from '@/lib/video-player/create-player';
+import { watchPlayer } from '@/lib/video-player/watch-player';
 import { ClientOnly, Link } from '@tanstack/react-router';
 import { VideoPlayerControls } from '../video-player/controls/video-player-controls';
 import { VideoPlayerFullscreenButton } from '../video-player/controls/video-player-fullscreen-button';
@@ -12,9 +14,11 @@ import { VideoPlayerTimeline } from '../video-player/controls/video-player-timel
 import { VideoPlayerTimer } from '../video-player/controls/video-player-timer';
 import { VideoPlayerVolume } from '../video-player/controls/video-player-volume';
 import { Video } from '../video-player/video';
+import { VideoPlayerAuthz } from '../video-player/video-player-auth';
 import { VideoPlayerContainer } from '../video-player/video-player-container';
 import { VideoPlayerOverlay } from '../video-player/video-player-overlay';
-import { VTTTrack } from '../video-player/VTT-track';
+import { VideoPlayerSource } from '../video-player/video-player-source';
+import { VTTTrack } from '../video-player/vtt-track';
 
 export function WatchLayout({
   video,
@@ -23,16 +27,28 @@ export function WatchLayout({
   video: WatchVideo;
   defaultTime: number;
 }) {
+  const refreshQuery = async () => {
+    const res = await getApi().video({ id: video.id }).refresh.get();
+    if (!res.data) {
+      throw new Error('Failed to refresh token');
+    }
+    return res.data;
+  };
+
   return (
     <div className="flex flex-col w-full">
       <ClientOnly>
-        <player.Provider
-          source={{
-            hls: video.hlsMasterUrl,
-            dash: video.dashManifestUrl,
-          }}
-          defaultTime={defaultTime}
-        >
+        <PlayerProvider player={watchPlayer}>
+          <VideoPlayerAuthz
+            exp={video.exp}
+            token={video.token}
+            // TODO IMPLEMENT THE REFRESH TOKEN ENDPOINT
+            refreshToken={refreshQuery}
+          />
+          <VideoPlayerSource
+            source={{ hls: video.hlsMasterUrl }}
+            defaultTime={defaultTime}
+          />
           <VideoPlayerContainer>
             <Video>
               <VTTTrack src={video.storyboardUrl} />
@@ -57,7 +73,7 @@ export function WatchLayout({
               </div>
             </VideoPlayerControls>
           </VideoPlayerContainer>
-        </player.Provider>
+        </PlayerProvider>
       </ClientOnly>
 
       <div className="flex flex-col w-full p-3 gap-2 pl-2">

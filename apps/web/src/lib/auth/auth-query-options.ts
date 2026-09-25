@@ -1,7 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 import { getAuthSession } from './get-session';
 
-export const authQueryOptions = () =>
+export const getAuthQueryOptions = () =>
   queryOptions({
     queryKey: ['auth-session'],
     queryFn: () => getAuthSession(),

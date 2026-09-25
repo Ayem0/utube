@@ -85,7 +85,18 @@ export function getImageExtensionFromMimeType(mimeType: string) {
   }
 }
 
-export type AssetStorageKey = `${string}/${string}.${string}`;
+export type Prefix =
+  | "videos"
+  | "avatars"
+  | "thumbnails"
+  | "audios"
+  | "subtitles";
+
+type AssetId = string;
+type Name = string;
+type Extension = string;
+
+export type AssetStorageKey = `${Prefix}/${AssetId}/${Name}.${Extension}`;
 
 export function createAssetStorageKey({
   id,
@@ -98,7 +109,25 @@ export function createAssetStorageKey({
   assetType: AssetType;
   variant?: string;
 }): AssetStorageKey {
-  return `${id}/${variant}.${getExtensionFromAssetTypeAndMimeType(assetType, mimeType)}`;
+  return `${assetTypeToPrefix(assetType)}/${id}/${variant}.${getExtensionFromAssetTypeAndMimeType(assetType, mimeType)}`;
+}
+
+export function assetTypeToPrefix(type: AssetType): Prefix {
+  switch (type) {
+    case assetType.AUDIO:
+      return "audios";
+    case assetType.CHANNEL_AVATAR:
+      return "avatars";
+    case assetType.SUBTITLE:
+      return "subtitles";
+    case assetType.VIDEO:
+      return "videos";
+    case assetType.VIDEO_THUMBNAIL:
+      return "thumbnails";
+    default: {
+      throw new Error(`Unable to find prefix for asset type '${type}'.`);
+    }
+  }
 }
 
 export function assetTypeToBucket(type: AssetType, isProcessed = false) {

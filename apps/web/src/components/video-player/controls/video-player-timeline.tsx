@@ -1,16 +1,26 @@
 import { TimelineController } from '@/lib/video-player/controllers/timeline-controller';
-import { player } from '@/lib/video-player/player';
+import {
+  usePlayerControllerContext,
+  usePlayerRefs,
+} from '@/lib/video-player/create-player';
+import { interactionFeature } from '@repo/video-player/feature/core/interaction';
+import { playbackFeature } from '@repo/video-player/feature/core/playback';
+import { storyboardFeature } from '@repo/video-player/feature/core/storyboard';
+import { timeFeature } from '@repo/video-player/feature/core/time';
 import { useEffect, useMemo, useRef } from 'react';
 
 export function VideoPlayerTimeline() {
-  const { videoRef } = player.usePlayerContext();
+  const { videoRef } = usePlayerRefs();
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const previewTimerRef = useRef<HTMLOutputElement>(null);
-  const controller = useMemo(
-    () => new TimelineController(player.getControllerContext()),
-    [],
-  );
+  const controllerCtx = usePlayerControllerContext([
+    timeFeature,
+    interactionFeature,
+    playbackFeature,
+    storyboardFeature,
+  ]);
+  const controller = useMemo(() => new TimelineController(controllerCtx), []);
   useEffect(() => {
     const container = containerRef.current;
     const video = videoRef?.current;

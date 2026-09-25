@@ -1,17 +1,23 @@
-import { player } from '@/lib/video-player/player';
+import {
+  usePlayerApi,
+  usePlayerRefs,
+  usePlayerState,
+} from '@/lib/video-player/create-player';
 import {
   ContextMenu,
   ContextMenuCheckboxItem,
   ContextMenuContent,
   ContextMenuTrigger,
 } from '@repo/ui/components/context-menu';
+import { displayFeature } from '@repo/video-player/feature/core/display';
+import { playbackFeature } from '@repo/video-player/feature/core/playback';
 import { Repeat2 } from 'lucide-react';
 
 export function VideoPlayerOverlay() {
-  const { toggleFullscreen } = player.usePlayerApi('display');
-  const { togglePlay, toggleLoop } = player.usePlayerApi('playback');
-  const looping = player.usePlayerState((s) => s.playback.loop);
-  const { containerRef } = player.usePlayerContext();
+  const { toggleFullscreen } = usePlayerApi(displayFeature);
+  const { togglePlay, toggleLoop } = usePlayerApi(playbackFeature);
+  const looping = usePlayerState(playbackFeature, (s) => s.loop);
+  const { containerRef } = usePlayerRefs();
   return (
     <div
       className="absolute inset-0"

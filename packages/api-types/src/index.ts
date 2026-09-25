@@ -1,9 +1,9 @@
-import { treaty } from "@elysiajs/eden";
+import { treaty } from "@elysia/eden";
 import type { Api } from "@repo/api";
 
 type ApiType = ReturnType<typeof treaty<Api>>["api"];
-export const api = <T extends {}>(headers?: T): ApiType =>
-  treaty<Api>("http://localhost:3001", {
+export const api = <T extends {}>(baseUrl: string, headers?: T): ApiType =>
+  treaty<Api>(baseUrl, {
     headers,
     fetch: { credentials: "include" },
   }).api;

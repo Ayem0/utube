@@ -4,7 +4,7 @@
     "outDir": "dist",
     "strictNullChecks": true,
     "module": "ESNext",
-    "types": ["vite/client", "bun"],
+    "types": ["bun", "./worker-configuration.d.ts"],
     "target": "ES2022",
 
     /* Bundler mode */
@@ -22,6 +22,6 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
   },
-  "include": ["**/*.ts", "vite.config.js"],
-  "exclude": ["node_modules", "dist"],
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "dist", "bridge_src"],
 }

@@ -1,4 +1,3 @@
-import { BaseField, FieldProps } from '@/components/form/base-field';
 import {
   InputGroup,
   InputGroupAddon,
@@ -6,7 +5,10 @@ import {
   InputGroupInput,
 } from '@repo/ui/components/input-group';
 import { Eye, EyeOff } from 'lucide-react';
-import { RefObject, useState } from 'react';
+import { useState } from 'react';
+import type { RefObject} from 'react';
+import type { FieldProps } from '@/components/form/base-field';
+import { BaseField } from '@/components/form/base-field';
 
 interface InputFieldProps extends FieldProps<string> {
   placeholder: string;

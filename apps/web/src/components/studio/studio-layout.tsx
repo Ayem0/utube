@@ -1,7 +1,7 @@
 import { SidebarInset, SidebarProvider } from '@repo/ui/components/sidebar';
-import { ReactNode } from 'react';
 import { StudioHeader } from './studio-header';
 import { StudioSidebar } from './studio-sidebar';
+import type { ReactNode } from 'react';
 
 export function StudioLayout({ children }: { children: ReactNode }) {
   return (

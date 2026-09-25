@@ -1,5 +1,3 @@
-import { setSelectedChannelCookie } from '@/lib/serverFn/set-selected-channel-cookie';
-import type { Channel } from '@repo/db/types';
 import {
   Avatar,
   AvatarFallback,
@@ -13,6 +11,8 @@ import {
 } from '@repo/ui/components/dropdown-menu';
 import { useRouteContext, useRouter } from '@tanstack/react-router';
 import { Check, Users } from 'lucide-react';
+import type { Channel } from '@repo/db/types';
+import { setSelectedChannelCookie } from '@/lib/serverFn/set-selected-channel-cookie';
 
 export function ChannelSwitcher() {
   const { channels, selectedChannel } = useRouteContext({ from: '/_app' });

@@ -1,6 +1,7 @@
 import { NotFoundComponent } from '@/components/not-found/not-found';
+import { WSProvider } from '@/lib/ws/ws-provider';
 import appCss from '@/styles/styles.css?url';
-import { User } from '@repo/auth/user';
+import type { User } from '@repo/auth/user';
 import uiCss from '@repo/ui/styles/globals.css?url';
 import { TanStackDevtools } from '@tanstack/react-devtools';
 import type { QueryClient } from '@tanstack/react-query';
@@ -12,7 +13,7 @@ import {
   createRootRouteWithContext,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
-import { authQueryOptions } from '../lib/auth/auth-query-options';
+import { getAuthQueryOptions } from '../lib/auth/auth-query-options';
 
 interface MyRouterContext {
   queryClient: QueryClient;
@@ -22,7 +23,7 @@ interface MyRouterContext {
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   beforeLoad: async ({ context }) => {
     const session = await context.queryClient.ensureQueryData({
-      ...authQueryOptions(),
+      ...getAuthQueryOptions(),
       revalidateIfStale: true,
     });
     return {
@@ -61,9 +62,9 @@ function RootComponent() {
   const { user } = Route.useRouteContext();
   return (
     <RootDocument>
-      <Outlet />
-      {/* <WS user={user}>
-      </WS> */}
+      <WSProvider url="http://localhost:8789/ws" userId={user?.id}>
+        <Outlet />
+      </WSProvider>
     </RootDocument>
   );
 }

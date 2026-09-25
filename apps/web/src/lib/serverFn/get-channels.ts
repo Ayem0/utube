@@ -1,11 +1,11 @@
-import { getApi } from '@/lib/api/api';
 import { queryOptions } from '@tanstack/react-query';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeader } from '@tanstack/react-start/server';
 import { getCookie } from '../utils/get-cookie';
+import { getApi } from '@/lib/api/api';
 
 export const getChannels = createServerFn({ method: 'GET' }).handler(
-  async ({}) => {
+  async () => {
     const channels = await getApi().channel.get();
     const cookie = getRequestHeader('Cookie');
     const storedSelectedChannelId = getCookie('selected_channel', cookie);

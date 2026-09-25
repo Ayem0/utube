@@ -1,6 +1,6 @@
 'use client';
 
-import { flexRender, Table as TanstackTable } from '@tanstack/react-table';
+import { flexRender } from '@tanstack/react-table';
 
 import { Spinner } from '@repo/ui/components/spinner';
 import {
@@ -11,17 +11,18 @@ import {
   TableHeader,
   TableRow,
 } from '@repo/ui/components/table';
+import type { ReactTable, RowData } from '@tanstack/react-table';
+import type { DataTableFeatures } from './data-table-features';
 
-interface DataTableProps<TData> {
-  table: TanstackTable<TData>;
+interface DataTableProps<TData extends RowData> {
+  table: ReactTable<DataTableFeatures, TData>;
   emptyComponent?: React.ReactNode;
 }
 
-export function DataTable<TData>({
+export function DataTable<TData extends RowData>({
   table,
   emptyComponent,
 }: DataTableProps<TData>) {
-  'use no memo';
   const isPending = table.options.meta?.isPending;
   const isFetching = table.options.meta?.isFetching;
   return (

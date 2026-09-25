@@ -1,11 +1,14 @@
+import { features } from '@/components/data-table/data-table-features';
 import { useHybridQuery } from '@/hooks/use-hybrid-query';
 import { getStudioVideosQueryOptions } from '@/lib/queries/get-studio-videos';
 import { Button } from '@repo/ui/components/button';
-import { useRouteContext, useRouter, useSearch } from '@tanstack/react-router';
 import {
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
+  useNavigate,
+  useRouteContext,
+  useSearch,
+} from '@tanstack/react-router';
+import {
+  useTable
 } from '@tanstack/react-table';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
@@ -23,7 +26,16 @@ export function VideoTable() {
   const search = useSearch({
     from: '/_studio/studio/$channelId/_content/content/videos',
   });
-  const router = useRouter();
+  const navigate = useNavigate({ from: '/studio/$channelId/content/videos' });
+  const openDialog = () => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        videoId: undefined,
+        up: true,
+      }),
+    });
+  };
 
   const { data, isFetching, isPending } = useHybridQuery(
     getStudioVideosQueryOptions(channel.id, {
@@ -32,20 +44,20 @@ export function VideoTable() {
     }),
   );
 
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [rowSelection, setRowSelection] = useState({});
 
-  const table = useReactTable({
+
+
+  const table = useTable({
+    features: features,
     columns: videoTableColumns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     data: data?.items ?? [],
     onPaginationChange: (updater) => {
       const next =
         typeof updater === 'function'
           ? updater({ pageIndex: search.page, pageSize: search.size })
           : updater;
-      router.navigate({
+      navigate({
         to: '/studio/$channelId/content/videos',
         params: { channelId: channel.id },
         search: {
@@ -55,7 +67,6 @@ export function VideoTable() {
         replace: true,
       });
     },
-
     manualPagination: true,
     autoResetPageIndex: false,
     onRowSelectionChange: setRowSelection,
@@ -78,10 +89,7 @@ export function VideoTable() {
     <div className="flex flex-1 flex-col gap-2">
       <DataTableHeader
         createComponent={
-          <Button
-            variant="default"
-            onClick={() => setDialogOpen((open) => !open)}
-          >
+          <Button variant="default" onClick={openDialog}>
             <Plus />
             Upload
           </Button>
@@ -92,10 +100,7 @@ export function VideoTable() {
         emptyComponent={
           <VideoTableEmpty
             createComponent={
-              <Button
-                variant="outline"
-                onClick={() => setDialogOpen((open) => !open)}
-              >
+              <Button variant="outline" onClick={openDialog}>
                 Import video
               </Button>
             }
@@ -104,11 +109,9 @@ export function VideoTable() {
       />
       <DataTablePagination
         table={table}
-        pageSize={search.size}
-        hasSelection={false}
         className="pb-2"
       />
-      <VideoTableDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <VideoTableDialog />
     </div>
   );
 }

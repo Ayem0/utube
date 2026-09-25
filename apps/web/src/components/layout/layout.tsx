@@ -1,8 +1,8 @@
 import { SidebarInset, SidebarProvider } from '@repo/ui/components/sidebar';
 import { useRouterState } from '@tanstack/react-router';
-import type { ReactNode } from 'react';
 import { Header } from '../header/header';
 import { AppSidebar } from '../sidebar/app-sidebar';
+import type { ReactNode } from 'react';
 
 export function Layout({
   children,

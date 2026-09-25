@@ -1,13 +1,15 @@
 import { PgClient } from "@effect/sql-pg";
 import { relations } from "@repo/db/relations";
+import { EffectLogger } from "drizzle-orm/effect-core";
 import * as PgDrizzle from "drizzle-orm/effect-postgres";
 import type { PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type { PgEffectTransaction } from "drizzle-orm/pg-core/effect";
-import { Context, Effect, Layer, Redacted } from "effect";
+import { Context, Effect, Layer, Option, Redacted } from "effect";
+import type { SqlError } from "effect/unstable/sql/SqlError";
+import { timed } from "../utils/timed";
 
-// TODO : benchmark bunsqlclient vs node pg client
 const make = PgDrizzle.make({ relations });
-export type DBApi = Effect.Success<typeof make>;
+type DBApi = Effect.Success<typeof make>;
 type Relations = typeof relations;
 
 type DBTransaction = PgEffectTransaction<
@@ -15,51 +17,79 @@ type DBTransaction = PgEffectTransaction<
   PgQueryResultHKT,
   Relations
 >;
-export type RepoFn<I, A, E = never, R = never> = (
-  input: I,
-  tx?: DBTransaction,
-) => Effect.Effect<A, E, R>;
 
-export function repoFn<I, A, E = never, R = never>(
-  fn: (input: I, dbOrTx: DBApi | DBTransaction) => Effect.Effect<A, E, R>,
-  db: DBApi,
-): RepoFn<I, A, E, R> {
-  return (input, tx) => fn(input, tx ?? db);
-}
+export class DBConfig extends Context.Service<
+  DBConfig,
+  {
+    readonly url: Redacted.Redacted<string>;
+  }
+>()("DBConfig") {}
 
-export class DB extends Context.Service<DB, DBApi>()("DB", {
-  make: make,
+const PgClientLayer = Layer.unwrap(
+  Effect.gen(function* () {
+    const config = yield* DBConfig;
+
+    return PgClient.layerFrom(
+      timed(
+        "PgClient.acquire",
+        PgClient.makeClient({
+          url: config.url,
+        }),
+      ),
+    );
+  }),
+);
+
+class DBDrizzle extends Context.Service<DBDrizzle, DBApi>()("DBDrizzle", {
+  make: timed("DBDrizzle.make", make),
 }) {
   static readonly Layer = Layer.effect(this, this.make).pipe(
+    Layer.provide(EffectLogger.layer),
     Layer.provide(PgDrizzle.DefaultServices),
-    Layer.provide(
-      PgClient.layer({
-        url: Redacted.make(process.env.DATABASE_URL!),
-      }),
-    ),
+    Layer.provide(PgClientLayer),
   );
 }
 
-type DBExecutor = DBApi | DBTransaction;
+class Transaction extends Context.Service<Transaction, DBTransaction>()(
+  "Transaction",
+) {}
 
-type RepoShape<T> = {
-  [K in keyof T]: T[K] extends RepoFn<any, any, any, any> ? T[K] : never;
-};
+type ExecuteFn = <A, E, R>(
+  fn: (db: DBApi | DBTransaction) => Effect.Effect<A, E, R>,
+) => Effect.Effect<A, E, R>;
 
-type RawRepo<T extends RepoShape<T>> = {
-  [K in keyof T]: T[K] extends RepoFn<infer I, infer A, infer E, infer R>
-    ? (input: I, db: DBExecutor) => Effect.Effect<A, E, R>
-    : never;
-};
-
-export function repo<T extends RepoShape<T>>(db: DBApi, raw: RawRepo<T>): T {
-  const out: Partial<Record<keyof T, unknown>> = {};
-
-  for (const key of Object.keys(raw) as Array<keyof T>) {
-    const fn = raw[key] as RawRepo<T>[typeof key];
-
-    out[key] = (input: unknown, tx?: DBTransaction) => fn(input, tx ?? db);
+export class DB extends Context.Service<
+  DB,
+  {
+    run: ExecuteFn;
+    withTransaction: <A, E, R>(
+      eff: Effect.Effect<A, E, R>,
+    ) => Effect.Effect<A, E | SqlError, Exclude<R, Transaction>>;
   }
+>()("DB", {
+  make: timed(
+    "DB.make",
+    Effect.gen(function* () {
+      const db = yield* DBDrizzle;
 
-  return out as T;
+      const run: ExecuteFn = Effect.fnUntraced(function* (cb) {
+        const tx = yield* Effect.serviceOption(Transaction);
+        if (Option.isSome(tx)) {
+          return yield* cb(tx.value);
+        }
+        return yield* cb(db);
+      });
+      return {
+        run: run,
+        withTransaction: (eff) =>
+          db.transaction((tx) =>
+            eff.pipe(Effect.provideService(Transaction, tx)),
+          ),
+      };
+    }),
+  ),
+}) {
+  static readonly Layer = Layer.effect(this, this.make).pipe(
+    Layer.provide(DBDrizzle.Layer),
+  );
 }

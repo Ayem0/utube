@@ -1,4 +1,3 @@
-import { formatDuration } from '@/lib/utils/format-duration';
 import { Button } from '@repo/ui/components/button';
 import {
   DropdownMenu,
@@ -15,6 +14,7 @@ import { FastAverageColor } from 'fast-average-color';
 import { EllipsisVertical } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { FakeVideo } from './home-feed';
+import { formatDuration } from '@/lib/utils/format-duration';
 
 // TODO compute the average color of the thumbnail server side, and add it in the FakeVideo type
 export function HomeCard({ video }: { video: FakeVideo }) {
@@ -68,7 +68,7 @@ export function HomeCard({ video }: { video: FakeVideo }) {
         <div className="flex flex-row px-2 pb-2 w-full">
           <Link
             to="/@{$alias}"
-            params={{ alias: video.channel.alias }}
+            params={{ alias: video.channel.name }}
             onClick={(e) => e.stopPropagation()}
           >
             <Image
@@ -89,7 +89,7 @@ export function HomeCard({ video }: { video: FakeVideo }) {
             <div className="text-muted-foreground">
               <Link
                 to="/@{$alias}"
-                params={{ alias: video.channel.alias }}
+                params={{ alias: video.channel.name }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <span className="text-muted-foreground hover:text-white">

@@ -1,4 +1,3 @@
-import { routeTree } from '@/routeTree.gen';
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -7,10 +6,12 @@ import {
   SidebarMenuItem,
 } from '@repo/ui/components/sidebar';
 import { cn } from '@repo/ui/lib/utils';
-import { Link, LinkProps } from '@tanstack/react-router';
-import type { LucideIcon } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
+import type { LinkProps } from '@tanstack/react-router';
+import type { LucideIcon } from 'lucide-react';
+import type { routeTree } from '@/routeTree.gen';
 
 type AppLink = LinkProps<typeof routeTree>;
 

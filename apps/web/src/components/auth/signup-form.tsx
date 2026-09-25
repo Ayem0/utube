@@ -1,6 +1,3 @@
-import { useAppForm } from '@/hooks/use-form';
-import { authQueryOptions } from '@/lib/auth/auth-query-options';
-import authClient from '@repo/auth/auth-client';
 import { Alert, AlertDescription } from '@repo/ui/components/alert';
 import { Button } from '@repo/ui/components/button';
 import {
@@ -15,6 +12,9 @@ import { Link, useRouter, useSearch } from '@tanstack/react-router';
 import { AlertCircleIcon } from 'lucide-react';
 import { useState } from 'react';
 import * as z from 'zod';
+import { getAuthQueryOptions } from '@/lib/auth/auth-query-options';
+import { authClient } from '@/lib/auth/auth-client';
+import { useAppForm } from '@/hooks/use-form';
 
 const majRegex = /[A-Z]/;
 const minRegex = /[a-z]/;
@@ -80,7 +80,7 @@ export function SignupForm() {
           onSuccess: async () => {
             // invalidate the auth query
             queryClient.removeQueries({
-              queryKey: authQueryOptions().queryKey,
+              queryKey: getAuthQueryOptions().queryKey,
             });
             // invalidate the router
             // await router.invalidate();

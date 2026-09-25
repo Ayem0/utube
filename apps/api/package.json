@@ -4,24 +4,29 @@
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
+    "dev": "wrangler dev --port 8787 --inspector-port 9229 --persist-to ../../.cloudflare-dev",
+    "cf-typegen": "wrangler types"
   },
   "exports": {
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "elysia": "catalog:",
-    "effect": "catalog:",
-    "zod": "catalog:",
+    "@aws-sdk/client-s3": "^3.1128.0",
+    "@aws-sdk/s3-request-presigner": "^3.1128.0",
+    "@elysiajs/cors": "^1.4.1",
+    "@repo/auth": "workspace:*",
+    "@repo/db": "workspace:*",
     "@repo/services": "workspace:*",
     "@repo/types": "workspace:*",
-    "@repo/auth": "workspace:*",
-    "@elysiajs/cors": "^1.4.1"
+    "effect": "catalog:",
+    "elysia": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "wrangler": "catalog:"
   },
   "module": "src/index.js"
 }

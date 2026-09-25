@@ -1,20 +1,58 @@
 import { ChannelRepository } from "@repo/services/channel/channel-repository";
-import { VideoRepository } from "@repo/services/video/video-repository";
 import { VideoService } from "@repo/services/video/video-service";
 import { paginationSchema } from "@repo/types/schemas/pagination";
 import { videoPutSchema } from "@repo/types/schemas/video-upload";
 import { Effect } from "effect";
 import Elysia from "elysia";
 import { z } from "zod";
-import { authPlugin } from "./auth";
-import { apiRuntime } from "./runtime";
+import { authMacro } from "./auth";
+import { runtimePlugin } from "./runtime";
 
 export const studioController = new Elysia()
-  .use(authPlugin)
+  .use(authMacro)
+  .use(runtimePlugin)
+  .get(
+    "/studio/channels/:channelId/videos",
+    async ({ user, status, params, query, runEffect }) =>
+      runEffect(
+        Effect.gen(function* () {
+          const serv = yield* VideoService;
+          return yield* serv.getStudioByChannelId({
+            desc: true,
+            search: "",
+            sort: {},
+            filters: [],
+            userId: user.id,
+            channelId: params.channelId,
+            index: query.index,
+            size: query.size,
+          });
+        }).pipe(
+          Effect.match({
+            onSuccess: (res) => {
+              return status(200, res);
+            },
+            onFailure: (err) => {
+              switch (err._tag) {
+                case "DBNotFoundError":
+                  return status(404);
+                default:
+                  return status(500);
+              }
+            },
+          }),
+        ),
+      ),
+    {
+      query: paginationSchema,
+      auth: true,
+      runtime: true,
+    },
+  )
   .post(
     "/studio/channels/:channelId/videos",
-    async ({ status, user, params, body }) => {
-      return await apiRuntime.runPromise(
+    async ({ status, user, params, body, runEffect }) =>
+      runEffect(
         Effect.gen(function* () {
           const publisher = yield* VideoService;
           return yield* publisher.createDraft({
@@ -43,8 +81,7 @@ export const studioController = new Elysia()
             },
           }),
         ),
-      );
-    },
+      ),
     {
       auth: true,
       body: z.object({
@@ -52,15 +89,16 @@ export const studioController = new Elysia()
         mimeType: z.string(),
         sizeBytes: z.number().positive(),
       }),
+      runtime: true,
     },
   )
   .put(
     "/studio/channels/:channelId/videos/:videoId",
-    async ({ status, user, params, body }) => {
-      return await apiRuntime.runPromise(
+    async ({ status, user, params, body, runEffect }) =>
+      runEffect(
         Effect.gen(function* () {
           const publisher = yield* VideoService;
-          return yield* publisher.updateVideo({
+          return yield* publisher.updateDraft({
             channelId: params.channelId,
             userId: user.id,
             videoId: params.videoId,
@@ -74,6 +112,7 @@ export const studioController = new Elysia()
           Effect.match({
             onSuccess: (value) => status(200, value),
             onFailure: (err) => {
+              console.log("ERROR UPDATING VIDEO", err, err.cause);
               switch (err._tag) {
                 case "DBNotFoundError":
                   return status(404);
@@ -85,17 +124,17 @@ export const studioController = new Elysia()
             },
           }),
         ),
-      );
-    },
+      ),
     {
       auth: true,
       body: videoPutSchema,
+      runtime: true,
     },
   )
   .get(
     "/studio/channels/:channelId",
-    async ({ user, status, params }) => {
-      return await apiRuntime.runPromise(
+    async ({ user, status, params, runEffect }) =>
+      runEffect(
         Effect.match(
           Effect.gen(function* () {
             const repo = yield* ChannelRepository;
@@ -118,23 +157,22 @@ export const studioController = new Elysia()
             },
           },
         ),
-      );
-    },
+      ),
     {
       auth: true,
+      runtime: true,
     },
   )
   .get(
-    "/studio/channels/:channelId/videos",
-    async ({ user, status, params, query }) => {
-      return await apiRuntime.runPromise(
+    "/studio/channels/:channelId/videos/:videoId",
+    async ({ status, params, user, runEffect }) =>
+      runEffect(
         Effect.gen(function* () {
-          const repo = yield* VideoRepository;
-          return yield* repo.getStudioByChannelId({
-            userId: user.id,
+          const repo = yield* VideoService;
+          return yield* repo.getStudioById({
             channelId: params.channelId,
-            index: query.index,
-            size: query.size,
+            userId: user.id,
+            videoId: params.videoId,
           });
         }).pipe(
           Effect.match({
@@ -151,11 +189,10 @@ export const studioController = new Elysia()
             },
           }),
         ),
-      );
-    },
+      ),
     {
-      query: paginationSchema,
       auth: true,
+      runtime: true,
     },
   );
 // .post(

@@ -1,6 +1,6 @@
-import authClient from '@repo/auth/auth-client';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
+import { authClient } from '@/lib/auth/auth-client';
 
 export const getAuthSession = createServerFn({ method: 'GET' }).handler(
   async () => {

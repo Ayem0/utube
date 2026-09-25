@@ -6,16 +6,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/select';
-import { BaseField, FieldProps } from './base-field';
+import { BaseField } from './base-field';
+import type { FieldProps } from './base-field';
 
 interface SelectFieldProps<
   TValue,
   TMultiple extends boolean = false,
-> extends FieldProps<TMultiple extends true ? TValue[] : TValue> {
+> extends FieldProps<TMultiple extends true ? Array<TValue> : TValue> {
   placeholder: string;
   autofocus?: boolean;
-  defaultValue?: TMultiple extends true ? TValue[] : TValue;
-  items: { label: string; value: TValue }[];
+  defaultValue?: TMultiple extends true ? Array<TValue> : TValue;
+  items: Array<{ label: string; value: TValue }>;
 }
 
 export function SelectField<TValue, TMultiple extends boolean = false>({

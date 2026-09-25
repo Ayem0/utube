@@ -1,50 +1,48 @@
-import { db } from "@repo/db";
+import { type DB } from "@repo/db";
 import { channel, schema } from "@repo/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { jwt } from "better-auth/plugins";
-import { tanstackStartCookies } from "better-auth/tanstack-start";
 
-export const auth = betterAuth({
-  database: drizzleAdapter(db, {
-    provider: "pg",
-    schema: schema,
-  }),
-  emailAndPassword: {
-    enabled: true,
-    autoSignIn: true,
-  },
-  session: {
-    cookieCache: {
-      enabled: true,
-      maxAge: 7 * 24 * 60 * 60, // 7 days cache duration
-      strategy: "jwe", // can be "jwt" or "compact"
-      // refreshCache: true, // Enable stateless refresh
-    },
-  },
-  trustedOrigins: ["http://localhost:3000", "http://localhost:3001"],
-  account: {
-    storeStateStrategy: "cookie",
-  },
-  plugins: [jwt(), tanstackStartCookies()],
-  baseURL: process.env.BETTER_AUTH_URL!,
-  secret: process.env.BETTER_AUTH_SECRET!,
-  databaseHooks: {
-    user: {
-      create: {
-        after: async (user) => {
-          const generatedName = generateRandomNameFromEmail(user.email);
-          await db.insert(channel).values({
-            default: true,
-            name: generatedName,
-            alias: generatedName,
-            userId: user.id,
-          });
-        },
-      },
-    },
-  },
-});
+// export const auth = betterAuth({
+//   database: drizzleAdapter(db, {
+//     provider: "pg",
+//     schema: schema,
+//   }),
+//   emailAndPassword: {
+//     enabled: true,
+//     autoSignIn: true,
+//   },
+//   session: {
+//     cookieCache: {
+//       enabled: true,
+//       maxAge: 7 * 24 * 60 * 60, // 7 days cache duration
+//       strategy: "jwe", // can be "jwt" or "compact"
+//       // refreshCache: true, // Enable stateless refresh
+//     },
+//   },
+//   trustedOrigins: ["http://localhost:3000", "http://localhost:8787"],
+//   account: {
+//     storeStateStrategy: "cookie",
+//   },
+//   plugins: [jwt()],
+//   baseURL: process.env.BETTER_AUTH_URL!,
+//   secret: process.env.BETTER_AUTH_SECRET!,
+//   databaseHooks: {
+//     user: {
+//       create: {
+//         after: async (user) => {
+//           const generatedName = generateRandomNameFromEmail(user.email);
+//           await db.insert(channel).values({
+//             default: true,
+//             name: generatedName,
+//             alias: generatedName,
+//             userId: user.id,
+//           });
+//         },
+//       },
+//     },
+//   },
+// });
 
 function generateRandomNameFromEmail(email: string) {
   const p1 = email.split("@")[0] ?? "user";
@@ -72,3 +70,45 @@ function randomSuffix(length: number = 6) {
   }
   return out;
 }
+
+export const makeAuth = (db: DB, baseUrl: string, secret: string) =>
+  betterAuth({
+    database: drizzleAdapter(db, {
+      provider: "pg",
+      schema: schema,
+    }),
+    emailAndPassword: {
+      enabled: true,
+      autoSignIn: true,
+    },
+    session: {
+      cookieCache: {
+        enabled: true,
+        maxAge: 7 * 24 * 60 * 60, // 7 days cache duration
+        strategy: "jwe", // can be "jwt" or "compact"
+        // refreshCache: true, // Enable stateless refresh
+      },
+    },
+    trustedOrigins: ["http://localhost:3000", "http://localhost:8787"],
+    account: {
+      storeStateStrategy: "cookie",
+    },
+    plugins: [],
+    baseURL: baseUrl,
+    secret: secret,
+    databaseHooks: {
+      user: {
+        create: {
+          after: async (user) => {
+            const generatedName = generateRandomNameFromEmail(user.email);
+            await db.insert(channel).values({
+              default: true,
+              name: generatedName,
+              alias: generatedName,
+              userId: user.id,
+            });
+          },
+        },
+      },
+    },
+  });

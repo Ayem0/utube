@@ -1,5 +1,4 @@
-import { videoPlaybackStatus } from "@repo/types/enums/video/video-status";
-import { VideoProcessingJob } from "@repo/types/types/video-processing-job";
+import { videoPlaybackStatus } from "@repo/types/enums/video/video-playback-status";
 import type { EffectDrizzleQueryError } from "drizzle-orm/effect-core";
 import { Context, Effect, Layer } from "effect";
 import { AssetRepository } from "../asset/asset-repository";
@@ -10,6 +9,7 @@ import { FSError } from "../file-system/file-system-errors";
 import { S3 } from "../s3/s3";
 import { S3Error } from "../s3/s3-errors";
 import { newId } from "../utils/id";
+import { WS } from "../ws/ws";
 import {
   VideoProcessingError,
   VideoUploadError,
@@ -22,10 +22,10 @@ import { VideoRepository } from "./video-repository";
 import { VideoStoryboardGenerator } from "./video-storyboard-generator";
 import { VideoValidator } from "./video-validator";
 
-export interface VideoPipelineService {
-  processVideo(
-    data: VideoProcessingJob,
-  ): Effect.Effect<
+export interface VideoPipelineApi {
+  processVideo(data: {
+    assetId: string;
+  }): Effect.Effect<
     void,
     | DBNotFoundError
     | S3Error
@@ -40,7 +40,7 @@ export interface VideoPipelineService {
 
 export class VideoPipeline extends Context.Service<
   VideoPipeline,
-  VideoPipelineService
+  VideoPipelineApi
 >()("VideoPipeline", {
   make: Effect.gen(function* () {
     const videoRepo = yield* VideoRepository;
@@ -52,6 +52,7 @@ export class VideoPipeline extends Context.Service<
     const videoProcessor = yield* VideoProcessor;
     const videoPlaybackRepo = yield* VideoPlaybackRepository;
     const db = yield* DB;
+    const ws = yield* WS;
 
     const withTempDirAndVideoFile = ({
       dirPath,
@@ -83,7 +84,9 @@ export class VideoPipeline extends Context.Service<
           const asset = yield* assetRepo.claimForProcessing({
             assetId: data.assetId,
           });
-          const video = yield* videoRepo.getBySourceVideoAssetId(asset.id);
+          const video = yield* videoRepo.getBySourceVideoAssetId({
+            sourceVideoAssetId: asset.id,
+          });
           const videoPlayback = yield* videoPlaybackRepo.create({
             videoId: video.id,
             id: newId(),
@@ -184,44 +187,42 @@ export class VideoPipeline extends Context.Service<
                       "videos",
                     );
 
-                    yield* db.transaction((tx) =>
-                      Effect.gen(function* () {
-                        yield* videoPlaybackRepo.update(
-                          {
-                            id: videoPlayback.id,
-                            values: {
-                              status: videoPlaybackStatus.READY,
-                              hlsMasterKey: `${video.id}/${videoPlayback.id}/hls/master.m3u8`,
-                              dashManifestKey: `${video.id}/${videoPlayback.id}/dash/manifest.mpd`,
-                              storyboardKey: `${video.id}/${videoPlayback.id}/storyboard/storyboard.vtt`,
-                              renditions: ladder.map((entry) => ({
-                                width: entry.width,
-                                height: entry.height,
-                                bitrate: 0, // TODO
-                                codec: "TODO",
-                                framerate: entry.fps,
-                                quality: entry.label,
-                                path: "TODO",
-                                durationMs: duration * 1000,
-                                mimeType: "TODO",
-                                qualityLabel: entry.label,
-                              })),
-                            },
-                          },
-                          tx,
-                        );
-                        yield* videoRepo.updateInternal(
-                          {
-                            videoId: video.id,
-                            data: {
-                              currentPlaybackId: videoPlayback.id,
-                              duration: duration,
-                            },
-                          },
-                          tx,
-                        );
-                      }),
-                    );
+                    yield* Effect.gen(function* () {
+                      yield* videoPlaybackRepo.update({
+                        id: videoPlayback.id,
+                        values: {
+                          status: videoPlaybackStatus.READY,
+                          hlsMasterKey: `${video.id}/${videoPlayback.id}/hls/master.m3u8`,
+                          dashManifestKey: `${video.id}/${videoPlayback.id}/dash/manifest.mpd`,
+                          storyboardKey: `${video.id}/${videoPlayback.id}/storyboard/storyboard.vtt`,
+                          renditions: ladder.map((entry) => ({
+                            width: entry.width,
+                            height: entry.height,
+                            bitrate: 0, // TODO
+                            codec: "TODO",
+                            framerate: entry.fps,
+                            quality: entry.label,
+                            path: "TODO",
+                            durationMs: duration * 1000,
+                            mimeType: "TODO",
+                            qualityLabel: entry.label,
+                          })),
+                        },
+                      });
+                      yield* videoRepo.updateInternal({
+                        videoId: video.id,
+                        values: {
+                          currentPlaybackId: videoPlayback.id,
+                          duration: duration,
+                        },
+                      });
+                    }).pipe(db.withTransaction);
+
+                    yield* ws.send(asset.ownerUserId, {
+                      type: "video.upload.updated",
+                      videoId: video.id,
+                      channelId: video.channelId,
+                    });
 
                     console.log("Video processed successfully");
                   }),
@@ -231,20 +232,6 @@ export class VideoPipeline extends Context.Service<
           });
 
           yield* attemptProcess.pipe(
-            // Effect.tap(
-            //   Effect.gen(function* () {
-            //     console.log("TAP");
-            //     yield* videoPlaybackRepo.update({
-            //       id: videoPlayback.id,
-            //       values: {
-            //         dashManifestKey: `${video.id}/${videoPlayback.id}/dash/manifest.mpd`,
-            //         hlsMasterKey: `${video.id}/${videoPlayback.id}/hls/master.m3u8`,
-            //         storyboardKey: `${video.id}/${videoPlayback.id}/storyboard.vtt`,
-            //         status: videoPlaybackStatus.READY,
-            //       },
-            //     });
-            //   }),
-            // ),
             Effect.catch((error) =>
               Effect.gen(function* () {
                 console.log("TAPERROR, attempt failed with error", error);
@@ -258,7 +245,7 @@ export class VideoPipeline extends Context.Service<
               }),
             ),
           );
-          console.log("PROCESSED VIDEO", data.videoId);
+          console.log("PROCESSED VIDEO", video.id);
         }),
     };
   }),
@@ -268,7 +255,6 @@ export class VideoPipeline extends Context.Service<
     Layer.provide(FileSystem.Layer),
     Layer.provide(VideoRepository.Layer),
     Layer.provide(VideoStoryboardGenerator.Layer),
-    Layer.provide(S3.Layer),
     Layer.provide(VideoValidator.Layer),
     Layer.provide(VideoPlaybackRepository.Layer),
     Layer.provide(AssetRepository.Layer),

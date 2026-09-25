@@ -50,7 +50,11 @@ export type FeatureContext<
 
   engine: Pick<
     Engine,
-    "setQuality" | "getQualities" | "getCurrentQuality" | "getIsAuto"
+    | "setQuality"
+    | "getQualities"
+    | "getCurrentQuality"
+    | "getIsAuto"
+    | "setToken"
   >;
 
   state: DeepSignal<TState>;
@@ -116,6 +120,13 @@ export type Feature<
     >,
   ) => void;
   onSourceLoad?: (
+    ctx: FeatureContext<
+      ReturnType<TGetState>,
+      ReturnType<TGetInternalState>,
+      TDependencies
+    >,
+  ) => void;
+  onBeforeSourceLoad?: (
     ctx: FeatureContext<
       ReturnType<TGetState>,
       ReturnType<TGetInternalState>,

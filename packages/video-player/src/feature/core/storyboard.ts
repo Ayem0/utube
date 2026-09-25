@@ -1,4 +1,5 @@
 import { createFeature } from "../feature";
+import { authzFeature } from "./authz";
 
 export type Cue = {
   start: number;
@@ -21,6 +22,7 @@ type StoryboardVTT = {
 
 export const storyboardFeature = createFeature({
   name: "storyboard",
+  dependencies: [authzFeature],
   getState: () => ({}),
   getInternalState: () => ({
     track: null as HTMLTrackElement | null,
@@ -35,9 +37,11 @@ export const storyboardFeature = createFeature({
         track.src,
       );
     };
-    const attachTrack = (track: HTMLTrackElement) => {
+    const attachTrack = (track: HTMLTrackElement, src: string) => {
       track.track.mode = "hidden";
       ctx.internalState.track = track;
+      track.src = ctx.dependencies.authz.api.authorizedUrl(src);
+
       if (track.readyState === track.LOADED && track.track.cues) {
         console.log("already loaded");
         ctx.internalState.storyboardVTT = parseTextTrackCueList(
@@ -48,7 +52,7 @@ export const storyboardFeature = createFeature({
       track.addEventListener("load", onLoad);
     };
     const detachTrack = () => {
-      ctx.internalState.track?.removeEventListener("cuechange", onLoad);
+      ctx.internalState.track?.removeEventListener("load", onLoad);
       ctx.internalState.track = null;
       ctx.internalState.storyboardVTT = null;
     };
@@ -57,6 +61,12 @@ export const storyboardFeature = createFeature({
       const story = ctx.internalState.storyboardVTT;
       if (!story) return;
       const cue = findFrame(time, story);
+      if (cue) {
+        return {
+          ...cue,
+          src: ctx.dependencies.authz.api.authorizedUrl(cue.src),
+        };
+      }
       return cue;
     };
 
@@ -72,6 +82,7 @@ function parseTextTrackCueList(
   list: TextTrackCueList,
   vttUrl: string,
 ): StoryboardVTT {
+  console.log("in parseTextTrackCueList");
   const cues: Cue[] = [];
   for (let i = 0; i < list.length; i++) {
     const cue = list[i] as VTTCue;
@@ -84,6 +95,7 @@ function parseTextTrackCueList(
     if (x == undefined || y == undefined || w == undefined || h == undefined)
       continue;
     if (isNaN(x) || isNaN(y) || isNaN(w) || isNaN(h)) continue;
+
     cues.push({
       end: cue.endTime,
       start: cue.startTime,

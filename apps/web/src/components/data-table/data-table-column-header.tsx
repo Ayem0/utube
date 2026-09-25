@@ -1,13 +1,14 @@
 import { Button } from '@repo/ui/components/button';
 import { cn } from '@repo/ui/lib/utils';
-import { Column } from '@tanstack/react-table';
+import type { Column, RowData } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp } from 'lucide-react';
+import type { DataTableFeatures } from './data-table-features';
 
-export function DataTableColumnHeader<TData, TValue>({
+export function DataTableColumnHeader<TRow extends RowData, TValue>({
   column,
   title,
 }: {
-  column: Column<TData, TValue>;
+  column: Column<DataTableFeatures, TRow, TValue>;
   title: string;
 }) {
   return (

@@ -6,7 +6,8 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
+    "check-types": "turbo run check-types",
+    "cf-typegen": "turbo run cf-typegen"
   },
   "devDependencies": {
     "prettier": "^3.7.4",
@@ -16,15 +17,16 @@
   "engines": {
     "node": ">=18"
   },
-  "packageManager": "bun@1.3.9",
+  "packageManager": "bun@1.4.2",
   "catalog": {
-    "elysia": "^1.4.8",
-    "@elysiajs/eden": "^1.4.8",
+    "elysia": "^1.4.30",
+    "@elysia/eden": "^1.4.10",
     "zod": "^4.3.6",
     "drizzle-kit": "1.0.0-rc.4-5d5b77c",
     "drizzle-orm": "1.0.0-rc.4-5d5b77c",
-    "effect": ">=4.0.0-beta.78 || >=4.0.0",
-    "bullmq": "^5.71.1"
+    "effect": "4.0.0-beta.99",
+    "@effect/sql-pg": "4.0.0-beta.99",
+    "wrangler": "^4.129.0"
   },
   "workspaces": [
     "apps/*",

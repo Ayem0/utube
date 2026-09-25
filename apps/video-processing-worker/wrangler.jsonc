@@ -1,0 +1,52 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "video-processing-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-12",
+  "observability": {
+    "enabled": true
+  },
+  "containers": [
+    {
+      "class_name": "VideoProcessingContainer",
+      "image": "./Dockerfile",
+      "max_instances": 3,
+      "instance_type": "standard-4",
+      "name": "video-processing-container",
+      "image_build_context": "../.."
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "class_name": "VideoProcessingContainer",
+        "name": "VIDEO_PROCESSING_CONTAINER"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "new_sqlite_classes": ["VideoProcessingContainer"],
+      "tag": "v1"
+    }
+  ],
+  "queues": {
+    "consumers": [
+      {
+        "queue": "video-processing-queue"
+      }
+    ]
+  },
+  "services": [
+    {
+      "binding": "WS",
+      "service": "ws"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "VIDEOS",
+      "bucket_name": "videos"
+    }
+  ]
+}

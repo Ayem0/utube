@@ -1,14 +1,22 @@
 import { EventEmitter } from "../event-emitter";
 import { VideoQuality, VideoSource } from "../types";
 
+export interface LoadSourceOptions {
+  startPosition?: number;
+}
+
 export abstract class Engine extends EventEmitter<EngineEvents> {
   constructor(defaultState: EngineOptions) {
     super();
   }
-  public abstract loadSource: (source: VideoSource) => void;
-  public abstract setStartPosition: (time: number) => void;
+  public abstract loadSource: (
+    source: VideoSource,
+    options?: LoadSourceOptions,
+  ) => void;
+  // public abstract setStartPosition: (time: number) => void;
   public abstract attachMedia: (video: HTMLVideoElement) => void;
   public abstract detachMedia: () => void;
+  public abstract setToken: (token: string) => void;
 
   public abstract destroy: () => void;
 

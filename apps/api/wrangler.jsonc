@@ -1,0 +1,29 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+ 	"name": "api",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-06-01",
+    "hyperdrive": [
+        {
+            "binding": "HYPERDRIVE",
+            "id": "your-hyperdrive-config-id",
+
+            // Only used by local `wrangler dev`
+            "localConnectionString": "postgresql://root:root@localhost:5432/mydb"
+        }
+    ],
+    "compatibility_flags": [
+        "nodejs_compat"
+    ],
+    "observability": {
+        "traces": {
+            "enabled": true
+        }
+    },
+   "r2_buckets": [
+        {
+            "binding": "VIDEOS",
+            "bucket_name": "videos"
+        }
+    ],
+}

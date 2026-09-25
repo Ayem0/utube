@@ -5,10 +5,10 @@ import {
   FieldError,
   FieldLabel,
 } from '@repo/ui/components/field';
-import type { FieldApi } from '@tanstack/react-form';
 import { useSelector } from '@tanstack/react-form';
-import type { ReactNode } from 'react';
 import { memo } from 'react';
+import type { FieldApi } from '@tanstack/react-form';
+import type { ReactNode } from 'react';
 
 export interface FieldProps<T> {
   label?: string;

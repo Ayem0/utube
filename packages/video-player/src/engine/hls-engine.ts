@@ -8,13 +8,14 @@ import Hls, {
   type BufferFlushedData,
 } from "hls.js";
 import { VideoQuality, VideoSource } from "../types";
-import { Engine, EngineOptions } from "./engine";
+import { Engine, EngineOptions, type LoadSourceOptions } from "./engine";
 
 export class HlsEngine extends Engine {
   private hls: Hls;
   private qualities: VideoQuality[] = [];
   private videoEl: HTMLVideoElement | null = null;
   private startPosition = 0;
+  private token: string | null = null;
 
   constructor(defaultState: EngineOptions) {
     super(defaultState);
@@ -27,21 +28,33 @@ export class HlsEngine extends Engine {
       capLevelToPlayerSize: true,
       capLevelOnFPSDrop: true,
       autoStartLoad: false,
+      xhrSetup: (xhr, url) => {
+        const url2 = new URL(url);
+        if (this.token) {
+          url2.searchParams.set("verify", this.token);
+        }
+        return xhr.open("GET", url2.toString());
+      },
     });
     this.initListeners();
   }
 
   /** Load the source  */
-  public loadSource = (source: VideoSource, defaultTime: number = 0) => {
+  public loadSource = (source: VideoSource, options?: LoadSourceOptions) => {
     this.resetState();
     if (source.hls) {
       this.hls.loadSource(source.hls);
+      this.startPosition = options?.startPosition ?? 0;
     }
   };
 
-  public setStartPosition = (seconds: number) => {
-    this.startPosition = seconds;
+  public setToken = (token: string) => {
+    this.token = token;
   };
+
+  // public setStartPosition = (seconds: number) => {
+  //   this.startPosition = seconds;
+  // };
 
   public attachMedia = (video: HTMLVideoElement) => {
     if (this.videoEl) this.detachMedia();

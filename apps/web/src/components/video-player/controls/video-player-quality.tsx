@@ -1,4 +1,4 @@
-import { player } from '@/lib/video-player/player';
+import { usePlayerApi, usePlayerState } from '@/lib/video-player/create-player';
 import {
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
@@ -8,15 +8,16 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from '@repo/ui/components/dropdown-menu';
-import { VideoQuality } from '@repo/video-player/types';
+import { qualityFeature } from '@repo/video-player/feature/core/quality';
+import type { VideoQuality } from '@repo/video-player/types';
 import { SlidersHorizontal } from 'lucide-react';
 
 export function VideoPlayerQuality() {
-  const { currentQuality, qualities, isAuto } = player.usePlayerState(
-    (s) => s.quality,
+  const { currentQuality, qualities, isAuto } = usePlayerState(
+    qualityFeature,
+    (s) => s,
   );
-  console.log('video player quality', { currentQuality, qualities, isAuto });
-  const { setQuality } = player.usePlayerApi('quality');
+  const { setQuality } = usePlayerApi(qualityFeature);
   if (!currentQuality) return null;
   return (
     <DropdownMenuSub>
