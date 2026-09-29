@@ -486,8 +486,6 @@ function buildFfmpegArgs({
   return { args: args, ladder: ladder };
 }
 
-export const VideoProcessorLive = Layer.effect(VideoProcessor);
-
 async function addFrameRateToMasterM3u8(
   outputDir: string,
   ladder: LadderEntry[],

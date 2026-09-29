@@ -13,20 +13,19 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1128.0",
     "@aws-sdk/s3-request-presigner": "^3.1128.0",
-    "@elysiajs/cors": "^1.4.1",
+    "@elysiajs/cors": "catalog:elysia",
     "@repo/auth": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/services": "workspace:*",
     "@repo/types": "workspace:*",
-    "effect": "catalog:",
-    "elysia": "catalog:",
+    "effect": "catalog:effect",
+    "elysia": "catalog:elysia",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "bun-types": "latest",
-    "wrangler": "catalog:"
+    "@cloudflare/workers-types": "catalog:alchemy"
   },
   "module": "src/index.js"
 }

@@ -13,7 +13,6 @@
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*",
-    "wrangler": "catalog:"
+    "@repo/typescript-config": "workspace:*"
   }
 }

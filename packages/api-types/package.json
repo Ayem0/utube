@@ -9,10 +9,9 @@
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@repo/api": "workspace:*",
-    "dotenv": "^17.3.1"
+    "@repo/api": "workspace:*"
   },
   "dependencies": {
-    "@elysia/eden": "catalog:"
+    "@elysia/eden": "catalog:elysia"
   }
 }

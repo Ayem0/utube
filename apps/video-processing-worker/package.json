@@ -9,14 +9,13 @@
   "dependencies": {
     "@repo/services": "workspace:*",
     "@repo/types": "workspace:*",
-    "effect": "catalog:",
+    "effect": "catalog:effect",
     "zod": "catalog:",
     "@cloudflare/containers": "0.3.7"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@types/bun": "^1.3.9",
-    "wrangler": "catalog:"
+    "@types/bun": "catalog:tooling"
   }
 }

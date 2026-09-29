@@ -8,11 +8,10 @@
     "dependencies": {
         "@repo/services": "workspace:*",
         "@repo/types": "workspace:*",
-        "effect": "catalog:"
+        "effect": "catalog:effect"
     },
     "devDependencies": {
         "@repo/eslint-config": "workspace:*",
-        "@repo/typescript-config": "workspace:*",
-        "wrangler": "catalog:"
+        "@repo/typescript-config": "workspace:*"
     }
 }

@@ -5,7 +5,6 @@ import type { EffectDrizzleQueryError } from "drizzle-orm/effect-core";
 import { Context, Effect, Layer, UndefinedOr } from "effect";
 import { DB } from "../db/db";
 import { DBNotFoundError } from "../db/db-errors";
-import { timed } from "../utils/timed";
 
 type ChannelLight = Pick<
   Channel,
@@ -52,171 +51,159 @@ export class ChannelRepository extends Context.Service<
   ChannelRepository,
   ChannelRepositoryService
 >()("ChannelRepository", {
-  make: timed(
-    "ChannelRepository.make",
-    Effect.gen(function* () {
-      const db = yield* DB;
+  make: Effect.gen(function* () {
+    const db = yield* DB;
 
-      return {
-        getChannelsByUserId: ({ userId, selectedChannelId }) =>
-          db.run((db) =>
-            Effect.gen(function* () {
-              console.log("before querying");
-              const primaryChannel = db.$with("primary_channel").as(
-                db
-                  .select()
-                  .from(channel)
-                  .where(
-                    and(
-                      eq(channel.userId, userId),
-                      selectedChannelId
-                        ? or(
-                            eq(channel.id, selectedChannelId),
-                            eq(channel.default, true),
-                          )
-                        : eq(channel.default, true),
-                    ),
-                  )
-                  .orderBy(
+    return {
+      getChannelsByUserId: ({ userId, selectedChannelId }) =>
+        db.run((db) =>
+          Effect.gen(function* () {
+            const primaryChannel = db.$with("primary_channel").as(
+              db
+                .select()
+                .from(channel)
+                .where(
+                  and(
+                    eq(channel.userId, userId),
                     selectedChannelId
-                      ? sql`
+                      ? or(
+                          eq(channel.id, selectedChannelId),
+                          eq(channel.default, true),
+                        )
+                      : eq(channel.default, true),
+                  ),
+                )
+                .orderBy(
+                  selectedChannelId
+                    ? sql`
                 case
                   when ${channel.id} = ${selectedChannelId} then 0
                   when ${channel.default} = true then 1
                   else 2
                 end
               `
-                      : sql`
+                    : sql`
                 case
                   when ${channel.default} = true then 0
                   else 1
                 end
               `,
-                  )
-                  .limit(1),
-              );
+                )
+                .limit(1),
+            );
 
-              const rows = yield* db
-                .with(primaryChannel)
-                .select(channelLightSelect)
-                .from(channel)
-                .innerJoin(primaryChannel, sql`true`)
-                .where(eq(channel.userId, userId))
-                .orderBy(
-                  sql`
+            const rows = yield* db
+              .with(primaryChannel)
+              .select(channelLightSelect)
+              .from(channel)
+              .innerJoin(primaryChannel, sql`true`)
+              .where(eq(channel.userId, userId))
+              .orderBy(
+                sql`
                 case
                   when ${channel.id} = ${primaryChannel.id} then 0
                   else 1
                 end
               `,
-                  asc(channel.createdAt),
-                )
-                .limit(3);
-              console.log("after querying");
+                asc(channel.createdAt),
+              )
+              .limit(3);
 
-              if (rows.length === 0) {
-                return yield* new DBNotFoundError({
-                  message: "No channel found for user",
-                });
-              }
-              return rows;
-            }),
-          ),
+            if (rows.length === 0) {
+              return yield* new DBNotFoundError({
+                message: "No channel found for user",
+              });
+            }
+            return rows;
+          }),
+        ),
 
-        getStudioChannelById: ({ userId, channelId }) =>
-          db.run((db) =>
-            Effect.gen(function* () {
-              const start = performance.now();
-              const res = yield* db
-                .select(channelLightSelect)
-                .from(channel)
-                .where(
-                  and(eq(channel.userId, userId), eq(channel.id, channelId)),
-                )
-                .limit(1)
-                .pipe(
-                  Effect.flatMap(([row]) =>
-                    UndefinedOr.match(row, {
-                      onDefined: (row) => Effect.succeed(row),
-                      onUndefined: () =>
-                        new DBNotFoundError({
-                          message: "Channel not found",
-                        }),
+      getStudioChannelById: ({ userId, channelId }) =>
+        db.run((db) =>
+          db
+            .select(channelLightSelect)
+            .from(channel)
+            .where(and(eq(channel.userId, userId), eq(channel.id, channelId)))
+            .limit(1)
+            .pipe(
+              Effect.flatMap(([row]) =>
+                UndefinedOr.match(row, {
+                  onDefined: (row) => Effect.succeed(row),
+                  onUndefined: () =>
+                    new DBNotFoundError({
+                      message: "Channel not found",
                     }),
-                  ),
-                );
-              console.log("channel SQL:", performance.now() - start, "ms");
-              return res;
-            }),
-          ),
-
-        getByPendingAvatarAssetId: ({ assetId }) =>
-          db.run((db) =>
-            db
-              .select()
-              .from(channel)
-              .where(eq(channel.pendingAvatarAssetId, assetId))
-              .limit(1)
-              .pipe(
-                Effect.flatMap(([row]) =>
-                  UndefinedOr.match(row, {
-                    onDefined: (row) => Effect.succeed(row),
-                    onUndefined: () =>
-                      new DBNotFoundError({
-                        message: "Channel not found",
-                      }),
-                  }),
-                ),
+                }),
               ),
-          ),
+            ),
+        ),
 
-        setPendingAvatarAssetId: ({ channelId, assetId }) =>
-          db.run((db) =>
-            db
-              .update(channel)
-              .set({
-                pendingAvatarAssetId: assetId,
-              })
-              .where(eq(channel.id, channelId))
-              .returning()
-              .pipe(
-                Effect.flatMap(([row]) =>
-                  UndefinedOr.match(row, {
-                    onDefined: (row) => Effect.succeed(row),
-                    onUndefined: () =>
-                      new DBNotFoundError({
-                        message: "Channel not found",
-                      }),
-                  }),
-                ),
+      getByPendingAvatarAssetId: ({ assetId }) =>
+        db.run((db) =>
+          db
+            .select()
+            .from(channel)
+            .where(eq(channel.pendingAvatarAssetId, assetId))
+            .limit(1)
+            .pipe(
+              Effect.flatMap(([row]) =>
+                UndefinedOr.match(row, {
+                  onDefined: (row) => Effect.succeed(row),
+                  onUndefined: () =>
+                    new DBNotFoundError({
+                      message: "Channel not found",
+                    }),
+                }),
               ),
-          ),
+            ),
+        ),
 
-        updateCurrentAvatarAssetIdWithPendingAssetId: ({ channelId }) =>
-          db.run((db) =>
-            db
-              .update(channel)
-              .set({
-                currentAvatarAssetId: channel.pendingAvatarAssetId,
-                pendingAvatarAssetId: null,
-              })
-              .where(eq(channel.id, channelId))
-              .returning()
-              .pipe(
-                Effect.flatMap(([row]) =>
-                  UndefinedOr.match(row, {
-                    onDefined: (row) => Effect.succeed(row),
-                    onUndefined: () =>
-                      new DBNotFoundError({
-                        message: "Channel not found",
-                      }),
-                  }),
-                ),
+      setPendingAvatarAssetId: ({ channelId, assetId }) =>
+        db.run((db) =>
+          db
+            .update(channel)
+            .set({
+              pendingAvatarAssetId: assetId,
+            })
+            .where(eq(channel.id, channelId))
+            .returning()
+            .pipe(
+              Effect.flatMap(([row]) =>
+                UndefinedOr.match(row, {
+                  onDefined: (row) => Effect.succeed(row),
+                  onUndefined: () =>
+                    new DBNotFoundError({
+                      message: "Channel not found",
+                    }),
+                }),
               ),
-          ),
-      };
-    }),
-  ),
+            ),
+        ),
+
+      updateCurrentAvatarAssetIdWithPendingAssetId: ({ channelId }) =>
+        db.run((db) =>
+          db
+            .update(channel)
+            .set({
+              currentAvatarAssetId: channel.pendingAvatarAssetId,
+              pendingAvatarAssetId: null,
+            })
+            .where(eq(channel.id, channelId))
+            .returning()
+            .pipe(
+              Effect.flatMap(([row]) =>
+                UndefinedOr.match(row, {
+                  onDefined: (row) => Effect.succeed(row),
+                  onUndefined: () =>
+                    new DBNotFoundError({
+                      message: "Channel not found",
+                    }),
+                }),
+              ),
+            ),
+        ),
+    };
+  }),
 }) {
   static Layer = Layer.effect(this, this.make).pipe(Layer.provide(DB.Layer));
 }

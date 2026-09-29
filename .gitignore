@@ -21,6 +21,9 @@ coverage
 # Cloudflare wrangler
 .cloudflare-dev
 
+# Alchemy
+.alchemy
+*.alchemy
 
 # Vercel
 .vercel

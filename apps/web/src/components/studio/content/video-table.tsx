@@ -7,9 +7,7 @@ import {
   useRouteContext,
   useSearch,
 } from '@tanstack/react-router';
-import {
-  useTable
-} from '@tanstack/react-table';
+import { useTable } from '@tanstack/react-table';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { DataTable } from '../../data-table/data-table';
@@ -45,8 +43,6 @@ export function VideoTable() {
   );
 
   const [rowSelection, setRowSelection] = useState({});
-
-
 
   const table = useTable({
     features: features,
@@ -107,10 +103,7 @@ export function VideoTable() {
           />
         }
       />
-      <DataTablePagination
-        table={table}
-        className="pb-2"
-      />
+      <DataTablePagination table={table} className="pb-2" />
       <VideoTableDialog />
     </div>
   );

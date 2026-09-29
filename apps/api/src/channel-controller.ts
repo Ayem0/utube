@@ -25,7 +25,7 @@ export const channelController = new Elysia()
               return status(200, res);
             },
             onFailure: (e) => {
-              console.log("ERROR", e);
+              console.log("ERROR in /channel", e);
               return status(500);
             },
           }),

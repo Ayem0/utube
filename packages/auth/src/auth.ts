@@ -71,7 +71,7 @@ function randomSuffix(length: number = 6) {
   return out;
 }
 
-export const makeAuth = (db: DB, baseUrl: string, secret: string) =>
+export const makeAuth = (db: DB, baseUrl: string, secret: string, trustedOrigins: string[]) =>
   betterAuth({
     database: drizzleAdapter(db, {
       provider: "pg",
@@ -89,7 +89,7 @@ export const makeAuth = (db: DB, baseUrl: string, secret: string) =>
         // refreshCache: true, // Enable stateless refresh
       },
     },
-    trustedOrigins: ["http://localhost:3000", "http://localhost:8787"],
+    trustedOrigins: trustedOrigins,
     account: {
       storeStateStrategy: "cookie",
     },

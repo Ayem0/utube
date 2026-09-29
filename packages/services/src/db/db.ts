@@ -6,7 +6,6 @@ import type { PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type { PgEffectTransaction } from "drizzle-orm/pg-core/effect";
 import { Context, Effect, Layer, Option, Redacted } from "effect";
 import type { SqlError } from "effect/unstable/sql/SqlError";
-import { timed } from "../utils/timed";
 
 const make = PgDrizzle.make({ relations });
 type DBApi = Effect.Success<typeof make>;
@@ -30,18 +29,15 @@ const PgClientLayer = Layer.unwrap(
     const config = yield* DBConfig;
 
     return PgClient.layerFrom(
-      timed(
-        "PgClient.acquire",
-        PgClient.makeClient({
-          url: config.url,
-        }),
-      ),
+      PgClient.makeClient({
+        url: config.url,
+      }),
     );
   }),
 );
 
 class DBDrizzle extends Context.Service<DBDrizzle, DBApi>()("DBDrizzle", {
-  make: timed("DBDrizzle.make", make),
+  make: make,
 }) {
   static readonly Layer = Layer.effect(this, this.make).pipe(
     Layer.provide(EffectLogger.layer),
@@ -67,27 +63,24 @@ export class DB extends Context.Service<
     ) => Effect.Effect<A, E | SqlError, Exclude<R, Transaction>>;
   }
 >()("DB", {
-  make: timed(
-    "DB.make",
-    Effect.gen(function* () {
-      const db = yield* DBDrizzle;
+  make: Effect.gen(function* () {
+    const db = yield* DBDrizzle;
 
-      const run: ExecuteFn = Effect.fnUntraced(function* (cb) {
-        const tx = yield* Effect.serviceOption(Transaction);
-        if (Option.isSome(tx)) {
-          return yield* cb(tx.value);
-        }
-        return yield* cb(db);
-      });
-      return {
-        run: run,
-        withTransaction: (eff) =>
-          db.transaction((tx) =>
-            eff.pipe(Effect.provideService(Transaction, tx)),
-          ),
-      };
-    }),
-  ),
+    const run: ExecuteFn = Effect.fnUntraced(function* (cb) {
+      const tx = yield* Effect.serviceOption(Transaction);
+      if (Option.isSome(tx)) {
+        return yield* cb(tx.value);
+      }
+      return yield* cb(db);
+    });
+    return {
+      run: run,
+      withTransaction: (eff) =>
+        db.transaction((tx) =>
+          eff.pipe(Effect.provideService(Transaction, tx)),
+        ),
+    };
+  }),
 }) {
   static readonly Layer = Layer.effect(this, this.make).pipe(
     Layer.provide(DBDrizzle.Layer),

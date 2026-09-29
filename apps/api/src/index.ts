@@ -1,10 +1,10 @@
 import cors from "@elysiajs/cors";
 import { makeAuth } from "@repo/auth/auth";
 import { makeDb } from "@repo/db";
-import { env } from "cloudflare:workers";
 import { Elysia } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 import { channelController } from "./channel-controller";
+import { Env } from "./env";
 import { studioController } from "./studio-controller";
 import { videoController } from "./video-controller";
 
@@ -20,8 +20,8 @@ const api = new Elysia({
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     }),
   )
-  .onError(({ code, error, status }) => {
-    console.error("ERROR IN API", {
+  .onError(({ code, error, status, route, request, path }) => {
+    console.error("ERROR IN API AT ROUTE: ", route, path, request, {
       code,
       error,
     });
@@ -32,13 +32,14 @@ const api = new Elysia({
     });
   })
   .all("/auth/*", async ({ request }) => {
-    const db = makeDb(env.HYPERDRIVE.connectionString, 1);
-    const auth = makeAuth(db, env.BETTER_AUTH_URL, env.BETTER_AUTH_SECRET);
+    const db = makeDb(Env.HYPERDRIVE.connectionString, 1);
+    const auth = makeAuth(db, Env.BETTER_AUTH_URL, Env.BETTER_AUTH_SECRET, [
+      "http://localhost:3000",
+    ]);
     return await auth.handler(request);
   })
   .use(studioController)
   .use(videoController)
-
   .use(channelController)
   .compile();
 
