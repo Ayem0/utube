@@ -12,7 +12,6 @@ export class WS {
       current?.readyState === WebSocket.OPEN ||
       current?.readyState === WebSocket.CONNECTING
     ) {
-      console.log('this socket exists returning');
       return;
     }
 
@@ -21,21 +20,20 @@ export class WS {
     this.socket = socket;
     socket.onmessage = this.onMessage;
     socket.onopen = () => {
-      console.log('Websocket connected');
+      console.log('WS connected');
     };
     socket.onclose = (ev) => {
-      console.log('Websocket disconnected', ev.code, ev.reason, ev.wasClean);
+      console.log('WS closed', ev.code, ev.reason, ev.wasClean);
       if (this.socket === socket) {
         this.socket = null;
       }
     };
     socket.onerror = (ev) => {
-      console.error('Websocket error', ev);
+      console.error('WS error', ev);
     };
   }
 
   public close() {
-    console.log('called close');
     const socket = this.socket;
 
     if (!socket) return;

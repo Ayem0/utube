@@ -59,22 +59,6 @@ export default class WSWorker extends Cloudflare.Worker<WSWorker>()(
         console.log("forwarding request to do");
         return yield* wsServer.getByName(session.user.id).fetch(request);
       }),
-      webSocketClose: Effect.fn(function* (
-        ws: Cloudflare.WebSocket,
-        code: number,
-        reason: string,
-      ) {
-        console.log(code, reason);
-        yield* ws.close(code, reason);
-      }),
-      webSocketError: Effect.fn(function* (
-        ws: Cloudflare.WebSocket,
-        error: unknown,
-      ) {
-        // Cloudflare closes an errored socket after this handler runs; only
-        // the session bookkeeping is ours to clean up.
-        console.log("WS Error: ", error);
-      }),
     };
   }).pipe(Effect.provide(Cloudflare.Hyperdrive.ConnectBinding)),
 ) {}
