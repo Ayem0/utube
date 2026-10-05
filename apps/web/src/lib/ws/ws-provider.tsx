@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect } from 'react';
+import { createContext, useContext, useEffect, useMemo } from 'react';
 import { WS } from './ws';
 
 const WSContext = createContext<{ ws: WS } | null>(null);
@@ -12,7 +12,7 @@ export const WSProvider = ({
   children: React.ReactNode;
   url: string;
 }) => {
-  const ws = new WS(url);
+  const ws = useMemo(() => new WS(url), [url]);
   useEffect(() => {
     if (userId) {
       ws.connect();
@@ -20,7 +20,7 @@ export const WSProvider = ({
       ws.close();
     }
     return () => ws.close();
-  }, [url, userId]);
+  }, [userId, ws]);
 
   return <WSContext.Provider value={{ ws }}>{children}</WSContext.Provider>;
 };

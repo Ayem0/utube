@@ -13,7 +13,7 @@ import { relations } from "./schema/relations";
 
 export type DB = Awaited<ReturnType<typeof makeDb>>;
 
-export const makeDb = (url: string, max?: number) => {
+export const makeDb = (url: string, max: number = 1) => {
   const client = new Pool({ connectionString: url, max: max });
   return drizzle({
     client: client,

@@ -7,26 +7,50 @@ export class WS {
   constructor(readonly url: string) {}
 
   public connect() {
-    if (this.socket) return;
+    const current = this.socket;
+    if (
+      current?.readyState === WebSocket.OPEN ||
+      current?.readyState === WebSocket.CONNECTING
+    ) {
+      console.log('this socket exists returning');
+      return;
+    }
 
-    this.socket = new WebSocket(this.url);
-    this.socket.onmessage = this.onMessage;
-    this.socket.onopen = () => {
+    const socket = new WebSocket(this.url);
+
+    this.socket = socket;
+    socket.onmessage = this.onMessage;
+    socket.onopen = () => {
       console.log('Websocket connected');
     };
-    this.socket.onclose = () => {
-      console.log('Websocket disconnected');
-      this.socket = null;
+    socket.onclose = (ev) => {
+      console.log('Websocket disconnected', ev.code, ev.reason, ev.wasClean);
+      if (this.socket === socket) {
+        this.socket = null;
+      }
     };
-    this.socket.onerror = () => {
-      console.error('Websocket error');
+    socket.onerror = (ev) => {
+      console.error('Websocket error', ev);
     };
   }
 
   public close() {
-    if (!this.socket) return;
+    console.log('called close');
+    const socket = this.socket;
 
-    this.socket.close(1000, 'User logged out.');
+    if (!socket) return;
+
+    this.socket = null;
+
+    if (socket.readyState === WebSocket.CONNECTING) {
+      socket.onopen = () => {
+        socket.close(1000, 'No longer needed.');
+      };
+      return;
+    }
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.close(1000, 'User logged out.');
+    }
   }
 
   private onMessage = (e: MessageEvent<string>) => {

@@ -13,6 +13,7 @@ import {
   createRootRouteWithContext,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
+import { useMemo } from 'react';
 import { getAuthQueryOptions } from '../lib/auth/auth-query-options';
 
 interface MyRouterContext {
@@ -60,9 +61,10 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootComponent() {
   const { user } = Route.useRouteContext();
+  const url = useMemo(() => import.meta.env.VITE_WS_URL! + '/ws', []);
   return (
     <RootDocument>
-      <WSProvider url="http://localhost:8789/ws" userId={user?.id}>
+      <WSProvider url={url} userId={user?.id}>
         <Outlet />
       </WSProvider>
     </RootDocument>
