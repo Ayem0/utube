@@ -96,12 +96,6 @@ Bun.serve({
   port: 8080,
   async fetch(request) {
     const url = new URL(request.url);
-
-    if (request.method !== "POST" || url.pathname !== "/process") {
-      return new Response("Not found", {
-        status: 404,
-      });
-    }
     try {
       const body = await request.json<{ assetId: string }>();
 

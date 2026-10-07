@@ -20,7 +20,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "baseUrl": ".",
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules", "dist", "bridge_src"],

@@ -288,7 +288,6 @@ export class VideoRepository extends Context.Service<
               eq(channel.userId, userId),
             );
 
-            const totalStartTime = performance.now();
             const total = yield* db
               .select({
                 total: count(),
@@ -297,11 +296,6 @@ export class VideoRepository extends Context.Service<
               .innerJoin(channel, eq(video.channelId, channel.id))
               .where(filters)
               .pipe(Effect.map(([row]) => row?.total ?? 0));
-
-            console.log(
-              "getStudioByChannelId total time: ",
-              performance.now() - totalStartTime,
-            );
 
             if (total === 0)
               return {
@@ -338,11 +332,6 @@ export class VideoRepository extends Context.Service<
               .offset(normalizedIndex * size)
               .limit(size)
               .orderBy(desc(video.createdAt));
-
-            console.log(
-              "getStudioByChannelId rows time: ",
-              performance.now() - rowsStartTime,
-            );
 
             return {
               index: normalizedIndex,

@@ -6,7 +6,7 @@ import type {
 } from "@repo/types/types/pagination";
 import type { EffectDrizzleQueryError } from "drizzle-orm/effect-core";
 import { Context, Effect, Layer } from "effect";
-import type { SqlError } from "effect/unstable/sql/SqlError";
+import type { SqlError } from "effect/sql/SqlError";
 import { AssetRepository } from "../asset/asset-repository";
 import { AssetUploadFactory } from "../asset/asset-upload-factory";
 import { CDN } from "../cdn/cdn";

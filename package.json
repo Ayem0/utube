@@ -31,7 +31,7 @@
     "zod": "^4.3.6"
   },
   "overrides": {
-    "@effect/platform-node-shared": "4.0.0-rc.117"
+    "@effect/platform-node-shared": "4.0.0"
   },
   "catalogs": {
     "elysia": {
@@ -46,14 +46,14 @@
       "react-dom": "^19.3.0"
     },
     "effect": {
-      "effect": "4.0.0-rc.117",
-      "@effect/platform-bun": "4.0.0-rc.117",
-      "@effect/platform-node": "4.0.0-rc.117",
-      "@effect/platform-node-shared": "4.0.0-rc.117",
-      "@effect/sql-pg": "4.0.0-rc.117"
+      "effect": "4.0.0",
+      "@effect/platform-bun": "4.0.0",
+      "@effect/platform-node": "4.0.0",
+      "@effect/platform-node-shared": "4.0.0",
+      "@effect/sql-pg": "4.0.0"
     },
     "alchemy": {
-      "alchemy": "2.0.0-beta.79",
+      "alchemy": "2.0.0-beta.81",
       "@cloudflare/workers-types": "4.20260603.1"
     },
     "drizzle": {

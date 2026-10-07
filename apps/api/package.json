@@ -11,8 +11,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1128.0",
-    "@aws-sdk/s3-request-presigner": "^3.1128.0",
+    "aws4fetch": "1.0.20",
     "@elysiajs/cors": "catalog:elysia",
     "@repo/auth": "workspace:*",
     "@repo/db": "workspace:*",

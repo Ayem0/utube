@@ -64,10 +64,7 @@ export const studioController = new Elysia()
           });
         }).pipe(
           Effect.match({
-            onSuccess: (value) => {
-              console.log("THE VALUE: ", value);
-              return status(201, value);
-            },
+            onSuccess: (value) => status(201, value),
             onFailure: (err) => {
               console.log("ERROR IN THE MATCH: ", err);
               switch (err._tag) {
@@ -144,9 +141,7 @@ export const studioController = new Elysia()
             });
           }),
           {
-            onSuccess: (res) => {
-              return status(200, res);
-            },
+            onSuccess: (res) => status(200, res),
             onFailure: (err) => {
               switch (err._tag) {
                 case "DBNotFoundError":
@@ -176,9 +171,7 @@ export const studioController = new Elysia()
           });
         }).pipe(
           Effect.match({
-            onSuccess: (res) => {
-              return status(200, res);
-            },
+            onSuccess: (res) => status(200, res),
             onFailure: (err) => {
               switch (err._tag) {
                 case "DBNotFoundError":

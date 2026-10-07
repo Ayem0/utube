@@ -26,6 +26,7 @@ export const UtubeWeb = Effect.gen(function* () {
     dev: {
       port: 3000,
     },
+    compatibility: { flags: ['nodejs_compat'], date: '2026-09-25' },
   });
 });
 

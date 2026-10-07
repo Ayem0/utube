@@ -5,7 +5,7 @@ import * as PgDrizzle from "drizzle-orm/effect-postgres";
 import type { PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type { PgEffectTransaction } from "drizzle-orm/pg-core/effect";
 import { Context, Effect, Layer, Option, Redacted } from "effect";
-import type { SqlError } from "effect/unstable/sql/SqlError";
+import type { SqlError } from "effect/sql/SqlError";
 
 const make = PgDrizzle.make({ relations });
 type DBApi = Effect.Success<typeof make>;

@@ -1,7 +1,7 @@
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
-export default class WSServer extends Cloudflare.DurableObject<WSServer>()(
+export default class WSDO extends Cloudflare.DurableObject<WSDO>()(
   "WSServer",
   Effect.gen(function* () {
     const state = yield* Cloudflare.DurableObjectState;
@@ -9,10 +9,7 @@ export default class WSServer extends Cloudflare.DurableObject<WSServer>()(
     return Effect.gen(function* () {
       return {
         fetch: Effect.gen(function* () {
-          console.log("in the do");
           const [response, socket] = yield* Cloudflare.upgrade();
-          console.log("it worked now returning the response!");
-          console.log(response.status);
           return response;
         }),
         /**

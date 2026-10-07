@@ -8,21 +8,13 @@ import {
 } from "@repo/services/video/video-playback";
 import { VideoRepository } from "@repo/services/video/video-repository";
 import { VideoService } from "@repo/services/video/video-service";
+import * as Cloudflare from "alchemy/Cloudflare";
+import { AwsClient } from "aws4fetch";
 import { Effect, Layer, Redacted } from "effect";
 import Elysia from "elysia";
 import { Env } from "./env";
 
 const S3Layer = Layer.sync(S3, () => {
-  // const client = new S3Client({
-  //   credentials: {
-  //     accessKeyId: Env.R2_ACCESS_KEY_ID,
-  //     secretAccessKey: Env.R2_SECRET_ACCESS_KEY,
-  //   },
-  //   region: Env.R2_REGION,
-  //   endpoint: Env.R2_ENDPOINT,
-  //   forcePathStyle: true,
-  // });
-
   return {
     uploadFiles: () => Effect.succeed(void 0),
     getFile: () => Effect.succeed(new Uint8Array()),
@@ -30,21 +22,22 @@ const S3Layer = Layer.sync(S3, () => {
     getPresignedUrl: ({ bucket, expiresIn = 60, mimeType, path, method }) =>
       Effect.tryPromise({
         try: async () => {
-          // const command = new PutObjectCommand({
-          //   Bucket: bucket,
-          //   Key: path,
-          //   ContentType: mimeType,
-          // });
-
-          // const presignedUrl = await getSignedUrl(client, command, {
-          //   expiresIn,
-          // });
-
-          return `http://localhost:8790/${path}`; // TODO REMOVE VOIR COMMENT FAIRE UN LAYER PROD ET UN DEV
-
-          // return presignedUrl;
+          const s3: Cloudflare.R2.S3CredentialsValue = JSON.parse(
+            Env.S3Credentials,
+          );
+          const client = new AwsClient({ ...s3, service: "s3" });
+          const url = new URL(
+            `${s3.endpoint}/${encodeURIComponent(s3.bucketName)}/${path}`,
+          );
+          url.searchParams.set("X-Amz-Expires", expiresIn.toString());
+          const signed = await client.sign(url.toString(), {
+            method: "PUT",
+            aws: { signQuery: true },
+          });
+          return signed.url;
         },
-        catch: (error) => new S3Error({ cause: error, message: "S3Error" }),
+        catch: (e) =>
+          new S3Error({ message: "S3 error in get presigned url", cause: e }),
       }),
     uploadFile: () => Effect.succeed(void 0),
   };
