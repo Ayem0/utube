@@ -1,0 +1,24 @@
+diff --git a/lib/Cloudflare/Containers/ContainerPlatform.js b/lib/Cloudflare/Containers/ContainerPlatform.js
+index d45e2346c66f6da984d56b5d893f657fd3943fb0..9ddbbb96874de50844d1917721e7f7a6e22e1cc4 100644
+--- a/lib/Cloudflare/Containers/ContainerPlatform.js
++++ b/lib/Cloudflare/Containers/ContainerPlatform.js
+@@ -5,7 +5,7 @@ import * as Output from "../../Output.js";
+ import { Platform } from "../../Platform.js";
+ import { serveRpc } from "../../Rpc.js";
+ import { packEnvValueKeepRedacted, unpackEnvValue } from "../../RuntimeContext.js";
+-import { fromCloudflareFetcher, toCloudflareFetcher } from "../Fetcher.js";
++import { fromCloudflareFetcher } from "../Fetcher.js";
+ import { DurableObject } from "../Workers/DurableObject.js";
+ import { DurableObjectState } from "../Workers/DurableObjectState.js";
+ import { Worker } from "../Workers/Worker.js";
+@@ -116,8 +116,8 @@ export const ContainerPlatform = Platform("Cloudflare.Container", {
+                 signal: (signo) => Effect.sync(() => state.container.signal(signo)),
+                 getTcpPort: (port) => Effect.sync(() => fromCloudflareFetcher(httpSchemePort(state.container.getTcpPort(port)))),
+                 setInactivityTimeout: (durationMs) => Effect.promise(() => state.container.setInactivityTimeout(durationMs)),
+-                interceptOutboundHttp: (addr, binding) => toCloudflareFetcher(binding).pipe(Effect.map((binding) => state.container.interceptOutboundHttp(addr, binding))),
+-                interceptAllOutboundHttp: (binding) => toCloudflareFetcher(binding).pipe(Effect.map((binding) => state.container.interceptAllOutboundHttp(binding))),
++                interceptOutboundHttp: (addr, binding) => Effect.promise(() => state.container.interceptOutboundHttp(addr, binding)),
++                interceptAllOutboundHttp: (binding) => Effect.promise(() => state.container.interceptAllOutboundHttp(binding)),
+                 monitor: () => Effect.promise(() => state.container?.monitor() ?? Promise.resolve()),
+                 start: (options) => Effect.sync(() => state.container.start(options)),
+             };
