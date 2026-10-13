@@ -13,8 +13,9 @@ interface EntrypointExports {
 export class Cached extends WorkerEntrypoint<VideoStorageWorkerEnv> {
   async fetch(request: Request) {
     const { pathname } = new URL(request.url);
+    const key = pathname.substring(1);
     try {
-      const res = await this.env.VIDEOS_BUCKET.get(pathname);
+      const res = await this.env.VIDEOS_BUCKET.get(key);
       return new Response(res?.body, {
         status: res?.body ? 200 : 404,
         headers: { "Cache-Control": "public, max-age=86400" },

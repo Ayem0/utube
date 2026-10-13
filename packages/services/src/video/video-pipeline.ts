@@ -522,9 +522,7 @@ export class VideoPipeline extends Context.Service<
           });
 
           // Read all the remaining media, init, master, manifest, storyboard files
-          const paths = yield* fs.readDirectory(tempdir);
-
-          //
+          const paths = yield* fs.readDirectory(tempdir, { recursive: true });
           yield* Effect.forEach(
             paths,
             (path) =>

@@ -55,7 +55,7 @@ export class VideoPlayback extends Context.Service<
       Effect.tryPromise({
         try: async () => {
           const key = await importHmacKey(Redacted.value(cfg.secret));
-          const data = `/videos/${videoId}/${playbackId}/`;
+          const data = `/${videoId}/${playbackId}/`;
           const signature = await crypto.subtle.sign(
             "HMAC",
             key,
@@ -98,7 +98,7 @@ export class VideoPlayback extends Context.Service<
                 return false;
               }
 
-              const data = `/videos/${videoId}/${playbackId}/`;
+              const data = `/${videoId}/${playbackId}/`;
 
               const signature = await crypto.subtle.verify(
                 "HMAC",
@@ -154,7 +154,7 @@ export class VideoPlayback extends Context.Service<
               return false; // expired
             }
 
-            const data = pathname.substring(0, 82); // 82 = 0 indexed length (not including last) of "/videos/${videoId}/${playbackId}/" uuids are 36 chars, 7 + 1 + 36 + 1 + 36 + 1 = 82
+            const data = pathname.substring(0, 75); // 75 = 0 indexed length (not including last) of "/${videoId}/${playbackId}/" uuids are 36 chars, 1 + 36 + 1 + 36 + 1 = 75
             console.log("data", data);
             const signature = await crypto.subtle.verify(
               "HMAC",
