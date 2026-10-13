@@ -130,7 +130,7 @@ export class VideoService extends Context.Service<
     const db = yield* DB;
     const assetUploadFactory = yield* AssetUploadFactory;
     const cdn = yield* CDN;
-    const cdnBaseUrl = yield* cdn.getBaseUrl();
+    const cdnBaseUrl = yield* cdn.getBaseUrl;
     const videoPlayback = yield* VideoPlaybackService;
 
     const mapAssetVariants = (
@@ -247,9 +247,9 @@ export class VideoService extends Context.Service<
             },
             token: token,
             exp: exp,
-            hlsMasterUrl: `${cdnBaseUrl}/videos/${row.playback.hlsMasterKey}`,
-            dashManifestUrl: `${cdnBaseUrl}/videos/${row.playback.dashManifestKey}`,
-            storyboardUrl: `${cdnBaseUrl}/videos/${row.playback.storyboardKey}`,
+            hlsMasterUrl: `${cdnBaseUrl}/${row.playback.hlsMasterKey}`,
+            dashManifestUrl: `${cdnBaseUrl}/${row.playback.dashManifestKey}`,
+            storyboardUrl: `${cdnBaseUrl}/${row.playback.storyboardKey}`,
             renditions: row.playback.renditions,
           };
         }),

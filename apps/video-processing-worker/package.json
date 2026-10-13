@@ -11,7 +11,8 @@
     "@repo/types": "workspace:*",
     "effect": "catalog:effect",
     "zod": "catalog:",
-    "@cloudflare/containers": "0.3.7"
+    "@cloudflare/containers": "0.3.7",
+    "@effect/platform-bun": "catalog:effect"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",

@@ -10,6 +10,9 @@ WORKDIR /app
 FROM base AS pruner
 RUN bun add -g turbo
 COPY . .
+
+RUN turbo telemetry disable
+
 # video-processing-container is the name of the app in package.json
 RUN turbo prune @repo/video-processing-worker --docker
 
@@ -27,6 +30,8 @@ COPY --from=pruner /app/out/full/ .
 
 # Build the app using Turbo (which runs the vite build script)
 RUN bunx turbo run build --filter=@repo/video-processing-worker
+
+
 
 # Stage 3: Runner
 FROM base AS runner

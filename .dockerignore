@@ -13,3 +13,7 @@ volume
 
 .env
 .env.*
+
+.alchemy/
+*.alchemy/
+.turbo/

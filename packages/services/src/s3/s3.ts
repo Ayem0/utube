@@ -132,26 +132,27 @@
 //   static Layer = Layer.effect(this, this.make);
 // }
 
-import { Context, Effect } from "effect";
+import { Context, Effect, type Stream } from "effect";
 import { S3Error } from "./s3-errors";
 
 export interface S3Api {
-  getFile: (key: string, bucket: string) => Effect.Effect<Uint8Array, S3Error>;
-  uploadFile: (
+  getFile: (key: string, bucket: string) => Stream.Stream<Uint8Array, S3Error>;
+  uploadFile: <E, R>(
     key: string,
-    file: Uint8Array,
+    file: Stream.Stream<Uint8Array, E, R>,
     bucket: string,
-  ) => Effect.Effect<void, S3Error>;
-  uploadFiles: (
-    entries: { key: string; file: Uint8Array }[],
+    size?: bigint,
+  ) => Effect.Effect<void, S3Error | E, R>;
+  uploadFiles: <E, R>(
+    entries: { key: string; file: Stream.Stream<Uint8Array, E, R> }[],
     bucket: string,
-  ) => Effect.Effect<void, S3Error>;
+  ) => Effect.Effect<void, S3Error | E, R>;
   deleteFile: (key: string, bucket: string) => Effect.Effect<void, S3Error>;
   getPresignedUrl: (params: {
     path: string;
     bucket: string;
     mimeType: string;
-    expiresIn?: number;
+    expiresInSeconds?: number;
     method: "GET" | "POST" | "PUT" | "DELETE" | "HEAD";
   }) => Effect.Effect<string, S3Error>;
 }

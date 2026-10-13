@@ -14,9 +14,15 @@ export default class VideoProcessingWorker extends Cloudflare.Worker<VideoProces
 
     yield* Cloudflare.Queues.consumeQueueMessages<VideoProcessingQueueMsg>(
       videoProcessingQueue,
+      {
+        batchSize: 1,
+        maxRetries: 3,
+        retryDelay: "5 seconds",
+      },
       (stream) =>
         Stream.runForEach(stream, (msg) =>
           Effect.gen(function* () {
+            yield* Effect.log("Processing message");
             const body = yield* parseBody(msg.body);
             yield* Effect.log(body.object.key);
             const assetId = body.object.key.split("/")[1];

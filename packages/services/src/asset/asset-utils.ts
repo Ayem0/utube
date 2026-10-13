@@ -86,11 +86,7 @@ export function getImageExtensionFromMimeType(mimeType: string) {
 }
 
 export type Prefix =
-  | "videos"
-  | "avatars"
-  | "thumbnails"
-  | "audios"
-  | "subtitles";
+  "videos" | "avatars" | "thumbnails" | "audios" | "subtitles";
 
 type AssetId = string;
 type Name = string;

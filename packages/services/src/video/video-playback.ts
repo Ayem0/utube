@@ -154,7 +154,7 @@ export class VideoPlayback extends Context.Service<
               return false; // expired
             }
 
-            const data = pathname.substring(0, 82); // 82 = 0 indexed length (not including last) of "/videos/${videoId}/${playbackId}/" uuids are 36 chars, 8 + 36 + 1 + 36 + 1 = 82
+            const data = pathname.substring(0, 82); // 82 = 0 indexed length (not including last) of "/videos/${videoId}/${playbackId}/" uuids are 36 chars, 7 + 1 + 36 + 1 + 36 + 1 = 82
             console.log("data", data);
             const signature = await crypto.subtle.verify(
               "HMAC",

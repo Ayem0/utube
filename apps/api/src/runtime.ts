@@ -1,3 +1,4 @@
+import { CDNConfig } from "@repo/services/cdn/cdn";
 import { ChannelRepository } from "@repo/services/channel/channel-repository";
 import { DBConfig } from "@repo/services/db/db";
 import { S3 } from "@repo/services/s3/s3";
@@ -10,16 +11,22 @@ import { VideoRepository } from "@repo/services/video/video-repository";
 import { VideoService } from "@repo/services/video/video-service";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { AwsClient } from "aws4fetch";
-import { Effect, Layer, Redacted } from "effect";
+import { Effect, Layer, Redacted, Stream } from "effect";
 import Elysia from "elysia";
 import { Env } from "./env";
 
 const S3Layer = Layer.sync(S3, () => {
   return {
-    uploadFiles: () => Effect.succeed(void 0),
-    getFile: () => Effect.succeed(new Uint8Array()),
-    deleteFile: () => Effect.succeed(void 0),
-    getPresignedUrl: ({ bucket, expiresIn = 60, mimeType, path, method }) =>
+    uploadFiles: () => Effect.die("Not implemented"),
+    getFile: () => Stream.die("Not implemented"),
+    deleteFile: () => Effect.die("Not implemented"),
+    getPresignedUrl: ({
+      bucket,
+      expiresInSeconds = 60,
+      mimeType,
+      path,
+      method,
+    }) =>
       Effect.tryPromise({
         try: async () => {
           const s3: Cloudflare.R2.S3CredentialsValue = JSON.parse(
@@ -29,7 +36,7 @@ const S3Layer = Layer.sync(S3, () => {
           const url = new URL(
             `${s3.endpoint}/${encodeURIComponent(s3.bucketName)}/${path}`,
           );
-          url.searchParams.set("X-Amz-Expires", expiresIn.toString());
+          url.searchParams.set("X-Amz-Expires", expiresInSeconds.toString());
           const signed = await client.sign(url.toString(), {
             method: "PUT",
             aws: { signQuery: true },
@@ -39,7 +46,7 @@ const S3Layer = Layer.sync(S3, () => {
         catch: (e) =>
           new S3Error({ message: "S3 error in get presigned url", cause: e }),
       }),
-    uploadFile: () => Effect.succeed(void 0),
+    uploadFile: () => Effect.die("Not implemented"),
   };
 });
 
@@ -53,6 +60,10 @@ const videoPlaybackConfigLayer = Layer.sync(VideoPlaybackConfig, () => ({
   secret: Redacted.make(Env.VIDEO_PLAYBACK_SECRET),
 }));
 
+const cdnLayer = Layer.sync(CDNConfig, () => ({
+  baseUrl: Env.VIDEO_BUCKET_URL,
+}));
+
 export const liveLayer = Layer.provideMerge(
   Layer.mergeAll(
     VideoService.Layer,
@@ -61,7 +72,7 @@ export const liveLayer = Layer.provideMerge(
   ),
   Layer.provideMerge(
     VideoPlayback.Layer,
-    Layer.mergeAll(S3Layer, dbConfigLayer, videoPlaybackConfigLayer),
+    Layer.mergeAll(S3Layer, dbConfigLayer, videoPlaybackConfigLayer, cdnLayer),
   ),
 );
 

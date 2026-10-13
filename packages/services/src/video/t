@@ -1,0 +1,149 @@
+
+
+
+MAJ TANSTACK START!!!!!!!!!!!!
+MAJ TANSTACK START!!!!!!!!!!!!
+MAJ TANSTACK START!!!!!!!!!!!!
+MAJ TANSTACK START!!!!!!!!!!!!
+MAJ TANSTACK START!!!!!!!!!!!!
+MAJ TANSTACK START!!!!!!!!!!!!
+MAJ TANSTACK START!!!!!!!!!!!!
+MAJ TANSTACK START!!!!!!!!!!!!
+MAJ TANSTACK START!!!!!!!!!!!!
+MAJ TANSTACK START!!!!!!!!!!!!
+MAJ TANSTACK START!!!!!!!!!!!!
+MAJ TANSTACK START!!!!!!!!!!!!
+
+
+
+
+
+[08:16:53.235] INFO (#15): CreateEvent 1791620213235 cmaf/0/init.m4s
+[08:16:53.235] INFO (#15): CreateEvent 1791620213235 cmaf/1/init.m4s
+[08:16:53.235] INFO (#15): CreateEvent 1791620213235 cmaf/2/init.m4s
+[08:16:53.235] INFO (#15): CreateEvent 1791620213235 cmaf/3/init.m4s
+[08:16:53.236] INFO (#15): CreateEvent 1791620213236 cmaf/4/init.m4s
+[08:16:53.409] INFO (#15): UpdateEvent 1791620213409 cmaf/0/init.m4s
+[08:16:53.410] INFO (#15): CreateEvent 1791620213410 cmaf/0/chunk_00001.m4s.tmp
+[08:16:53.413] INFO (#15): UpdateEvent 1791620213413 cmaf/1/init.m4s
+[08:16:53.413] INFO (#15): UpdateEvent 1791620213413 cmaf/2/init.m4s
+[08:16:53.414] INFO (#15): CreateEvent 1791620213414 cmaf/1/chunk_00001.m4s.tmp
+[08:16:53.415] INFO (#15): UpdateEvent 1791620213415 cmaf/3/init.m4s
+[08:16:53.415] INFO (#15): CreateEvent 1791620213415 cmaf/2/chunk_00001.m4s.tmp
+[08:16:53.415] INFO (#15): UpdateEvent 1791620213415 cmaf/4/init.m4s
+[08:16:53.416] INFO (#15): CreateEvent 1791620213416 cmaf/3/chunk_00001.m4s.tmp
+[08:16:53.416] INFO (#15): CreateEvent 1791620213416 cmaf/4/chunk_00001.m4s.tmp
+[08:16:53.960] INFO (#15): UpdateEvent 1791620213960 cmaf/0/chunk_00001.m4s.tmp
+[08:16:53.960] INFO (#15): UpdateEvent 1791620213960 cmaf/0/chunk_00001.m4s.tmp
+[08:16:53.960] INFO (#15): UpdateEvent 1791620213960 cmaf/4/chunk_00001.m4s.tmp
+[08:16:53.960] INFO (#15): CreateEvent 1791620213960 cmaf/0/chunk_00001.m4s
+[08:16:53.960] INFO (#15): CreateEvent 1791620213960 cmaf/4/chunk_00001.m4s
+[08:16:53.961] INFO (#15): CreateEvent 1791620213961 cmaf/0/chunk_00002.m4s.tmp
+[08:16:53.961] INFO (#15): UpdateEvent 1791620213961 cmaf/1/chunk_00001.m4s.tmp
+[08:16:53.965] INFO (#15): CreateEvent 1791620213965 cmaf/1/chunk_00001.m4s
+[08:16:53.965] INFO (#15): CreateEvent 1791620213965 cmaf/1/chunk_00002.m4s.tmp
+[08:16:53.965] INFO (#15): UpdateEvent 1791620213965 cmaf/2/chunk_00001.m4s.tmp
+[08:16:53.965] INFO (#15): UpdateEvent 1791620213965 cmaf/3/chunk_00001.m4s.tmp
+[08:16:53.965] INFO (#15): UpdateEvent 1791620213965 dash/media_0.m3u8.tmp
+[08:16:53.965] INFO (#15): CreateEvent 1791620213965 cmaf/3/chunk_00001.m4s
+[08:16:53.966] INFO (#15): CreateEvent 1791620213966 cmaf/2/chunk_00002.m4s.tmp
+[08:16:53.966] INFO (#15): UpdateEvent 1791620213966 dash/media_1.m3u8.tmp
+[08:16:53.966] INFO (#15): CreateEvent 1791620213966 cmaf/2/chunk_00001.m4s
+[08:16:53.966] INFO (#15): CreateEvent 1791620213966 dash/manifest.mpd.tmp
+[08:16:53.966] INFO (#15): CreateEvent 1791620213966 dash/media_0.m3u8
+[08:16:53.966] INFO (#15): UpdateEvent 1791620213966 dash/media_2.m3u8.tmp
+[08:16:53.966] INFO (#15): UpdateEvent 1791620213966 dash/media_3.m3u8.tmp
+[08:16:53.966] INFO (#15): UpdateEvent 1791620213966 dash/media_4.m3u8.tmp
+[08:16:53.966] INFO (#15): CreateEvent 1791620213966 dash/media_1.m3u8
+[08:16:53.966] INFO (#15): UpdateEvent 1791620213966 dash/manifest.mpd.tmp
+[08:16:53.966] INFO (#15): UpdateEvent 1791620213966 hls/master.m3u8.tmp
+[08:16:53.967] INFO (#15): CreateEvent 1791620213967 dash/media_2.m3u8
+[08:16:53.967] INFO (#15): CreateEvent 1791620213967 dash/media_3.m3u8
+[08:16:53.967] INFO (#15): CreateEvent 1791620213967 dash/media_4.m3u8
+[08:16:53.967] INFO (#15): CreateEvent 1791620213967 dash/manifest.mpd
+[08:16:53.967] INFO (#15): CreateEvent 1791620213967 hls/master.m3u8
+[08:16:53.967] INFO (#15): CreateEvent 1791620213967 cmaf/4/chunk_00002.m4s.tmp
+[08:16:53.978] INFO (#15): CreateEvent 1791620213978 cmaf/3/chunk_00002.m4s.tmp
+[08:16:54.648] INFO (#15): UpdateEvent 1791620214648 cmaf/0/chunk_00002.m4s.tmp
+[08:16:54.655] INFO (#15): CreateEvent 1791620214655 cmaf/0/chunk_00002.m4s
+[08:16:54.657] INFO (#15): UpdateEvent 1791620214657 cmaf/4/chunk_00002.m4s.tmp
+[08:16:54.657] INFO (#15): UpdateEvent 1791620214657 cmaf/1/chunk_00002.m4s.tmp
+[08:16:54.657] INFO (#15): UpdateEvent 1791620214657 cmaf/2/chunk_00002.m4s.tmp
+[08:16:54.657] INFO (#15): CreateEvent 1791620214657 cmaf/0/chunk_00003.m4s.tmp
+[08:16:54.657] INFO (#15): CreateEvent 1791620214657 cmaf/4/chunk_00002.m4s
+[08:16:54.657] INFO (#15): CreateEvent 1791620214657 cmaf/1/chunk_00003.m4s.tmp
+[08:16:54.657] INFO (#15): CreateEvent 1791620214657 cmaf/1/chunk_00002.m4s
+[08:16:54.657] INFO (#15): CreateEvent 1791620214657 cmaf/2/chunk_00003.m4s.tmp
+[08:16:54.657] INFO (#15): CreateEvent 1791620214657 cmaf/2/chunk_00002.m4s
+[08:16:54.658] INFO (#15): UpdateEvent 1791620214658 cmaf/3/chunk_00002.m4s.tmp
+[08:16:54.661] INFO (#15): CreateEvent 1791620214661 cmaf/3/chunk_00002.m4s
+[08:16:54.661] INFO (#15): UpdateEvent 1791620214661 dash/media_0.m3u8.tmp
+[08:16:54.661] INFO (#15): UpdateEvent 1791620214661 dash/media_1.m3u8.tmp
+[08:16:54.661] INFO (#15): UpdateEvent 1791620214661 dash/media_2.m3u8.tmp
+[08:16:54.661] INFO (#15): UpdateEvent 1791620214661 dash/media_3.m3u8.tmp
+[08:16:54.661] INFO (#15): UpdateEvent 1791620214661 dash/media_4.m3u8.tmp
+[08:16:54.661] INFO (#15): UpdateEvent 1791620214661 dash/manifest.mpd.tmp
+[08:16:54.661] INFO (#15): CreateEvent 1791620214661 dash/media_0.m3u8
+[08:16:54.661] INFO (#15): CreateEvent 1791620214661 dash/media_2.m3u8
+[08:16:54.661] INFO (#15): CreateEvent 1791620214661 dash/media_1.m3u8
+[08:16:54.662] INFO (#15): CreateEvent 1791620214662 dash/media_3.m3u8
+[08:16:54.662] INFO (#15): CreateEvent 1791620214662 dash/media_4.m3u8
+[08:16:54.662] INFO (#15): CreateEvent 1791620214662 dash/manifest.mpd
+[08:16:54.662] INFO (#15): CreateEvent 1791620214662 cmaf/3/chunk_00003.m4s.tmp
+[08:16:54.662] INFO (#15): CreateEvent 1791620214662 cmaf/4/chunk_00003.m4s.tmp
+[08:16:55.304] INFO (#15): UpdateEvent 1791620215304 cmaf/0/chunk_00003.m4s.tmp
+[08:16:55.305] INFO (#15): UpdateEvent 1791620215305 cmaf/0/chunk_00003.m4s.tmp
+[08:16:55.311] INFO (#15): CreateEvent 1791620215311 cmaf/0/chunk_00003.m4s
+[08:16:55.312] INFO (#15): UpdateEvent 1791620215311 cmaf/4/chunk_00003.m4s.tmp
+[08:16:55.312] INFO (#15): CreateEvent 1791620215312 cmaf/4/chunk_00003.m4s
+[08:16:55.312] INFO (#15): CreateEvent 1791620215312 cmaf/0/chunk_00004.m4s.tmp
+[08:16:55.313] INFO (#15): UpdateEvent 1791620215313 cmaf/1/chunk_00003.m4s.tmp
+[08:16:55.314] INFO (#15): CreateEvent 1791620215314 cmaf/1/chunk_00003.m4s
+[08:16:55.314] INFO (#15): CreateEvent 1791620215314 cmaf/1/chunk_00004.m4s.tmp
+[08:16:55.316] INFO (#15): UpdateEvent 1791620215316 cmaf/2/chunk_00003.m4s.tmp
+[08:16:55.316] INFO (#15): UpdateEvent 1791620215316 cmaf/3/chunk_00003.m4s.tmp
+[08:16:55.317] INFO (#15): UpdateEvent 1791620215317 dash/media_0.m3u8.tmp
+[08:16:55.317] INFO (#15): UpdateEvent 1791620215317 dash/media_1.m3u8.tmp
+[08:16:55.323] INFO (#15): CreateEvent 1791620215323 dash/media_0.m3u8
+[08:16:55.323] INFO (#15): CreateEvent 1791620215323 dash/manifest.mpd.tmp
+[08:16:55.323] INFO (#15): CreateEvent 1791620215323 cmaf/3/chunk_00003.m4s
+[08:16:55.323] INFO (#15): CreateEvent 1791620215323 cmaf/2/chunk_00004.m4s.tmp
+[08:16:55.323] INFO (#15): CreateEvent 1791620215323 cmaf/2/chunk_00003.m4s
+[08:16:55.323] INFO (#15): UpdateEvent 1791620215323 dash/media_2.m3u8.tmp
+[08:16:55.324] INFO (#15): UpdateEvent 1791620215324 dash/media_3.m3u8.tmp
+[08:16:55.324] INFO (#15): UpdateEvent 1791620215324 dash/media_4.m3u8.tmp
+[08:16:55.324] INFO (#15): UpdateEvent 1791620215324 dash/manifest.mpd.tmp
+[08:16:55.324] INFO (#15): CreateEvent 1791620215324 dash/media_3.m3u8
+[08:16:55.324] INFO (#15): CreateEvent 1791620215324 dash/media_2.m3u8
+[08:16:55.324] INFO (#15): CreateEvent 1791620215324 dash/media_1.m3u8
+[08:16:55.324] INFO (#15): CreateEvent 1791620215324 cmaf/4/chunk_00004.m4s.tmp
+[08:16:55.326] INFO (#15): CreateEvent 1791620215326 dash/media_4.m3u8
+[08:16:55.327] INFO (#15): CreateEvent 1791620215327 cmaf/3/chunk_00004.m4s.tmp
+[08:16:55.327] INFO (#15): CreateEvent 1791620215327 dash/manifest.mpd
+[08:16:55.813] INFO (#15): UpdateEvent 1791620215813 cmaf/0/chunk_00004.m4s.tmp
+[08:16:55.814] INFO (#15): CreateEvent 1791620215814 cmaf/0/chunk_00004.m4s
+[08:16:55.814] INFO (#15): UpdateEvent 1791620215814 cmaf/1/chunk_00004.m4s.tmp
+[08:16:55.815] INFO (#15): UpdateEvent 1791620215815 cmaf/2/chunk_00004.m4s.tmp
+[08:16:55.816] INFO (#15): CreateEvent 1791620215816 cmaf/1/chunk_00004.m4s
+[08:16:55.816] INFO (#15): CreateEvent 1791620215816 cmaf/2/chunk_00004.m4s
+[08:16:55.816] INFO (#15): UpdateEvent 1791620215816 cmaf/3/chunk_00004.m4s.tmp
+[08:16:55.817] INFO (#15): CreateEvent 1791620215817 cmaf/3/chunk_00004.m4s
+[08:16:55.817] INFO (#15): UpdateEvent 1791620215817 cmaf/4/chunk_00004.m4s.tmp
+[08:16:55.817] INFO (#15): CreateEvent 1791620215817 cmaf/4/chunk_00004.m4s
+[08:16:55.818] INFO (#15): CreateEvent 1791620215818 dash/manifest.mpd.tmp
+[08:16:55.818] INFO (#15): CreateEvent 1791620215818 dash/media_0.m3u8.tmp
+[08:16:55.818] INFO (#15): UpdateEvent 1791620215818 dash/media_0.m3u8.tmp
+[08:16:55.818] INFO (#15): CreateEvent 1791620215818 dash/media_0.m3u8
+[08:16:55.818] INFO (#15): UpdateEvent 1791620215818 dash/media_1.m3u8.tmp
+[08:16:55.820] INFO (#15): CreateEvent 1791620215820 dash/media_1.m3u8.tmp
+[08:16:55.820] INFO (#15): CreateEvent 1791620215820 dash/media_1.m3u8
+[08:16:55.820] INFO (#15): UpdateEvent 1791620215820 dash/media_2.m3u8.tmp
+[08:16:55.820] INFO (#15): CreateEvent 1791620215820 dash/media_2.m3u8.tmp
+[08:16:55.820] INFO (#15): UpdateEvent 1791620215820 dash/media_3.m3u8.tmp
+[08:16:55.820] INFO (#15): CreateEvent 1791620215820 dash/media_2.m3u8
+[08:16:55.820] INFO (#15): CreateEvent 1791620215820 dash/media_3.m3u8
+[08:16:55.820] INFO (#15): UpdateEvent 1791620215820 dash/media_4.m3u8.tmp
+[08:16:55.820] INFO (#15): UpdateEvent 1791620215820 dash/manifest.mpd.tmp
+[08:16:55.820] INFO (#15): CreateEvent 1791620215820 dash/media_4.m3u8
+[08:16:55.821] INFO (#15): CreateEvent 1791620215821 dash/manifest.mpd
+[08:16:55.846] INFO (#15): UpdateEvent 1791620215846 hls/master.m3u8

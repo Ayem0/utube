@@ -1,4 +1,8 @@
-import { Context, Effect, Layer } from "effect";
+import { Context, Effect, Layer, Stream } from "effect";
+import { FileSystem } from "effect/FileSystem";
+import { ChildProcess } from "effect/process";
+import type { ChildProcessSpawner } from "effect/process/ChildProcessSpawner";
+import type { Scope } from "effect/Scope";
 import { VideoStoryboardError } from "./video-errors";
 import {
   VideoStoryboardConfig,
@@ -10,7 +14,7 @@ interface VideoStoryboardGeneratorService {
     originalPath: string;
     outputDir: string;
     duration: number;
-  }) => Effect.Effect<string[], VideoStoryboardError>;
+  }) => Effect.Effect<void, VideoStoryboardError, ChildProcessSpawner | Scope>;
 }
 
 export class VideoStoryboardGenerator extends Context.Service<
@@ -19,49 +23,92 @@ export class VideoStoryboardGenerator extends Context.Service<
 >()("VideoStoryboardGenerator", {
   make: Effect.gen(function* () {
     const cfg = yield* VideoStoryboardConfig;
+    const fs = yield* FileSystem;
+
     return {
       generate: ({ originalPath, outputDir, duration }) =>
-        Effect.tryPromise({
-          try: async () => {
-            const storyboardArgs = buildStoryboardArgs(
-              originalPath,
-              outputDir,
-              duration,
-              cfg,
-            );
+        Effect.gen(function* () {
+          const dir = `${outputDir}/storyboard`;
+          yield* fs.makeDirectory(dir);
+          const storyboardArgs = buildStoryboardArgs(
+            originalPath,
+            dir,
+            duration,
+            cfg,
+          );
 
-            await Bun.$`mkdir -p ${outputDir}`;
-            const storyboardProc = Bun.spawn(storyboardArgs, {
-              stdout: "pipe",
-              stderr: "pipe",
+          const spawn = yield* ChildProcess.make("ffmpeg", storyboardArgs, {
+            stderr: "pipe",
+            stdout: "pipe",
+          });
+
+          const [exitCode, stderr] = yield* Effect.all(
+            [
+              spawn.exitCode,
+              spawn.stderr.pipe(Stream.decodeText, Stream.mkString),
+            ],
+            { concurrency: "unbounded" },
+          );
+          if (exitCode !== 0)
+            return yield* new VideoStoryboardError({
+              cause: stderr,
+              message: `Ffmpeg exited with code ${exitCode}`,
             });
-            const storyboardExit = await storyboardProc.exited;
-            if (storyboardExit !== 0) {
-              const stderr = await new Response(storyboardProc.stderr).text();
-              throw new Error(
-                `ffmpeg exited with code ${storyboardExit}: ${stderr}`,
-              );
-            } else {
-              const stdout = await new Response(storyboardProc.stdout).text();
-              console.log("Generated storyboard with stdout:", stdout);
-            }
 
-            await generateStoryboardVTTFile({ outputDir, duration, cfg });
-            const paths = await Array.fromAsync(
-              new Bun.Glob("**/storyboard*.*").scan({
-                cwd: outputDir,
-                absolute: true,
+          yield* fs.writeFileString(
+            `${dir}/storyboard.vtt`,
+            createStoryboardVTTString({ cfg, duration }),
+          );
+        }).pipe(
+          Effect.catchCause(
+            (c) =>
+              new VideoStoryboardError({
+                cause: c,
+                message: "Error generating storyboard",
               }),
-            );
-            console.log("Generated storyboard", paths);
-            return paths;
-          },
-          catch: (e) =>
-            new VideoStoryboardError({
-              cause: e,
-              message: "Error generating storyboard",
-            }),
-        }),
+          ),
+        ),
+      // Effect.tryPromise({
+      //   try: async () => {
+      //     const storyboardArgs = buildStoryboardArgs(
+      //       originalPath,
+      //       outputDir,
+      //       duration,
+      //       cfg,
+      //     );
+
+      //     await Bun.$`mkdir -p ${outputDir}`;
+      //     const storyboardProc = Bun.spawn(storyboardArgs, {
+      //       stdout: "pipe",
+      //       stderr: "pipe",
+      //     });
+      //     const storyboardExit = await storyboardProc.exited;
+      //     if (storyboardExit !== 0) {
+      //       const stderr = await new Response(storyboardProc.stderr).text();
+      //       throw new Error(
+      //         `ffmpeg exited with code ${storyboardExit}: ${stderr}`,
+      //       );
+      //     } else {
+      //       const stdout = await new Response(storyboardProc.stdout).text();
+      //       console.log("Generated storyboard with stdout:", stdout);
+      //     }
+
+      //     await generateStoryboardVTTFile({ outputDir, duration, cfg });
+      //     const paths = await Array.fromAsync(
+      //       new Bun.Glob("**/storyboard*.*").scan({
+      //         cwd: outputDir,
+      //         absolute: true,
+      //       }),
+      //     );
+      //     console.log("Generated storyboard", paths);
+      //     return paths;
+      //   },
+      //   catch: (e) =>
+      //     new VideoStoryboardError({
+      //       cause: e,
+      //       message: "Error generating storyboard",
+      //     }),
+      // }),
     };
   }),
 }) {
@@ -129,6 +176,44 @@ async function generateStoryboardVTTFile({
   await Bun.write(`${outputDir}/storyboard.vtt`, lines.join("\n"));
 }
 
+function createStoryboardVTTString({
+  duration,
+  cfg,
+}: {
+  duration: number;
+  cfg: VideoStoryboardConfigService;
+}) {
+  const storyboardInterval = getStoryboardInterval(duration, cfg);
+  const thumbsPerSheet = cfg.STORYBOARD_TILE_COLS * cfg.STORYBOARD_TILE_ROWS;
+  const totalThumbs = Math.ceil(duration / storyboardInterval);
+
+  const lines: string[] = ["WEBVTT", ""];
+
+  for (let i = 0; i < totalThumbs; i++) {
+    const start = i * storyboardInterval;
+    const end = Math.min((i + 1) * storyboardInterval, duration);
+
+    const sheetIndex = Math.floor(i / thumbsPerSheet);
+    const indexInSheet = i % thumbsPerSheet;
+
+    const col = indexInSheet % cfg.STORYBOARD_TILE_COLS;
+    const row = Math.floor(indexInSheet / cfg.STORYBOARD_TILE_COLS);
+
+    const x = col * cfg.STORYBOARD_WIDTH;
+    const y = row * cfg.STORYBOARD_HEIGHT;
+
+    const sheetNumber = sheetIndex + 1;
+
+    lines.push(
+      `${toVttTimestamp(start)} --> ${toVttTimestamp(end)}`,
+      `storyboard_${String(sheetNumber).padStart(3, "0")}.jpg#xywh=${x},${y},${cfg.STORYBOARD_WIDTH},${cfg.STORYBOARD_HEIGHT}`,
+      "",
+    );
+  }
+
+  return lines.join("\n");
+}
+
 function toVttTimestamp(totalSeconds: number) {
   const ms = Math.floor((totalSeconds % 1) * 1000);
   const s = Math.floor(totalSeconds) % 60;
@@ -152,7 +237,6 @@ function buildStoryboardArgs(
     `tile=${cfg.STORYBOARD_TILE_COLS}x${cfg.STORYBOARD_TILE_ROWS}:nb_frames=${cfg.STORYBOARD_TILE_COLS * cfg.STORYBOARD_TILE_ROWS}`,
   ];
   return [
-    "ffmpeg",
     "-y",
     "-i",
     inputPath,

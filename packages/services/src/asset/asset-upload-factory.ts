@@ -50,7 +50,7 @@ export class AssetUploadFactory extends Context.Service<
           mimeType,
           path: assetStorageKey,
           method: "PUT",
-          expiresIn: 3600,
+          expiresInSeconds: 86400,
         }),
       validate: ({ mimeType, sizeBytes, assetType: type }) =>
         Effect.gen(function* () {

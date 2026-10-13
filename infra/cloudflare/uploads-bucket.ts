@@ -15,4 +15,5 @@ export const UploadsBucket = Cloudflare.R2.Bucket("uploads", {
       maxAgeSeconds: 3600,
     },
   ],
+  publicAccess: false,
 }).pipe(Alchemy.remote());

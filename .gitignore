@@ -22,8 +22,8 @@ coverage
 .cloudflare-dev
 
 # Alchemy
-.alchemy
-*.alchemy
+.alchemy/
+*.alchemy/
 
 # Vercel
 .vercel

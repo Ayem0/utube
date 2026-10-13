@@ -1,7 +1,8 @@
 export const videoPlaybackStatus = {
   PROCESSING: 1,
-  READY: 2,
-  FAILED: 3,
+  VALIDATED: 2,
+  READY: 3,
+  FAILED: 4,
 } as const;
 
 export type VideoPlaybackStatus =

@@ -1,0 +1,87 @@
+diff --git a/src/Cloudflare/Workers/LocalWorkerProvider.ts b/src/Cloudflare/Workers/LocalWorkerProvider.ts
+index f63e5863beea85a654eea9368be7af8db312be4a..18031bcbcba2c4ab4bfa384065698f4433ae204d 100644
+--- a/src/Cloudflare/Workers/LocalWorkerProvider.ts
++++ b/src/Cloudflare/Workers/LocalWorkerProvider.ts
+@@ -1,14 +1,13 @@
+-import * as os from "node:os";
+ import {
+-  Runtime,
+-  type RuntimeServices,
+-  type BindingHook,
+-  type BindingServices,
+-  type HyperdriveOrigin,
+-  type Module,
+-  type DurableObjectNamespace as RuntimeDurableObject,
+-  type QueueConsumer as RuntimeQueueConsumer,
+-  type Workflow as RuntimeWorkflow,
++    Runtime,
++    type BindingHook,
++    type BindingServices,
++    type HyperdriveOrigin,
++    type Module,
++    type DurableObjectNamespace as RuntimeDurableObject,
++    type QueueConsumer as RuntimeQueueConsumer,
++    type RuntimeServices,
++    type Workflow as RuntimeWorkflow,
+ } from "@alchemy.run/cloudflare-runtime/core";
+ import type { ContainerImage as RuntimeContainerImage } from "@alchemy.run/cloudflare-runtime/core/Docker";
+ import * as WorkerProxy from "@alchemy.run/cloudflare-runtime/core/proxy/WorkerProxy";
+@@ -28,11 +27,12 @@ import * as Result from "effect/Result";
+ import * as Scope from "effect/Scope";
+ import * as Semaphore from "effect/Semaphore";
+ import * as Stream from "effect/Stream";
++import * as os from "node:os";
+ import { dotAlchemyDirectory } from "../../AlchemyContext.ts";
+ import {
+-  Artifacts as AlchemyArtifacts,
+-  createArtifactStore,
+-  makeScopedArtifacts,
++    Artifacts as AlchemyArtifacts,
++    createArtifactStore,
++    makeScopedArtifacts,
+ } from "../../Artifacts.ts";
+ import type * as Bundle from "../../Bundle/Bundle.ts";
+ import { FQN_SEPARATOR } from "../../FQN.ts";
+@@ -42,24 +42,24 @@ import { Stack } from "../../Stack.ts";
+ import { unwrapRedacted } from "../../Util/index.ts";
+ import { isPathWithin } from "../../Util/isPathWithin.ts";
+ import {
+-  formatResourceTag,
+-  makeResourceLogger,
+-  makeResourceOutput,
++    formatResourceTag,
++    makeResourceLogger,
++    makeResourceOutput,
+ } from "../../Util/ResourceOutput.ts";
+ import { sha256 } from "../../Util/sha256.ts";
+ import { ANSI_RESET, ansiFg, colorsEnabled } from "../../Util/Terminal.ts";
+ import { theme } from "../../Util/Theme.ts";
+ import type { DevContainerImage } from "../Containers/ContainerApplication.ts";
+ import {
+-  assertBindingContainersOnAsyncClasses,
+-  mergeWorkerContainers,
++    assertBindingContainersOnAsyncClasses,
++    mergeWorkerContainers,
+ } from "../Containers/ContainerConfiguration.ts";
+ import { localAccountId } from "../LocalAccount.ts";
+ import {
+-  isLiveId,
+-  LOCAL_PROVIDERS_URL,
+-  LocalRuntimeState,
+-  localStorageDirectory,
++    isLiveId,
++    LOCAL_PROVIDERS_URL,
++    LocalRuntimeState,
++    localStorageDirectory,
+ } from "../LocalRuntime.ts";
+ import type { ConsumerSettings } from "../Queues/Consumer.ts";
+ import type { WorkerAssetsConfig, WorkerProps } from "../Workers/Worker.ts";
+@@ -729,7 +729,7 @@ export const LocalWorkerProvider = () =>
+               Effect.gen(function* () {
+                 const entries = yield* fs.readDirectory(dir);
+                 for (const entry of entries.sort()) {
+-                  if (entry === "node_modules" || entry === ".git") continue;
++                  if (entry === "node_modules" || entry === ".git" || entry === ".alchemy") continue;
+                   const file = path.join(dir, entry);
+                   const stat = yield* fs.stat(file);
+                   if (stat.type === "Directory") {

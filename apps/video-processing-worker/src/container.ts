@@ -10,6 +10,7 @@ export class VideoProcessingContainer extends Cloudflare.Container<VideoProcessi
       env: {
         DATABASE_URL: Config.NonEmptyString("DATABASE_URL"),
       },
+      maxInstances: 20,
     };
   }),
 ) {}

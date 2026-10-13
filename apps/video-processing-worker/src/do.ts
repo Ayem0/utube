@@ -7,6 +7,7 @@ import {
   HttpServerResponse,
 } from "effect/http";
 import { UploadsBucket } from "../../../infra/cloudflare/uploads-bucket";
+import { VideosBucket } from "../../../infra/cloudflare/videos-bucket";
 import WSDO from "../../ws/src/do";
 import { VideoProcessingContainer } from "./container";
 
@@ -17,29 +18,49 @@ export class VideoProcessingDO extends Cloudflare.DurableObject<VideoProcessingD
     const state = yield* Cloudflare.DurableObjectState;
     const env = yield* Cloudflare.WorkerEnvironment;
     const bucket = yield* Cloudflare.R2.ReadWriteBucket(UploadsBucket);
+    const videosBucket = yield* Cloudflare.R2.ReadWriteBucket(VideosBucket);
+
+    const presignedGet = yield* Cloudflare.R2.PresignGetObject(UploadsBucket);
     const ws = yield* WSDO;
 
     return Effect.gen(function* () {
+      console.log("ENV", env, "DO", env.VideoProcessingDO);
       const self = Cloudflare.fromCloudflareFetcher(
         env.VideoProcessingDO.get(state.id),
       );
+      console.log("self", self, typeof self, typeof self.fetch);
       const { fetch } = yield* container.getTcpPort(8080);
-      yield* container.interceptAllOutboundHttp(self);
 
       return {
         fetch: Effect.gen(function* () {
           const request = yield* HttpServerRequest.HttpServerRequest;
-          const { pathname, hostname } = new URL(request.url);
-          switch (hostname) {
+          console.log("REQUEST RECEIVED", {
+            url: request.url,
+            host: request.headers.host,
+            method: request.method,
+            contentType: request.headers["content-type"],
+            ContentType: request.headers["Content-Type"],
+            headers: request.headers,
+            contentLength: request.headers["content-length"],
+            ContentLength: request.headers["Content-Length"],
+          });
+          const { pathname, hostname } = new URL(
+            request.url,
+            `http://${request.headers.host ?? "localhost"}/`,
+          );
+          console.log("pathname", pathname, "hostname", hostname);
+          switch (request.headers.host) {
             case "r2.get": {
-              const res = yield* bucket.get(pathname);
+              const res = yield* bucket.get(pathname.substring(1)); // remove first "/" from "/videos/..."
               if (res) {
                 return HttpServerResponse.stream(res.body);
               }
               return HttpServerResponse.empty({ status: 404 });
             }
             case "r2.put": {
-              yield* bucket.put(pathname, request.stream);
+              yield* videosBucket.put(pathname.substring(1), request.stream, {
+                contentLength: Number(request.headers["content-length"]),
+              }); // remove first "/" from "/:videoId/..."
               return HttpServerResponse.empty();
             }
             case "ws.send": {
@@ -53,6 +74,13 @@ export class VideoProcessingDO extends Cloudflare.DurableObject<VideoProcessingD
               yield* ws.getByName(userId).sendMessage(message);
               return HttpServerResponse.empty();
             }
+            case "r2.presign": {
+              const url = yield* presignedGet({
+                key: pathname.substring(1),
+                expiresIn: 86400,
+              });
+              return yield* HttpServerResponse.json({ url });
+            }
             default: {
               return HttpServerResponse.text("Unknown outbound route", {
                 status: 404,
@@ -62,17 +90,25 @@ export class VideoProcessingDO extends Cloudflare.DurableObject<VideoProcessingD
         }),
         process: (assetId: string) =>
           Effect.gen(function* () {
+            yield* Effect.promise(() =>
+              state.container!.interceptAllOutboundHttp(self.raw),
+            );
             const body = yield* HttpBody.json({ assetId: assetId });
-            yield* fetch(HttpClientRequest.post("http://container/", { body }));
+            const res = yield* container
+              .start({ enableInternet: true })
+              .pipe(
+                Effect.andThen(
+                  fetch(HttpClientRequest.post("http://container/", { body })),
+                ),
+              );
+            const resJson = yield* res.json;
+
+            console.log("RESPONSE FROM PROCESS", resJson?.toString());
           }),
       };
     });
   }).pipe(
     Effect.provide(Cloudflare.R2.ReadWriteBucketBinding),
-    Effect.provide(
-      Cloudflare.Containers.layer(VideoProcessingContainer, {
-        enableInternet: true,
-      }),
-    ),
+    Effect.provide(Cloudflare.R2.PresignGetObjectToken),
   ),
 ) {}

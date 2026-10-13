@@ -4,7 +4,7 @@
     "outDir": "dist",
     "strictNullChecks": true,
     "module": "ESNext",
-    "types": ["bun", "./worker-configuration.d.ts"],
+    "types": ["bun"],
     "target": "ES2022",
 
     /* Bundler mode */

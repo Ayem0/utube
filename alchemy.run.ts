@@ -1,12 +1,14 @@
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Effect } from "effect";
-import { UtubeApi } from "./apps/api/alchemy.run";
+import { ApiConfig, UtubeApi } from "./apps/api/alchemy.run";
+import { VideoStorageWorker } from "./apps/storage-gateway/alchemy.run";
 import VideoProcessingWorker from "./apps/video-processing-worker/src/worker";
 import { UtubeWeb, WebConfig } from "./apps/web/alchemy.run";
 import WSWorker from "./apps/ws/src/worker";
 import { UploadsBucket } from "./infra/cloudflare/uploads-bucket";
 import { VideoProcessingQueue } from "./infra/cloudflare/video-processing-queue";
+import { VideosBucket } from "./infra/cloudflare/videos-bucket";
 
 export default Alchemy.Stack(
   "utube",
@@ -17,7 +19,13 @@ export default Alchemy.Stack(
   Effect.gen(function* () {
     const videoProcessingQueue = yield* VideoProcessingQueue;
     const uploadsBucket = yield* UploadsBucket;
-    const api = yield* UtubeApi;
+    yield* VideosBucket;
+    const videoStorageWorker = yield* VideoStorageWorker;
+    const api = yield* UtubeApi.pipe(
+      Effect.provideService(ApiConfig, {
+        videoBucketUrl: videoStorageWorker.url,
+      }),
+    );
     const ws = yield* WSWorker;
     const web = yield* UtubeWeb.pipe(
       Effect.provideService(WebConfig, { apiUrl: api.url, wsUrl: ws.url }),

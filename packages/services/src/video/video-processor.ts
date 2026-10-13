@@ -1,4 +1,4 @@
-import { Context, Effect, Layer } from "effect";
+import { Context, Effect, Layer, Stream } from "effect";
 import { VideoMetadata } from "./video";
 import { VideoProcessingError } from "./video-errors";
 import {
@@ -6,21 +6,10 @@ import {
   VideoProcessorConfigService,
 } from "./video-processor-config";
 
-import { stat } from "node:fs/promises";
-
-async function assertDirectoryExists(dir: string) {
-  try {
-    const s = await stat(dir);
-
-    if (!s.isDirectory()) {
-      throw new Error(`Path exists but is not a directory: ${dir}`);
-    }
-
-    console.log(`OK directory exists: ${dir}`);
-  } catch (err) {
-    throw new Error(`Missing directory: ${dir}`, { cause: err });
-  }
-}
+import { FileSystem } from "effect/FileSystem";
+import { ChildProcess } from "effect/process";
+import type { ChildProcessSpawner } from "effect/process/ChildProcessSpawner";
+import type { Scope } from "effect/Scope";
 
 interface VideoProcessorService {
   transcode: (params: {
@@ -28,10 +17,10 @@ interface VideoProcessorService {
     outputDir: string;
     videoMetadata: VideoMetadata;
     parsedFPS: number;
-    duration: number;
   }) => Effect.Effect<
-    { ladder: LadderEntry[]; paths: string[] },
-    VideoProcessingError
+    LadderEntry[],
+    VideoProcessingError,
+    ChildProcessSpawner | Scope
   >;
 }
 
@@ -41,72 +30,77 @@ export class VideoProcessor extends Context.Service<
 >()("VideoProcessor", {
   make: Effect.gen(function* () {
     const config = yield* VideoProcessorConfig;
+    const fs = yield* FileSystem;
+
+    const makeDirectories = (dirs: string[]) =>
+      Effect.forEach(
+        dirs,
+        (dir) =>
+          fs.makeDirectory(dir, {
+            recursive: true,
+          }),
+        { concurrency: "unbounded" },
+      );
+
     return {
-      transcode: ({
-        originalPath,
-        outputDir,
-        videoMetadata,
-        parsedFPS,
-        duration,
-      }) =>
-        Effect.tryPromise({
-          try: async () => {
-            const { args, ladder } = buildFfmpegArgs({
-              inputPath: originalPath,
-              outputDir,
-              metadata: videoMetadata,
-              parsedFPS,
-              config,
+      transcode: ({ originalPath, outputDir, videoMetadata, parsedFPS }) =>
+        Effect.gen(function* () {
+          const { args, ladder, hasAudio } = buildFfmpegArgs({
+            inputPath: originalPath,
+            outputDir,
+            metadata: videoMetadata,
+            parsedFPS,
+            config,
+          });
+
+          yield* Effect.log("Ladder:", ladder);
+
+          yield* makeDirectories([
+            `${outputDir}/cmaf`,
+            `${outputDir}/hls`,
+            `${outputDir}/dash`,
+            ...ladder.map(
+              (entry) => `${outputDir}/cmaf/${entry.representationId}`,
+            ),
+            ...(hasAudio ? [`${outputDir}/cmaf/${ladder.length}`] : []),
+          ]);
+
+          const spawn = yield* ChildProcess.make("ffmpeg", args, {
+            stderr: "pipe",
+            stdout: "pipe",
+          });
+
+          const [exitCode, stderr] = yield* Effect.all(
+            [
+              spawn.exitCode,
+              spawn.stderr.pipe(Stream.decodeText, Stream.mkString),
+            ],
+            { concurrency: "unbounded" },
+          );
+
+          if (exitCode !== 0)
+            return yield* new VideoProcessingError({
+              cause: stderr,
+              message: `Ffmpeg exited with code : ${exitCode}`,
             });
 
-            for (const sub of ["cmaf", "hls", "dash"]) {
-              const dir = `${outputDir}/${sub}`;
-              await Bun.$`mkdir -p ${dir}`;
-              await assertDirectoryExists(dir);
-            }
+          const master = yield* fs.readFileString(
+            `${outputDir}/hls/master.m3u8.tmp2`,
+          );
+          const patched = addFrameRateToMasterM3u8(master, ladder);
+          yield* fs.writeFileString(`${outputDir}/hls/master.m3u8`, patched);
 
-            console.log("created folders cmaf, hls, dash");
-            for (const entry of ladder) {
-              const dir = `${outputDir}/cmaf/${entry.representationId}`;
-              await Bun.$`mkdir -p ${dir}`;
-              await assertDirectoryExists(dir);
-            }
-
-            // audio cmaf
-            await Bun.$`mkdir -p ${outputDir}/cmaf/${ladder.length}`;
-            console.log("created folders for cmaf ladder");
-
-            console.log("ffmpeg command: ", args.join(" "));
-            const proc = Bun.spawn(args, {
-              stdout: "pipe",
-              stderr: "pipe",
-            });
-
-            const exitCode = await proc.exited;
-            if (exitCode !== 0) {
-              const stderr = await new Response(proc.stderr).text();
-              throw new Error(`ffmpeg exited with code ${exitCode}: ${stderr}`);
-            }
-
-            await addFrameRateToMasterM3u8(outputDir, ladder);
-
-            const paths = await Array.fromAsync(
-              new Bun.Glob("**/{cmaf,hls,dash}/**").scan({
-                cwd: outputDir,
-                absolute: true,
+          return ladder;
+        }).pipe(
+          Effect.catchTag(
+            "PlatformError",
+            (e) =>
+              new VideoProcessingError({
+                cause: e,
+                message: "Video processing error",
               }),
-            );
-            return {
-              paths: paths,
-              ladder: ladder,
-            };
-          },
-          catch: (e) =>
-            new VideoProcessingError({
-              cause: e,
-              message: "Error transcoding video",
-            }),
-        }),
+          ),
+        ),
     };
   }),
 }) {
@@ -413,7 +407,7 @@ function buildFfmpegArgs({
     : [];
 
   const args = [
-    "ffmpeg",
+    // "ffmpeg",
     "-y",
     "-i",
     inputPath,
@@ -467,7 +461,7 @@ function buildFfmpegArgs({
     "-hls_playlist",
     "1",
     "-hls_master_name",
-    "../hls/master.m3u8",
+    "../hls/master.m3u8.tmp2",
     `${outputDir}/dash/manifest.mpd`,
     // storyboard map
     // "-map",
@@ -483,17 +477,11 @@ function buildFfmpegArgs({
     // `${outputDir}/storyboard_%03d.jpg`,
   ];
 
-  return { args: args, ladder: ladder };
+  return { args: args, ladder: ladder, hasAudio };
 }
 
-async function addFrameRateToMasterM3u8(
-  outputDir: string,
-  ladder: LadderEntry[],
-) {
-  const masterPath = `${outputDir}/hls/master.m3u8`;
-  const text = await Bun.file(masterPath).text();
-
-  const lines = text.split("\n");
+function addFrameRateToMasterM3u8(input: string, ladder: LadderEntry[]) {
+  const lines = input.split("\n");
   let mediaIndex = 0;
 
   const patched = lines.map((line) => {
@@ -511,5 +499,106 @@ async function addFrameRateToMasterM3u8(
     return line;
   });
 
-  await Bun.write(masterPath, patched.join("\n"));
+  return patched.join("\n");
 }
+
+// Effect.tryPromise({
+//   try: async () => {
+//     const { args, ladder } = buildFfmpegArgs({
+//       inputPath: originalPath,
+//       outputDir,
+//       metadata: videoMetadata,
+//       parsedFPS,
+//       config,
+//     });
+
+//     for (const sub of ["cmaf", "hls", "dash"]) {
+//       const dir = `${outputDir}/${sub}`;
+//       await Bun.$`mkdir -p ${dir}`;
+//       await assertDirectoryExists(dir);
+//     }
+
+//     console.log("created folders cmaf, hls, dash");
+//     for (const entry of ladder) {
+//       const dir = `${outputDir}/cmaf/${entry.representationId}`;
+//       await Bun.$`mkdir -p ${dir}`;
+//       await assertDirectoryExists(dir);
+//     }
+
+//     // audio cmaf
+//     await Bun.$`mkdir -p ${outputDir}/cmaf/${ladder.length}`;
+//     console.log("created folders for cmaf ladder");
+
+//     console.log("ffmpeg command: ", args.join(" "));
+//     const proc = Bun.spawn(args, {
+//       stdout: "pipe",
+//       stderr: "pipe",
+//     });
+
+//     const exitCode = await proc.exited;
+//     if (exitCode !== 0) {
+//       const stderr = await new Response(proc.stderr).text();
+//       throw new Error(`ffmpeg exited with code ${exitCode}: ${stderr}`);
+//     }
+
+//     await addFrameRateToMasterM3u8(outputDir, ladder);
+
+//     const paths = await Array.fromAsync(
+//       new Bun.Glob("**/{cmaf,hls,dash}/**").scan({
+//         cwd: outputDir,
+//         absolute: true,
+//       }),
+//     );
+//     return {
+//       paths: paths,
+//       ladder: ladder,
+//     };
+//   },
+//   catch: (e) =>
+//     new VideoProcessingError({
+//       cause: e,
+//       message: "Error transcoding video",
+//     }),
+// }),
+
+// async function addFrameRateToMasterM3u8(
+//   outputDir: string,
+//   ladder: LadderEntry[],
+// ) {
+//   const masterPath = `${outputDir}/hls/master.m3u8`;
+//   const text = await Bun.file(masterPath).text();
+
+//   const lines = text.split("\n");
+//   let mediaIndex = 0;
+
+//   const patched = lines.map((line) => {
+//     if (line.startsWith("#EXT-X-STREAM-INF:")) {
+//       const fps = ladder[mediaIndex]?.fps;
+//       mediaIndex += 1;
+
+//       if (!fps) return line;
+//       if (line.includes("FRAME-RATE=")) return line;
+
+//       const frameRateValue = fps === 60 ? "60.000" : "30.000";
+//       return `${line},FRAME-RATE=${frameRateValue}`;
+//     }
+
+//     return line;
+//   });
+
+//   await Bun.write(masterPath, patched.join("\n"));
+// }
+
+// async function assertDirectoryExists(dir: string) {
+//   try {
+//     const s = await stat(dir);
+
+//     if (!s.isDirectory()) {
+//       throw new Error(`Path exists but is not a directory: ${dir}`);
+//     }
+
+//     console.log(`OK directory exists: ${dir}`);
+//   } catch (err) {
+//     throw new Error(`Missing directory: ${dir}`, { cause: err });
+//   }
+// }
