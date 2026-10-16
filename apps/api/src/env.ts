@@ -1,4 +1,4 @@
 import { env } from "cloudflare:workers";
-import type { UtubeApiEnv } from "../alchemy.run";
+import type { ApiEnv } from "../alchemy.run";
 
-export const Env = env as UtubeApiEnv;
+export const Env = env as ApiEnv;

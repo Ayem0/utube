@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
 export type VideoAuthProps = {
   exp: number;
   token: string;
-  refreshToken: () => Promise<{ token: string; exp: number }>;
+  refreshQuery: () => Promise<{ token: string; exp: number }>;
 };
 
 export function useVideoAuthz(props: VideoAuthProps) {
@@ -25,7 +25,7 @@ export function useVideoAuthz(props: VideoAuthProps) {
     const delay = Math.max(0, refreshAt.current * 1000 - Date.now() - 60_000);
     timeoutId = window.setTimeout(async () => {
       try {
-        const res = await props.refreshToken();
+        const res = await props.refreshQuery();
 
         authz.setToken(res.token);
         refreshAt.current = res.exp;

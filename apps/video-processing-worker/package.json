@@ -2,14 +2,14 @@
   "name": "@repo/video-processing-worker",
   "private": true,
   "scripts": {
-    "dev": "wrangler dev -c bridge_src/wrangler.jsonc -c wrangler.jsonc --port 8788 --inspector-port 9230 --persist-to ../../.cloudflare-dev",
-    "cf-typegen": "wrangler types -c wrangler.jsonc -c ../ws/wrangler.jsonc",
     "build": "bun build ./container_src/index.ts --target=bun --outfile=dist/index.mjs"
   },
   "dependencies": {
     "@repo/services": "workspace:*",
     "@repo/types": "workspace:*",
+    "@repo/infra": "workspace:*",
     "effect": "catalog:effect",
+    "alchemy": "catalog:alchemy",
     "zod": "catalog:",
     "@cloudflare/containers": "0.3.7",
     "@effect/platform-bun": "catalog:effect"

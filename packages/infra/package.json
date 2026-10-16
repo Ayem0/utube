@@ -1,0 +1,20 @@
+{
+  "name": "@repo/infra",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./ws": "./src/workers/ws.ts",
+    "./video-processing": "./src/workers/video-processing.ts",
+    "./video-storage": "./src/workers/video-storage.ts"
+  },
+  "scripts": {},
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*"
+  },
+  "dependencies": {
+    "effect": "catalog:effect",
+    "alchemy": "catalog:alchemy"
+  }
+}

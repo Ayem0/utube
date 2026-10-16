@@ -25,6 +25,7 @@
         "@elysiajs/cors": "catalog:elysia",
         "@repo/auth": "workspace:*",
         "@repo/db": "workspace:*",
+        "@repo/infra": "workspace:*",
         "@repo/services": "workspace:*",
         "@repo/types": "workspace:*",
         "aws4fetch": "1.0.20",
@@ -41,6 +42,7 @@
     "apps/storage-gateway": {
       "name": "@repo/storage-gateway",
       "dependencies": {
+        "@repo/infra": "workspace:*",
         "@repo/services": "workspace:*",
         "@repo/types": "workspace:*",
         "effect": "catalog:effect",
@@ -55,8 +57,10 @@
       "dependencies": {
         "@cloudflare/containers": "0.3.7",
         "@effect/platform-bun": "catalog:effect",
+        "@repo/infra": "workspace:*",
         "@repo/services": "workspace:*",
         "@repo/types": "workspace:*",
+        "alchemy": "catalog:alchemy",
         "effect": "catalog:effect",
         "zod": "catalog:",
       },
@@ -119,9 +123,12 @@
     "apps/ws": {
       "name": "@repo/ws",
       "dependencies": {
-        "@repo/auth": "workspace:",
-        "@repo/db": "workspace:",
-        "@repo/types": "workspace:",
+        "@repo/auth": "workspace:*",
+        "@repo/db": "workspace:*",
+        "@repo/infra": "workspace:*",
+        "@repo/types": "workspace:*",
+        "alchemy": "catalog:alchemy",
+        "effect": "catalog:effect",
       },
       "devDependencies": {
         "@repo/eslint-config": "workspace:*",
@@ -185,6 +192,18 @@
         "typescript-eslint": "^8.50.0",
       },
     },
+    "packages/infra": {
+      "name": "@repo/infra",
+      "version": "0.0.0",
+      "dependencies": {
+        "alchemy": "catalog:alchemy",
+        "effect": "catalog:effect",
+      },
+      "devDependencies": {
+        "@repo/eslint-config": "workspace:*",
+        "@repo/typescript-config": "workspace:*",
+      },
+    },
     "packages/services": {
       "name": "@repo/services",
       "version": "0.0.0",
@@ -202,6 +221,7 @@
         "@repo/eslint-config": "workspace:*",
         "@repo/typescript-config": "workspace:*",
         "@types/bun": "catalog:tooling",
+        "@types/node": "catalog:tooling",
       },
     },
     "packages/types": {
@@ -878,6 +898,8 @@
     "@repo/db": ["@repo/db@workspace:packages/db"],
 
     "@repo/eslint-config": ["@repo/eslint-config@workspace:packages/eslint-config"],
+
+    "@repo/infra": ["@repo/infra@workspace:packages/infra"],
 
     "@repo/services": ["@repo/services@workspace:packages/services"],
 

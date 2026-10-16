@@ -262,7 +262,6 @@
 //   );
 // }
 import { videoPlaybackStatus } from "@repo/types/enums/video/video-playback-status";
-import type { EffectDrizzleQueryError } from "drizzle-orm/effect-core";
 import {
   Context,
   Data,
@@ -280,44 +279,27 @@ import { FileSystem } from "effect/FileSystem";
 import type { PlatformError } from "effect/PlatformError";
 import type { ChildProcessSpawner } from "effect/process/ChildProcessSpawner";
 import type { Scope } from "effect/Scope";
-import type { SqlError } from "effect/sql/SqlError";
 import { AssetRepository } from "../asset/asset-repository";
 import { DB } from "../db/db";
-import { DBNotFoundError } from "../db/db-errors";
-import { FSError } from "../file-system/file-system-errors";
 import { S3 } from "../s3/s3";
 import { S3Error } from "../s3/s3-errors";
 import { newId } from "../utils/id";
 import { WS } from "../ws/ws";
-import {
-  VideoProcessingError,
-  VideoUploadError,
-  VideoValidationError,
-  type VideoStoryboardError,
-} from "./video-errors";
 import { VideoPlaybackRepository } from "./video-playback-repository";
 import { VideoProcessor } from "./video-processor";
 import { VideoRepository } from "./video-repository";
 import { VideoStoryboardGenerator } from "./video-storyboard-generator";
 import { VideoValidator } from "./video-validator";
 
+export class VideoPipelineError extends Data.TaggedError("VideoPipelineError")<{
+  cause: unknown;
+  message: string;
+}> {}
+
 export interface VideoPipelineApi {
   processVideo(data: {
     assetId: string;
-  }): Effect.Effect<
-    void,
-    | DBNotFoundError
-    | S3Error
-    | FSError
-    | VideoValidationError
-    | VideoProcessingError
-    | PlatformError
-    | VideoUploadError
-    | EffectDrizzleQueryError
-    | VideoStoryboardError
-    | SqlError,
-    ChildProcessSpawner | Scope
-  >;
+  }): Effect.Effect<void, VideoPipelineError, ChildProcessSpawner | Scope>;
 }
 
 export class StreamError extends Data.TaggedError("StreamError")<{
@@ -376,10 +358,6 @@ export class VideoPipeline extends Context.Service<
             id: newId(),
           });
 
-          const tempdir = yield* fs.makeTempDirectoryScoped({
-            prefix: `video_${video.id}_${videoPlayback.id}`,
-          });
-
           const assetGetUrl = yield* s3.getPresignedUrl({
             bucket: "uploads",
             method: "GET",
@@ -388,216 +366,238 @@ export class VideoPipeline extends Context.Service<
             expiresInSeconds: 86400,
           });
 
-          const { videoMetadata, parsedFPS, duration } =
-            yield* videoValidator.validateVideo(assetGetUrl);
+          yield* Effect.gen(function* () {
+            const tempdir = yield* fs.makeTempDirectoryScoped({
+              prefix: `video_${video.id}_${videoPlayback.id}`,
+            });
 
-          yield* videoPlaybackRepo.update({
-            id: videoPlayback.id,
-            values: { status: videoPlaybackStatus.VALIDATED },
-          });
+            const { videoMetadata, parsedFPS, duration } =
+              yield* videoValidator.validateVideo(assetGetUrl);
 
-          yield* notifyWs({
-            userId: asset.ownerUserId,
-            videoId: video.id,
-            channelId: video.channelId,
-          });
+            yield* videoPlaybackRepo.update({
+              id: videoPlayback.id,
+              values: { status: videoPlaybackStatus.VALIDATED },
+            });
 
-          const queue = yield* Queue.unbounded<string, Cause.Done>();
-          const storagePrefix = `${video.id}/${videoPlayback.id}`;
+            yield* notifyWs({
+              userId: asset.ownerUserId,
+              videoId: video.id,
+              channelId: video.channelId,
+            });
 
-          const uploadAndDelete = (relativePath: string) =>
-            Effect.gen(function* () {
-              const absolutePath = `${tempdir}/${relativePath}`;
+            const queue = yield* Queue.unbounded<string, Cause.Done>();
+            const storagePrefix = `${video.id}/${videoPlayback.id}`;
 
-              yield* Effect.gen(function* () {
-                const { size } = yield* fs.stat(absolutePath);
-                const stream = fs.stream(absolutePath).pipe(
-                  Stream.mapError(
-                    (e) =>
-                      new StreamError({
-                        cause: e,
-                        message: `Failed to read ${absolutePath}`,
-                      }),
-                  ),
+            const uploadAndDelete = (relativePath: string) =>
+              Effect.gen(function* () {
+                const absolutePath = `${tempdir}/${relativePath}`;
+
+                yield* Effect.gen(function* () {
+                  const { size } = yield* fs.stat(absolutePath);
+                  const stream = fs.stream(absolutePath).pipe(
+                    Stream.mapError(
+                      (e) =>
+                        new StreamError({
+                          cause: e,
+                          message: `Failed to read ${absolutePath}`,
+                        }),
+                    ),
+                  );
+
+                  const path = MEDIA_PATTERN.test(relativePath)
+                    ? `${storagePrefix}/${relativePath.replace("dash", "hls")}`
+                    : `${storagePrefix}/${relativePath}`;
+
+                  yield* s3.uploadFile(path, stream, "videos", size);
+                }).pipe(
+                  Effect.retry({
+                    times: 3,
+                    schedule: Schedule.exponential("200 millis"),
+                  }),
                 );
 
-                const path = MEDIA_PATTERN.test(relativePath)
-                  ? `${storagePrefix}/${relativePath.replace("dash", "hls")}`
-                  : `${storagePrefix}/${relativePath}`;
+                yield* fs
+                  .remove(absolutePath)
+                  .pipe(Effect.catch((e) => Effect.void));
+              });
 
-                yield* s3.uploadFile(path, stream, "videos", size);
-              }).pipe(
-                Effect.retry({
-                  times: 3,
-                  schedule: Schedule.exponential("200 millis"),
+            const failedUploads = yield* Ref.make(
+              EffectArray.empty<{
+                absolutePath: string;
+                cause: S3Error | StreamError | PlatformError;
+              }>(),
+            );
+
+            const consumer = Effect.gen(function* () {
+              while (true) {
+                const relativePath = yield* Queue.take(queue);
+                yield* uploadAndDelete(relativePath).pipe(
+                  Effect.catch((e) =>
+                    Effect.gen(function* () {
+                      yield* Ref.update(failedUploads, (arr) =>
+                        EffectArray.append(arr, {
+                          absolutePath: `${tempdir}/${relativePath}`,
+                          cause: e,
+                        }),
+                      );
+                    }),
+                  ),
+                );
+              }
+            }).pipe(Effect.catch((e) => Effect.void));
+
+            const scheduled = new Set<string>();
+
+            const enqueueChunk = (path: string) =>
+              Effect.uninterruptible(
+                Effect.suspend(() => {
+                  if (FINAL_CHUNK_PATTERN.test(path) && !scheduled.has(path)) {
+                    scheduled.add(path);
+                    return Queue.offer(queue, path);
+                  }
+                  return Effect.void;
                 }),
               );
 
-              yield* fs
-                .remove(absolutePath)
-                .pipe(Effect.catch((e) => Effect.void));
+            // Start consumers
+            const consumersFiber = yield* Effect.forEach(
+              Array.from({ length: 3 }),
+              () => consumer,
+              { concurrency: 3, discard: true },
+            ).pipe(Effect.forkScoped);
+
+            // starts watching the tempDir and enqueue the chunks to upload
+            const watcher = yield* Stream.runForEach(
+              fs.watch(tempdir, { recursive: true }),
+              (event) =>
+                Effect.gen(function* () {
+                  if (event._tag === "Create") {
+                    yield* enqueueChunk(event.path);
+                  }
+                }),
+            ).pipe(Effect.forkScoped);
+
+            const ladder = yield* videoProcessor.transcode({
+              originalPath: assetGetUrl,
+              parsedFPS: parsedFPS,
+              videoMetadata: videoMetadata,
+              outputDir: tempdir,
+            });
+            // stops watching
+            yield* Fiber.interrupt(watcher);
+
+            // Watch can miss events
+            // reads all the chunks in the cmaf directory and enqueues them to upload
+            const cmafDir = `${tempdir}/cmaf`;
+            const cmafPaths = yield* fs.readDirectory(cmafDir, {
+              recursive: true,
+            });
+            yield* Effect.forEach(cmafPaths, (cmafPath) =>
+              enqueueChunk(`cmaf/${cmafPath}`),
+            );
+
+            yield* storyboardGenerator.generate({
+              originalPath: assetGetUrl,
+              outputDir: tempdir,
+              duration: duration,
             });
 
-          const failedUploads = yield* Ref.make(
-            EffectArray.empty<{
-              absolutePath: string;
-              cause: S3Error | StreamError | PlatformError;
-            }>(),
-          );
-
-          const consumer = Effect.gen(function* () {
-            while (true) {
-              const relativePath = yield* Queue.take(queue);
-              yield* uploadAndDelete(relativePath).pipe(
-                Effect.catch((e) =>
-                  Effect.gen(function* () {
-                    yield* Ref.update(failedUploads, (arr) =>
-                      EffectArray.append(arr, {
-                        absolutePath: `${tempdir}/${relativePath}`,
-                        cause: e,
-                      }),
+            // Read all the remaining media, init, master, manifest, storyboard files
+            const paths = yield* fs.readDirectory(tempdir, { recursive: true });
+            yield* Effect.forEach(
+              paths,
+              (path) =>
+                Effect.gen(function* () {
+                  if (
+                    INIT_PATTERN.test(path) ||
+                    MEDIA_PATTERN.test(path) ||
+                    MASTER_PATTERN.test(path) ||
+                    MANIFEST_PATTERN.test(path) ||
+                    STORYBOARD_PATTERN.test(path)
+                  ) {
+                    yield* Queue.offer(queue, path);
+                  } else {
+                    yield* Effect.logError(
+                      `Unrecognized file ${path} should not be present`,
                     );
-                  }),
-                ),
-              );
-            }
-          }).pipe(Effect.catch((e) => Effect.void));
+                  }
+                }),
+              { concurrency: 3, discard: true },
+            );
 
-          const scheduled = new Set<string>();
+            // signals that no more elements will be added to the queue
+            yield* Queue.end(queue);
+            // waits for all the consumers to finish consuming
+            yield* Fiber.join(consumersFiber);
 
-          const enqueueChunk = (path: string) =>
-            Effect.uninterruptible(
-              Effect.suspend(() => {
-                if (FINAL_CHUNK_PATTERN.test(path) && !scheduled.has(path)) {
-                  scheduled.add(path);
-                  return Queue.offer(queue, path);
+            // see all the failures
+            // TODO see how to manage failures, maybe return something instead of void
+            yield* Effect.forEach(yield* Ref.get(failedUploads), (fail) =>
+              Effect.gen(function* () {
+                if (fail.cause._tag === "StreamError") {
+                  const exists = yield* fs.exists(fail.absolutePath);
+                  if (!exists) return;
+                } else if (fail.cause._tag === "S3Error") {
                 }
-                return Effect.void;
               }),
             );
 
-          // Start consumers
-          const consumersFiber = yield* Effect.forEach(
-            Array.from({ length: 3 }),
-            () => consumer,
-            { concurrency: 3, discard: true },
-          ).pipe(Effect.forkScoped);
+            yield* Effect.gen(function* () {
+              yield* videoPlaybackRepo.update({
+                id: videoPlayback.id,
+                values: {
+                  status: videoPlaybackStatus.READY,
+                  hlsMasterKey: `${storagePrefix}/hls/master.m3u8`,
+                  dashManifestKey: `${storagePrefix}/dash/manifest.mpd`,
+                  storyboardKey: `${storagePrefix}/storyboard/storyboard.vtt`,
+                  renditions: ladder.map((entry) => ({
+                    width: entry.width,
+                    height: entry.height,
+                    bitrate: 0, // TODO
+                    codec: "TODO",
+                    framerate: entry.fps,
+                    quality: entry.label,
+                    path: "TODO",
+                    durationMs: duration * 1000,
+                    mimeType: "TODO",
+                    qualityLabel: entry.label,
+                  })),
+                },
+              });
+              yield* videoRepo.updateInternal({
+                videoId: video.id,
+                values: {
+                  currentPlaybackId: videoPlayback.id,
+                  duration: duration,
+                },
+              });
+            }).pipe(db.withTransaction);
 
-          // starts watching the tempDir and enqueue the chunks to upload
-          const watcher = yield* Stream.runForEach(
-            fs.watch(tempdir, { recursive: true }),
-            (event) =>
-              Effect.gen(function* () {
-                if (event._tag === "Create") {
-                  yield* enqueueChunk(event.path);
-                }
-              }),
-          ).pipe(Effect.forkScoped);
-
-          const ladder = yield* videoProcessor.transcode({
-            originalPath: assetGetUrl,
-            parsedFPS: parsedFPS,
-            videoMetadata: videoMetadata,
-            outputDir: tempdir,
-          });
-          // stops watching
-          yield* Fiber.interrupt(watcher);
-
-          // Watch can miss events
-          // reads all the chunks in the cmaf directory and enqueues them to upload
-          const cmafDir = `${tempdir}/cmaf`;
-          const cmafPaths = yield* fs.readDirectory(cmafDir, {
-            recursive: true,
-          });
-          yield* Effect.forEach(cmafPaths, (cmafPath) =>
-            enqueueChunk(`cmaf/${cmafPath}`),
-          );
-
-          const storyboardDir = `${tempdir}/storyboard`;
-          yield* fs.makeDirectory(storyboardDir);
-          yield* storyboardGenerator.generate({
-            originalPath: assetGetUrl,
-            outputDir: storyboardDir,
-            duration: duration,
-          });
-
-          // Read all the remaining media, init, master, manifest, storyboard files
-          const paths = yield* fs.readDirectory(tempdir, { recursive: true });
-          yield* Effect.forEach(
-            paths,
-            (path) =>
-              Effect.gen(function* () {
-                if (
-                  INIT_PATTERN.test(path) ||
-                  MEDIA_PATTERN.test(path) ||
-                  MASTER_PATTERN.test(path) ||
-                  MANIFEST_PATTERN.test(path) ||
-                  STORYBOARD_PATTERN.test(path)
-                ) {
-                  yield* Queue.offer(queue, path);
-                } else {
-                  yield* Effect.logError(
-                    `Unrecognized file ${path} should not be present`,
-                  );
-                }
-              }),
-            { concurrency: 3, discard: true },
-          );
-
-          // signals that no more elements will be added to the queue
-          yield* Queue.end(queue);
-          // waits for all the consumers to finish consuming
-          yield* Fiber.join(consumersFiber);
-
-          // see all the failures
-          // TODO see how to manage failures, maybe return something instead of void
-          yield* Effect.forEach(yield* Ref.get(failedUploads), (fail) =>
-            Effect.gen(function* () {
-              if (fail.cause._tag === "StreamError") {
-                const exists = yield* fs.exists(fail.absolutePath);
-                if (!exists) return;
-              } else if (fail.cause._tag === "S3Error") {
-              }
-            }),
-          );
-
-          yield* Effect.gen(function* () {
-            yield* videoPlaybackRepo.update({
-              id: videoPlayback.id,
-              values: {
-                status: videoPlaybackStatus.READY,
-                hlsMasterKey: `${storagePrefix}/hls/master.m3u8`,
-                dashManifestKey: `${storagePrefix}/dash/manifest.mpd`,
-                storyboardKey: `${storagePrefix}/storyboard/storyboard.vtt`,
-                renditions: ladder.map((entry) => ({
-                  width: entry.width,
-                  height: entry.height,
-                  bitrate: 0, // TODO
-                  codec: "TODO",
-                  framerate: entry.fps,
-                  quality: entry.label,
-                  path: "TODO",
-                  durationMs: duration * 1000,
-                  mimeType: "TODO",
-                  qualityLabel: entry.label,
-                })),
-              },
-            });
-            yield* videoRepo.updateInternal({
+            yield* notifyWs({
+              userId: asset.ownerUserId,
               videoId: video.id,
-              values: {
-                currentPlaybackId: videoPlayback.id,
-                duration: duration,
-              },
+              channelId: video.channelId,
             });
-          }).pipe(db.withTransaction);
-
-          yield* notifyWs({
-            userId: asset.ownerUserId,
-            videoId: video.id,
-            channelId: video.channelId,
-          });
-        }),
+          }).pipe(
+            Effect.catch((c) =>
+              Effect.gen(function* () {
+                yield* videoPlaybackRepo.update({
+                  id: videoPlayback.id,
+                  values: { status: videoPlaybackStatus.FAILED },
+                });
+                yield* notifyWs({
+                  userId: asset.ownerUserId,
+                  videoId: video.id,
+                  channelId: video.channelId,
+                });
+                return yield* new VideoPipelineError({
+                  cause: c,
+                  message: "Failed to process video",
+                });
+              }),
+            ),
+          );
+        }).pipe(Effect.catch((c) => new VideoPipelineError({cause: c, message: "Video pipeline error"}))),
     };
   }),
 }) {

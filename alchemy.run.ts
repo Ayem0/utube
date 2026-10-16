@@ -1,14 +1,18 @@
+import { UploadsBucket, VideoProcessingQueue, VideosBucket } from "@repo/infra";
+import {
+  VideoStorageCacheWorker,
+  VideoStorageGatewayWorker,
+} from "@repo/infra/video-storage";
+import { WSWorker } from "@repo/infra/ws";
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Effect } from "effect";
-import { ApiConfig, UtubeApi } from "./apps/api/alchemy.run";
-import { VideoStorageWorker } from "./apps/storage-gateway/alchemy.run";
+import { Api } from "./apps/api/alchemy.run";
+import VideoStorageCacheWorkerLive from "./apps/storage-gateway/src/video-storage-cache-worker";
+import VideoStorageGatewayWorkerLive from "./apps/storage-gateway/src/video-storage-gateway-worker";
 import VideoProcessingWorker from "./apps/video-processing-worker/src/worker";
-import { UtubeWeb, WebConfig } from "./apps/web/alchemy.run";
-import WSWorker from "./apps/ws/src/worker";
-import { UploadsBucket } from "./infra/cloudflare/uploads-bucket";
-import { VideoProcessingQueue } from "./infra/cloudflare/video-processing-queue";
-import { VideosBucket } from "./infra/cloudflare/videos-bucket";
+import { Web } from "./apps/web/alchemy.run";
+import WSWorkerLive from "./apps/ws/src/worker";
 
 export default Alchemy.Stack(
   "utube",
@@ -20,16 +24,11 @@ export default Alchemy.Stack(
     const videoProcessingQueue = yield* VideoProcessingQueue;
     const uploadsBucket = yield* UploadsBucket;
     yield* VideosBucket;
-    const videoStorageWorker = yield* VideoStorageWorker;
-    const api = yield* UtubeApi.pipe(
-      Effect.provideService(ApiConfig, {
-        videoBucketUrl: videoStorageWorker.url,
-      }),
-    );
+    const videoStorageCacheWorker = yield* VideoStorageCacheWorker;
+    const videoStorageGatewayWorker = yield* VideoStorageGatewayWorker;
+    const api = yield* Api;
     const ws = yield* WSWorker;
-    const web = yield* UtubeWeb.pipe(
-      Effect.provideService(WebConfig, { apiUrl: api.url, wsUrl: ws.url }),
-    );
+    const web = yield* Web;
     yield* VideoProcessingWorker;
 
     yield* Cloudflare.R2.BucketEventNotification("videoUploadNotification", {
@@ -48,6 +47,12 @@ export default Alchemy.Stack(
       apiUrl: api.url.as<string>(),
       webUrl: web.url.as<string>(),
       wsUrl: ws.url.as<string>(),
+      videoStorageCacheWorkerUrl: videoStorageCacheWorker.url.as<string>(),
+      videoStorageGatewayWorkerUrl: videoStorageGatewayWorker.url.as<string>(),
     };
-  }),
+  }).pipe(
+    Effect.provide(WSWorkerLive),
+    Effect.provide(VideoStorageCacheWorkerLive),
+    Effect.provide(VideoStorageGatewayWorkerLive),
+  ),
 );

@@ -136,46 +136,6 @@ function getStoryboardInterval(
   }
 }
 
-async function generateStoryboardVTTFile({
-  outputDir,
-  duration,
-  cfg,
-}: {
-  outputDir: string;
-  duration: number;
-  cfg: VideoStoryboardConfigService;
-}) {
-  const storyboardInterval = getStoryboardInterval(duration, cfg);
-  const thumbsPerSheet = cfg.STORYBOARD_TILE_COLS * cfg.STORYBOARD_TILE_ROWS;
-  const totalThumbs = Math.ceil(duration / storyboardInterval);
-
-  const lines: string[] = ["WEBVTT", ""];
-
-  for (let i = 0; i < totalThumbs; i++) {
-    const start = i * storyboardInterval;
-    const end = Math.min((i + 1) * storyboardInterval, duration);
-
-    const sheetIndex = Math.floor(i / thumbsPerSheet);
-    const indexInSheet = i % thumbsPerSheet;
-
-    const col = indexInSheet % cfg.STORYBOARD_TILE_COLS;
-    const row = Math.floor(indexInSheet / cfg.STORYBOARD_TILE_COLS);
-
-    const x = col * cfg.STORYBOARD_WIDTH;
-    const y = row * cfg.STORYBOARD_HEIGHT;
-
-    const sheetNumber = sheetIndex + 1;
-
-    lines.push(
-      `${toVttTimestamp(start)} --> ${toVttTimestamp(end)}`,
-      `storyboard_${String(sheetNumber).padStart(3, "0")}.jpg#xywh=${x},${y},${cfg.STORYBOARD_WIDTH},${cfg.STORYBOARD_HEIGHT}`,
-      "",
-    );
-  }
-
-  await Bun.write(`${outputDir}/storyboard.vtt`, lines.join("\n"));
-}
-
 function createStoryboardVTTString({
   duration,
   cfg,

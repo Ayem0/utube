@@ -1,15 +1,14 @@
 {
   "name": "@repo/ws",
   "private": true,
-  "scripts": {
-    "dev": "wrangler dev --persist-to ../../.cloudflare-dev --port 8789 --inspector-port 9231",
-    "deploy": "wrangler deploy",
-    "cf-typegen": "wrangler types"
-  },
+  "scripts": {},
   "dependencies": {
-    "@repo/auth": "workspace:",
-    "@repo/db": "workspace:",
-    "@repo/types": "workspace:"
+    "@repo/auth": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@repo/types": "workspace:*",
+    "@repo/infra": "workspace:*",
+    "effect": "catalog:effect",
+    "alchemy": "catalog:alchemy"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",

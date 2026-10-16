@@ -40,13 +40,7 @@ export function VideoPreviewPlayer({
 }) {
   return (
     <ClientOnly>
-      <PlayerProvider
-        player={videoEditorPlayer}
-        source={{
-          hls: hlsUrl,
-          dash: dashUrl,
-        }}
-      >
+      <PlayerProvider player={videoEditorPlayer}>
         <VideoPlayerContainer>
           <Video>{storyboardUrl && <VTTTrack src={storyboardUrl} />}</Video>
           <VideoPlayerOverlay />

@@ -9,7 +9,8 @@
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@types/bun": "catalog:tooling"
+    "@types/bun": "catalog:tooling",
+    "@types/node": "catalog:tooling"
   },
   "dependencies": {
     "@effect/sql-pg": "catalog:effect",

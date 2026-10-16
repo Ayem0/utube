@@ -55,7 +55,11 @@ export class VideoPlayback extends Context.Service<
       Effect.tryPromise({
         try: async () => {
           const key = await importHmacKey(Redacted.value(cfg.secret));
-          const data = `/${videoId}/${playbackId}/`;
+          const now = Math.floor(Date.now() / 1000);
+          const deltaAllowed = 15 * 60;
+          const exp = Math.floor(now + durationSeconds + deltaAllowed);
+          const hmacExp = exp - MAX_TTL;
+          const data = `${exp}/${videoId}/${playbackId}/`;
           const signature = await crypto.subtle.sign(
             "HMAC",
             key,
@@ -63,11 +67,6 @@ export class VideoPlayback extends Context.Service<
           );
           const token = Buffer.from(signature).toString("base64");
           console.log("DATA,", data, "SIGNATURE", token);
-
-          const now = Math.floor(Date.now() / 1000);
-          const deltaAllowed = 15 * 60;
-          const exp = Math.floor(now + durationSeconds + deltaAllowed);
-          const hmacExp = exp - MAX_TTL;
 
           console.log("created token", `${hmacExp}.${token}`, exp);
           console.log("SIGNATURE LENGTH:", token.length);
@@ -98,7 +97,9 @@ export class VideoPlayback extends Context.Service<
                 return false;
               }
 
-              const data = `/${videoId}/${playbackId}/`;
+              const encodedExp = exp + MAX_TTL;
+
+              const data = `${encodedExp}/${videoId}/${playbackId}/`;
 
               const signature = await crypto.subtle.verify(
                 "HMAC",
@@ -154,7 +155,10 @@ export class VideoPlayback extends Context.Service<
               return false; // expired
             }
 
-            const data = pathname.substring(0, 75); // 75 = 0 indexed length (not including last) of "/${videoId}/${playbackId}/" uuids are 36 chars, 1 + 36 + 1 + 36 + 1 = 75
+            const encodedExp = exp + MAX_TTL;
+
+            const end = pathname.substring(0, 75); // 75 = 0 indexed length (not including last) of "/${videoId}/${playbackId}/" uuids are 36 chars, 1 + 36 + 1 + 36 + 1 = 75
+            const data = `${encodedExp}${end}`;
             console.log("data", data);
             const signature = await crypto.subtle.verify(
               "HMAC",

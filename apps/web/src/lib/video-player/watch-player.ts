@@ -1,10 +1,10 @@
 import { videoFeatures } from '@repo/video-player/feature/core/video-features';
+import type { PlayerFeatureOptions } from '@repo/video-player/feature/feature';
 import { createPlayer } from '@repo/video-player/player/player';
 import {
   getSessionVolumeState,
   setSessionVolumeState,
 } from './video-player-volume';
-import type { PlayerFeatureOptions } from '@repo/video-player/feature/feature';
 
 const defaultPlaybackRate = 1; // TODO fetch from localstorage / session storage
 const defaultQuality = -1; // TODO fetch from localstorage / session storage (-1 means auto)

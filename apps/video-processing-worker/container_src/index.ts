@@ -50,17 +50,7 @@ const uploadFile: S3Api["uploadFile"] = (key, file, bucket, size) =>
   });
 
 const s3Layer = Layer.succeed(S3, {
-  deleteFile: (key, bucket) =>
-    Effect.tryPromise({
-      try: async () => {
-        throw new Error("Not implemented");
-      },
-      catch: (e) =>
-        new S3Error({
-          cause: e,
-          message: "S3Error deleteFile not implemented",
-        }),
-    }),
+  deleteFile: (key, bucket) => Effect.die("Not implemented"),
   getFile: (key, bucket) =>
     Stream.unwrap(
       Effect.tryPromise({

@@ -1,8 +1,9 @@
+import { VideoProcessingQueue } from "@repo/infra";
+import { VideoProcessingDO } from "@repo/infra/video-processing";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Effect, Schema, SchemaIssue, Stream } from "effect";
 import { SchemaError } from "effect/Schema";
-import { VideoProcessingQueue } from "../../../infra/cloudflare/video-processing-queue";
-import { VideoProcessingDO } from "./do";
+import VideoProcessingDOLive from "./do";
 import { VideoProcessingQueueMsg } from "./video-processing-queue-msg";
 
 export default class VideoProcessingWorker extends Cloudflare.Worker<VideoProcessingWorker>()(
@@ -38,7 +39,10 @@ export default class VideoProcessingWorker extends Cloudflare.Worker<VideoProces
     );
 
     return {};
-  }).pipe(Effect.provide(Cloudflare.Queues.EventSourceLive)),
+  }).pipe(
+    Effect.provide(Cloudflare.Queues.EventSourceLive),
+    Effect.provide(VideoProcessingDOLive),
+  ),
 ) {}
 
 const parseBody = (body: unknown | string) =>

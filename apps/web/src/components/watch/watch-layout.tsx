@@ -1,24 +1,6 @@
-import { getApi } from '@/lib/api/api';
 import type { WatchVideo } from '@/lib/queries/get-watch-video';
-import { PlayerProvider } from '@/lib/video-player/create-player';
-import { watchPlayer } from '@/lib/video-player/watch-player';
-import { ClientOnly, Link } from '@tanstack/react-router';
-import { VideoPlayerControls } from '../video-player/controls/video-player-controls';
-import { VideoPlayerFullscreenButton } from '../video-player/controls/video-player-fullscreen-button';
-import { VideoPlayerPipButton } from '../video-player/controls/video-player-pip-button';
-import { VideoPlayerPlayButton } from '../video-player/controls/video-player-play-button';
-import { VideoPlayerPlayrate } from '../video-player/controls/video-player-playrate';
-import { VideoPlayerQuality } from '../video-player/controls/video-player-quality';
-import { VideoPlayerSettings } from '../video-player/controls/video-player-settings';
-import { VideoPlayerTimeline } from '../video-player/controls/video-player-timeline';
-import { VideoPlayerTimer } from '../video-player/controls/video-player-timer';
-import { VideoPlayerVolume } from '../video-player/controls/video-player-volume';
-import { Video } from '../video-player/video';
-import { VideoPlayerAuthz } from '../video-player/video-player-auth';
-import { VideoPlayerContainer } from '../video-player/video-player-container';
-import { VideoPlayerOverlay } from '../video-player/video-player-overlay';
-import { VideoPlayerSource } from '../video-player/video-player-source';
-import { VTTTrack } from '../video-player/vtt-track';
+import { Link } from '@tanstack/react-router';
+import { VideoPlayer } from '../video-player/video-player';
 
 export function WatchLayout({
   video,
@@ -27,54 +9,16 @@ export function WatchLayout({
   video: WatchVideo;
   defaultTime: number;
 }) {
-  const refreshQuery = async () => {
-    const res = await getApi().video({ id: video.id }).refresh.get();
-    if (!res.data) {
-      throw new Error('Failed to refresh token');
-    }
-    return res.data;
-  };
-
   return (
     <div className="flex flex-col w-full">
-      <ClientOnly>
-        <PlayerProvider player={watchPlayer}>
-          <VideoPlayerAuthz
-            exp={video.exp}
-            token={video.token}
-            // TODO IMPLEMENT THE REFRESH TOKEN ENDPOINT
-            refreshToken={refreshQuery}
-          />
-          <VideoPlayerSource
-            source={{ hls: video.hlsMasterUrl }}
-            defaultTime={defaultTime}
-          />
-          <VideoPlayerContainer>
-            <Video>
-              <VTTTrack src={video.storyboardUrl} />
-            </Video>
-            <VideoPlayerOverlay />
-            <VideoPlayerControls>
-              <VideoPlayerTimeline />
-              <div className="flex flex-row justify-between">
-                <div className="flex flex-row gap-2">
-                  <VideoPlayerPlayButton />
-                  <VideoPlayerVolume />
-                  <VideoPlayerTimer />
-                </div>
-                <div className="flex flex-row gap-2">
-                  <VideoPlayerSettings>
-                    <VideoPlayerPlayrate />
-                    <VideoPlayerQuality />
-                  </VideoPlayerSettings>
-                  <VideoPlayerPipButton />
-                  <VideoPlayerFullscreenButton />
-                </div>
-              </div>
-            </VideoPlayerControls>
-          </VideoPlayerContainer>
-        </PlayerProvider>
-      </ClientOnly>
+      <VideoPlayer
+        defaultTime={defaultTime}
+        exp={video.exp}
+        hlsMasterUrl={video.hlsMasterUrl}
+        storyboardUrl={video.storyboardUrl}
+        token={video.token}
+        videoId={video.id}
+      />
 
       <div className="flex flex-col w-full p-3 gap-2 pl-2">
         <span className="text-lg">{video.title}</span>

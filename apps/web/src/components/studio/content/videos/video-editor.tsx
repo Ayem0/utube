@@ -1,3 +1,4 @@
+import { VideoPlayer } from '@/components/video-player/video-player';
 import { useAppForm } from '@/hooks/use-form';
 import { getApi } from '@/lib/api/api';
 import type { StudioFullVideo } from '@/lib/queries/get-studio-videos';
@@ -20,7 +21,6 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouteContext } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
-import { VideoPreviewPlayer } from './video-preview-player';
 
 export function VideoEditor({ videoId }: { videoId: string }) {
   const { channel } = useRouteContext({
@@ -237,9 +237,12 @@ export function VideoPreview({
   ) {
     return (
       <div className="w-xs">
-        <VideoPreviewPlayer
-          dashUrl={dashManifestUrl}
-          hlsUrl={hlsMasterUrl}
+        <VideoPlayer
+          hlsMasterUrl={hlsMasterUrl}
+          defaultTime={0}
+          exp={100000000000000}
+          token={''}
+          videoId={''}
           storyboardUrl={storyboardUrl}
         />
       </div>

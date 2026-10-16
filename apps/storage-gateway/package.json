@@ -8,6 +8,7 @@
     "dependencies": {
         "@repo/services": "workspace:*",
         "@repo/types": "workspace:*",
+        "@repo/infra": "workspace:*",
         "effect": "catalog:effect"
     },
     "devDependencies": {

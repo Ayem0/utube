@@ -17,6 +17,7 @@
     "@repo/db": "workspace:*",
     "@repo/services": "workspace:*",
     "@repo/types": "workspace:*",
+    "@repo/infra": "workspace:*",
     "effect": "catalog:effect",
     "elysia": "catalog:elysia",
     "zod": "catalog:"
