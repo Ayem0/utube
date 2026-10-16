@@ -3,7 +3,7 @@ import { useAppForm } from '@/hooks/use-form';
 import { getApi } from '@/lib/api/api';
 import type { StudioFullVideo } from '@/lib/queries/get-studio-videos';
 import { getStudioVideoQueryOptions } from '@/lib/queries/get-studio-videos';
-import { useWS } from '@/lib/ws/ws-provider';
+import { useWs } from '@/lib/ws/ws-provider';
 import { videoPlaybackStatus } from '@repo/types/enums/video/video-playback-status';
 import type { VideoVisibility } from '@repo/types/enums/video/video-visibility';
 import { videoVisibility } from '@repo/types/enums/video/video-visibility';
@@ -20,7 +20,7 @@ import {
 } from '@repo/ui/components/stepper';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouteContext } from '@tanstack/react-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 export function VideoEditor({ videoId }: { videoId: string }) {
   const { channel } = useRouteContext({
@@ -39,16 +39,10 @@ export function VideoEditor({ videoId }: { videoId: string }) {
     ],
     [],
   );
-  useEffect(() => {
-    console.log('refetching', isRefetching);
-  }, [isRefetching]);
-  const ws = useWS();
-  ws.subscribe('video.upload.updated', async (msg) => {
-    console.log(
-      "in the component subscribind to wsEvent 'video.upload.updated':",
-      msg,
-    );
-    void refetch();
+
+  useWs('video.upload.updated', (msg) => {
+    if (channel.id !== msg.channelId || msg.videoId !== videoId) return;
+    refetch();
   });
 
   return (
