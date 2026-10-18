@@ -1,5 +1,5 @@
 import type { Asset, Channel, Video, VideoPlayback } from "@repo/db/types";
-import { assetType } from "@repo/types/enums/asset/asset-type";
+import { assetType, type AssetType } from "@repo/types/enums/asset/asset-type";
 import type {
   PaginationRequest,
   PaginationResult,
@@ -8,6 +8,7 @@ import type { EffectDrizzleQueryError } from "drizzle-orm/effect-core";
 import { Context, Effect, Layer } from "effect";
 import type { SqlError } from "effect/sql/SqlError";
 import { AssetRepository } from "../asset/asset-repository";
+import { AssetService } from "../asset/asset-service";
 import { AssetUploadFactory } from "../asset/asset-upload-factory";
 import { CDN } from "../cdn/cdn";
 import { DB } from "../db/db";
@@ -118,6 +119,23 @@ export interface VideoServiceApi {
     { id: string },
     DBNotFoundError | InvalidMediaTypeError | EffectDrizzleQueryError
   >;
+
+  addAsset: (params: {
+    userId: string;
+    channelId: string;
+    videoId: string;
+    assetType: AssetType;
+    mimeType: string;
+    sizeBytes: number;
+  }) => Effect.Effect<
+    { url: string },
+    | S3Error
+    | EffectDrizzleQueryError
+    | SqlError
+    | DBNotFoundError
+    | InvalidMediaSizeError
+    | InvalidMediaTypeError
+  >;
 }
 
 export class VideoService extends Context.Service<
@@ -132,6 +150,8 @@ export class VideoService extends Context.Service<
     const cdn = yield* CDN;
     const cdnBaseUrl = yield* cdn.getBaseUrl;
     const videoPlayback = yield* VideoPlaybackService;
+
+    const assetService = yield* AssetService;
 
     const mapAssetVariants = (
       obj: Asset["variants"],
@@ -152,68 +172,91 @@ export class VideoService extends Context.Service<
       }
     };
     return {
-      refreshPlaybackToken: ({ userId, videoId }) =>
-        Effect.gen(function* () {
-          const res = yield* videoRepo.canRefreshPlaybackToken({
-            userId,
-            videoId,
-          });
-          return yield* videoPlayback.createPlaybackToken(res);
-        }),
-      createDraft: ({ userId, channelId, filename, mimeType, sizeBytes }) =>
-        Effect.gen(function* () {
-          const title = filename.split(".")[0] ?? "Title";
-          const videoId = newId();
-          const assetId = newId();
-
-          yield* assetUploadFactory.validate({
+      addAsset: Effect.fnUntraced(function* ({
+        channelId,
+        mimeType,
+        sizeBytes,
+        assetType,
+        userId,
+        videoId,
+      }) {
+        const { presignedUrl } = yield* assetService.createWithRelation({
+          input: {
             mimeType,
+            ownerUserId: userId,
             sizeBytes,
-            assetType: assetType.VIDEO,
-          });
-
-          const storageKey = yield* assetUploadFactory.createAssetStorageKey({
-            id: assetId,
-            mimeType: mimeType,
-            assetType: assetType.VIDEO,
-          });
-
-          const presignedUrl = yield* assetUploadFactory.getPresignedUrl({
-            assetStorageKey: storageKey,
-            mimeType: mimeType,
-          });
-
-          return yield* Effect.gen(function* () {
-            const asset = yield* assetRepo.create({
-              id: assetId,
-              ownerUserId: userId,
-              originalStorageKey: storageKey,
-              sizeBytes: sizeBytes,
-              type: assetType.VIDEO,
-              mimeType: mimeType,
-            });
-            const video = yield* videoRepo.create({
-              id: videoId,
-              channelId: channelId,
-              title: title,
-              sourceVideoAssetId: asset.id,
-            });
-
-            return {
-              assetId: asset.id,
-              videoId: video.id,
-              presignedUrl: presignedUrl,
-              title: video.title,
-            };
-          }).pipe(db.withTransaction);
-        }),
-      updateDraft: ({ userId, channelId, videoId, data }) =>
-        videoRepo.updateStudio({
+            type: assetType,
+          },
+          effect: (assetId) =>
+            videoRepo.setPendingThumbnailAssetId({
+              channelId,
+              userId,
+              assetId,
+              videoId,
+            }),
+        });
+        return { url: presignedUrl };
+      }),
+      refreshPlaybackToken: Effect.fnUntraced(function* ({ userId, videoId }) {
+        const res = yield* videoRepo.canRefreshPlaybackToken({
           userId,
-          channelId,
           videoId,
-          data,
-        }),
+        });
+        return yield* videoPlayback.createPlaybackToken(res);
+      }),
+      createDraft: Effect.fnUntraced(function* ({
+        userId,
+        channelId,
+        filename,
+        mimeType,
+        sizeBytes,
+      }) {
+        const title = filename.split(".")[0] ?? "Title";
+        const videoId = newId();
+        const assetId = newId();
+
+        yield* assetUploadFactory.validate({
+          mimeType,
+          sizeBytes,
+          assetType: assetType.VIDEO,
+        });
+
+        const storageKey = yield* assetUploadFactory.createAssetStorageKey({
+          id: assetId,
+          mimeType: mimeType,
+          assetType: assetType.VIDEO,
+        });
+
+        const presignedUrl = yield* assetUploadFactory.getPresignedUrl({
+          assetStorageKey: storageKey,
+          mimeType: mimeType,
+        });
+
+        return yield* Effect.gen(function* () {
+          const asset = yield* assetRepo.create({
+            id: assetId,
+            ownerUserId: userId,
+            originalStorageKey: storageKey,
+            sizeBytes: sizeBytes,
+            type: assetType.VIDEO,
+            mimeType: mimeType,
+          });
+          const video = yield* videoRepo.create({
+            id: videoId,
+            channelId: channelId,
+            title: title,
+            sourceVideoAssetId: asset.id,
+          });
+
+          return {
+            assetId: asset.id,
+            videoId: video.id,
+            presignedUrl: presignedUrl,
+            title: video.title,
+          };
+        }).pipe(db.withTransaction);
+      }),
+      updateDraft: videoRepo.updateStudio,
       getStudioByChannelId: ({ userId, channelId, index, size }) =>
         videoRepo.getStudioByChannelId({
           filters: {},
@@ -289,13 +332,13 @@ export class VideoService extends Context.Service<
               ? {
                   status: row.playback.status,
                   hlsMasterUrl: row.playback.hlsMasterKey
-                    ? `${cdnBaseUrl}/videos/${row.playback.hlsMasterKey}`
+                    ? `${cdnBaseUrl}/${row.playback.hlsMasterKey}`
                     : null,
                   dashManifestUrl: row.playback.dashManifestKey
-                    ? `${cdnBaseUrl}/videos/${row.playback.dashManifestKey}`
+                    ? `${cdnBaseUrl}/${row.playback.dashManifestKey}`
                     : null,
                   storyboardUrl: row.playback.storyboardKey
-                    ? `${cdnBaseUrl}/videos/${row.playback.storyboardKey}`
+                    ? `${cdnBaseUrl}/${row.playback.storyboardKey}`
                     : null,
                   renditions: row.playback.renditions,
                 }

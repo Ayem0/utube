@@ -1,7 +1,7 @@
 import { Dialog, DialogContent } from '@repo/ui/components/dialog';
 import { useNavigate, useSearch } from '@tanstack/react-router';
+import { VideoFormDialog } from './videos/video-form';
 import { VideoUploadForm } from './videos/video-upload-form';
-import { VideoEditor } from '@/components/studio/content/videos/video-editor';
 
 export function VideoTableDialog() {
   const navigate = useNavigate({ from: '/studio/$channelId/content/videos' });
@@ -31,7 +31,7 @@ export function VideoTableDialog() {
         closeButtonClassName="top-2.5"
       >
         {videoId ? (
-          <VideoEditor videoId={videoId} />
+          <VideoFormDialog videoId={videoId} />
         ) : up ? (
           <VideoUploadForm />
         ) : null}

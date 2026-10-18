@@ -1,5 +1,5 @@
-import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 import { getApi } from '@/lib/api/api';
+import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 
 export const getStudioVideosQueryOptions = (
   channelId: string,
@@ -25,10 +25,13 @@ export type StudioLightVideo = NonNullable<
   Awaited<ReturnType<typeof getStudioVideos>>['data']
 >['items'][number];
 
-export const getStudioVideoQueryOptions = (
-  channelId: string,
-  videoId: string,
-) =>
+export const getStudioVideoQueryOptions = ({
+  channelId,
+  videoId,
+}: {
+  channelId: string;
+  videoId: string;
+}) =>
   queryOptions({
     queryKey: ['studio-video', channelId, videoId],
     queryFn: async () => (await getStudioVideo(channelId, videoId)).data,

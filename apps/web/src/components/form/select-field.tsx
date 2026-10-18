@@ -6,8 +6,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/select';
-import { BaseField } from './base-field';
 import type { FieldProps } from './base-field';
+import { BaseField } from './base-field';
 
 interface SelectFieldProps<
   TValue,
@@ -37,7 +37,7 @@ export function SelectField<TValue, TMultiple extends boolean = false>({
         <Select<TValue, TMultiple>
           items={items}
           disabled={isSubmitting}
-          defaultValue={defaultValue}
+          value={field.state.value ?? undefined}
           required={required}
           onValueChange={(v) => {
             if (v === null) return;

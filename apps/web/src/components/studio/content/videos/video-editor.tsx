@@ -28,7 +28,7 @@ export function VideoEditor({ videoId }: { videoId: string }) {
   });
   const qc = useQueryClient();
   const { data, isRefetching, error, isLoading, refetch } = useQuery(
-    getStudioVideoQueryOptions(channel.id, videoId),
+    getStudioVideoQueryOptions({ channelId: channel.id, videoId }),
     qc,
   );
   const [currenntTab, setCurrentTab] = useState(0);

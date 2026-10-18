@@ -149,6 +149,13 @@ export interface VideoRepositoryService {
     EffectDrizzleQueryError | DBNotFoundError
   >;
 
+  setPendingThumbnailAssetId: (params: {
+    assetId: string;
+    userId: string;
+    channelId: string;
+    videoId: string;
+  }) => Effect.Effect<Video, EffectDrizzleQueryError | DBNotFoundError>;
+
   updateInternal: (params: {
     videoId: string;
     values: Partial<
@@ -228,6 +235,40 @@ export class VideoRepository extends Context.Service<
     const sourceVideoAsset = alias(asset, "source_video_asset");
 
     return {
+      setPendingThumbnailAssetId: ({ assetId, channelId, userId, videoId }) =>
+        db.run((db) =>
+          db
+            .update(video)
+            .set({ pendingThumbnailAssetId: assetId })
+            .where(
+              and(
+                eq(video.id, videoId),
+                eq(video.channelId, channelId),
+                exists(
+                  db
+                    .select({ id: channel.id })
+                    .from(channel)
+                    .where(
+                      and(
+                        eq(channel.id, channelId),
+                        eq(channel.userId, userId),
+                      ),
+                    )
+                    .limit(1),
+                ),
+              ),
+            )
+            .returning()
+            .pipe(
+              Effect.flatMap(([res]) =>
+                UndefinedOr.match(res, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Video not found" }),
+                  onDefined: (res) => Effect.succeed(res),
+                }),
+              ),
+            ),
+        ),
       canRefreshPlaybackToken: ({ videoId, userId }) =>
         db.run((db) =>
           db
