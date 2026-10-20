@@ -136,25 +136,24 @@ import { Context, Effect, type Stream } from "effect";
 import { S3Error } from "./s3-errors";
 
 export interface S3Api {
-  getFile: (key: string, bucket: string) => Stream.Stream<Uint8Array, S3Error>;
-  uploadFile: <E, R>(
+  getFile(params: {
+    key: string;
+    bucket: string;
+  }): Stream.Stream<Uint8Array, S3Error>;
+  uploadFile<E = never, R = never>(
     key: string,
-    file: Stream.Stream<Uint8Array, E, R>,
+    file: Stream.Stream<Uint8Array, E, R> | Uint8Array,
     bucket: string,
     size?: bigint,
-  ) => Effect.Effect<void, S3Error | E, R>;
-  uploadFiles: <E, R>(
-    entries: { key: string; file: Stream.Stream<Uint8Array, E, R> }[],
-    bucket: string,
-  ) => Effect.Effect<void, S3Error | E, R>;
-  deleteFile: (key: string, bucket: string) => Effect.Effect<void, S3Error>;
-  getPresignedUrl: (params: {
+  ): Effect.Effect<void, S3Error | E, R>;
+  deleteFile(key: string, bucket: string): Effect.Effect<void, S3Error>;
+  getPresignedUrl(params: {
     path: string;
     bucket: string;
     mimeType: string;
     expiresInSeconds?: number;
     method: "GET" | "POST" | "PUT" | "DELETE" | "HEAD";
-  }) => Effect.Effect<string, S3Error>;
+  }): Effect.Effect<string, S3Error>;
 }
 
 export class S3 extends Context.Service<S3, S3Api>()("S3") {}

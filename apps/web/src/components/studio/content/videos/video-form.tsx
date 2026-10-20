@@ -1,5 +1,11 @@
 import { useAppForm, withForm } from '@/hooks/use-form';
-import { getStudioVideoQueryOptions } from '@/lib/queries/get-studio-videos';
+import { getApi } from '@/lib/api/api';
+import {
+  getStudioVideoQueryOptions,
+  type StudioFullVideo,
+} from '@/lib/queries/get-studio-videos';
+import { uploadToS3 } from '@/lib/s3/upload-to-s3';
+import { assetType } from '@repo/types/enums/asset/asset-type';
 import {
   videoVisibility,
   type VideoVisibility,
@@ -16,7 +22,7 @@ import {
 import { formOptions, type AnyFormGroupApi } from '@tanstack/react-form';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouteContext } from '@tanstack/react-router';
-import { ReactNode, useMemo, useState } from 'react';
+import { ReactNode, useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 
 const formSchema = z.object({
@@ -41,7 +47,7 @@ const formOpts = formOptions({
       visibility: videoVisibility.DRAFT as VideoVisibility,
     },
     step2: {
-      thumbnail: undefined as unknown as File,
+      thumbnail: undefined as File | undefined,
     },
   },
   validators: {
@@ -69,35 +75,31 @@ export function VideoFormDialog({ videoId }: { videoId: string }) {
           <Spinner />
         </div>
       ) : data ? (
-        <VideoForm
-          title={data.title}
-          description={data.description}
-          visibility={data.visibility}
-        />
+        <VideoForm channelId={channel.id} videoId={videoId} video={data} />
       ) : null}
     </div>
   );
 }
 
 export function VideoForm({
-  title,
-  description,
-  visibility,
+  video,
+  videoId,
+  channelId,
 }: {
-  title: string;
-  description: string | null;
-  visibility: VideoVisibility;
+  videoId: string;
+  channelId: string;
+  video: StudioFullVideo;
 }) {
   const form = useAppForm({
     ...formOpts,
     defaultValues: {
       step1: {
-        title,
-        description,
-        visibility,
+        title: video.title,
+        description: video.description,
+        visibility: video.visibility,
       },
       step2: {
-        thumbnail: undefined as unknown as File,
+        thumbnail: undefined as File | undefined,
       },
     },
     onSubmit: ({}) => {
@@ -128,8 +130,9 @@ export function VideoForm({
         />
       ) : (
         <ThumbnailForm
+          channelId={channelId}
+          videoId={videoId}
           form={form}
-          onGroupSubmit={form.handleSubmit}
           renderChild={(group) => (
             <Button type="submit" onClick={group.handleSubmit}>
               Next
@@ -224,11 +227,73 @@ const MetadataForm = withForm({
 const ThumbnailForm = withForm({
   ...formOpts,
   props: {
-    onGroupSubmit: () => {},
+    videoId: '',
+    channelId: '',
     renderChild: (group: AnyFormGroupApi) => ({}) as ReactNode,
   },
-  render: ({ form }) => {
-    const {} = useQuery();
-    return <div></div>;
+  render: ({ form, videoId, channelId }) => {
+    const ref = useRef<HTMLInputElement>(null);
+
+    const onButtonClick = () => {
+      if (ref.current) ref.current.click();
+    };
+
+    return (
+      <form.FormGroup
+        name="step2"
+        listeners={{
+          onChange: async ({ groupApi, value }) => {
+            console.log('in the onchange');
+            if (groupApi.state.meta.isSubmitting) return;
+            if (!value.thumbnail) return;
+
+            await groupApi.handleSubmit();
+          },
+        }}
+        onGroupSubmit={async ({ value, groupApi }) => {
+          console.log(
+            'in the ongroupsubmit',
+            value.thumbnail,
+            groupApi.state.meta.isSubmitting,
+          );
+          if (!value.thumbnail) return;
+          const res = await getApi()
+            .studio.channels({ channelId })
+            .videos({ videoId })
+            .assets.post({
+              mimeType: value.thumbnail.type,
+              sizeBytes: value.thumbnail.size,
+              type: assetType.VIDEO_THUMBNAIL,
+            });
+          if (!res.data) {
+            // set error
+            return;
+          }
+
+          try {
+            await uploadToS3(value.thumbnail, res.data.url);
+          } catch (error) {
+            // set error
+          }
+        }}
+        children={(group) => (
+          <form.AppField name="step2.thumbnail">
+            {(field) => (
+              <div className="flex">
+                <Button
+                  className="w-40"
+                  type="button"
+                  onClick={onButtonClick}
+                  disabled={group.state.meta.isSubmitting}
+                >
+                  Select thumbnail
+                </Button>
+                <field.FileInput ref={ref} className="hidden" field={field} />
+              </div>
+            )}
+          </form.AppField>
+        )}
+      />
+    );
   },
 });

@@ -39,6 +39,20 @@
         "@repo/typescript-config": "workspace:*",
       },
     },
+    "apps/image-processing-worker": {
+      "name": "@repo/image-processing-worker",
+      "dependencies": {
+        "@repo/infra": "workspace:*",
+        "@repo/services": "workspace:*",
+        "@repo/types": "workspace:*",
+        "alchemy": "catalog:alchemy",
+        "effect": "catalog:effect",
+      },
+      "devDependencies": {
+        "@repo/eslint-config": "workspace:*",
+        "@repo/typescript-config": "workspace:*",
+      },
+    },
     "apps/storage-gateway": {
       "name": "@repo/storage-gateway",
       "dependencies": {
@@ -898,6 +912,8 @@
     "@repo/db": ["@repo/db@workspace:packages/db"],
 
     "@repo/eslint-config": ["@repo/eslint-config@workspace:packages/eslint-config"],
+
+    "@repo/image-processing-worker": ["@repo/image-processing-worker@workspace:apps/image-processing-worker"],
 
     "@repo/infra": ["@repo/infra@workspace:packages/infra"],
 

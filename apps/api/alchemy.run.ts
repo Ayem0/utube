@@ -1,5 +1,5 @@
-import { Hyperdrive, UploadsBucket } from "@repo/infra";
-import { VideoStorageGatewayWorker } from "@repo/infra/video-storage";
+import { Hyperdrive, UploadsBucket } from "@repo/infra/ressources";
+import { VideoStorageGatewayWorker } from "@repo/infra/workers";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Config, Effect } from "effect";
 

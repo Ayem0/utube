@@ -1,11 +1,10 @@
 import { assetStatus } from "@repo/types/enums/asset/asset-status";
-import { imageAssetType } from "@repo/types/enums/image/image-type";
-import type { ImageProcessingJob } from "@repo/types/schemas/image-processing-job";
+import { assetType } from "@repo/types/enums/asset/asset-type";
 import type { EffectDrizzleQueryError } from "drizzle-orm/effect-core";
-import { Context, Effect } from "effect";
+import { Context, Effect, Layer, Stream } from "effect";
+import { exponential } from "effect/Schedule";
 import { AssetRepository } from "../asset/asset-repository";
 import type { DBNotFoundError } from "../db/db-errors";
-import { FileSystem } from "../file-system/file-system";
 import type { FSError } from "../file-system/file-system-errors";
 import type {
   InvalidMediaDimensionError,
@@ -19,9 +18,9 @@ import { ImageProcessor } from "./image-processor";
 import { ImageValidator } from "./image-validator";
 
 export interface ImagePipelineService {
-  process: (
-    data: ImageProcessingJob,
-  ) => Effect.Effect<
+  process: (params: {
+    assetId: string;
+  }) => Effect.Effect<
     void,
     | EffectDrizzleQueryError
     | DBNotFoundError
@@ -44,44 +43,45 @@ export class ImagePipeline extends Context.Service<
     const s3 = yield* S3;
     const imageProcessor = yield* ImageProcessor;
     const imageValidator = yield* ImageValidator;
-    const fs = yield* FileSystem;
     return {
-      process: (data) =>
-        Effect.gen(function* () {
-          const asset = yield* assetRepo.getById({ assetId: data.assetId });
+      process: Effect.fnUntraced(function* ({ assetId }) {
+        const asset = yield* assetRepo.claimForProcessing({
+          assetId,
+        });
 
-          // Already processing
-          if (
-            asset.status !== assetStatus.UPLOADED &&
-            asset.status !== assetStatus.FAILED
-          )
-            return;
+        if (
+          asset.type !== assetType.VIDEO_THUMBNAIL &&
+          asset.type !== assetType.CHANNEL_AVATAR
+        ) {
+          yield* assetRepo.unclaimFromProcessing({
+            assetId,
+            status: assetStatus.FAILED,
+          });
+          return; // TODO change to Effect.fail
+        }
+        const fileStream = s3.getFile({
+          key: asset.originalStorageKey,
+          bucket: "uploads",
+        });
 
-          if (
-            !(
-              asset.type === imageAssetType.CHANNEL_AVATAR ||
-              asset.type === imageAssetType.VIDEO_THUMBNAIL
-            )
-          ) {
-            return yield* new InvalidAssetTypeError({
-              message: `Invalid asset type`,
-            });
-          }
-          const file = yield* s3.getFile(asset.originalStorageKey, "assets");
-          const outputdir = yield* fs.createDirectory(`/tmp/${asset.id}`);
-          const originalPath = `${outputdir}/original`;
-          yield* fs.writeFile(originalPath, file);
-          yield* imageValidator.validate(originalPath, asset.type);
-          const genFilePaths = yield* imageProcessor.process(
-            originalPath,
-            outputdir,
-            asset.type,
-          );
-          // yield* s3.uploadFiles(
-          //   genFilePaths.map((g) => ({ file: Bun.file(g).bytes(), key: `` })),
-          //   "test",
-          // );
-        }),
+        const buffer = yield* fileStream.pipe(Stream.runCollect);
+        yield* imageValidator.validate({ buffer, type: asset.type });
+
+        const outputs = yield* imageProcessor.process({
+          buffer,
+          type: asset.type,
+        });
+
+        yield* Effect.forEach(outputs, (output) =>
+          s3
+            .uploadFile(output.key, output.buffer, "images")
+            .pipe(
+              Effect.retry({ times: 3, schedule: exponential("100 millis") }),
+            ),
+        );
+      }),
     };
   }),
-}) {}
+}) {
+  static readonly Layer = Layer.effect(this, this.make);
+}

@@ -1,10 +1,13 @@
-import { VideoProcessingQueue } from "@repo/infra";
-import { VideoProcessingDO } from "@repo/infra/video-processing";
+import { VideoProcessingQueue } from "@repo/infra/ressources";
+import {
+  type R2ObjectCreateEvent,
+  R2ObjectCreateEventSchema,
+} from "@repo/infra/types";
+import { VideoProcessingDO } from "@repo/infra/workers";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Effect, Schema, SchemaIssue, Stream } from "effect";
 import { SchemaError } from "effect/Schema";
 import VideoProcessingDOLive from "./do";
-import { VideoProcessingQueueMsg } from "./video-processing-queue-msg";
 
 export default class VideoProcessingWorker extends Cloudflare.Worker<VideoProcessingWorker>()(
   "VideoProcessingWorker",
@@ -13,7 +16,7 @@ export default class VideoProcessingWorker extends Cloudflare.Worker<VideoProces
     const videoProcessingQueue = yield* VideoProcessingQueue;
     const videoProcessingDo = yield* VideoProcessingDO;
 
-    yield* Cloudflare.Queues.consumeQueueMessages<VideoProcessingQueueMsg>(
+    yield* Cloudflare.Queues.consumeQueueMessages<R2ObjectCreateEvent>(
       videoProcessingQueue,
       {
         batchSize: 1,
@@ -59,4 +62,6 @@ const parseBody = (body: unknown | string) =>
       new SchemaError(
         new SchemaIssue.Forbidden({ message: "JSON parsing failed" }),
       ),
-  }).pipe(Effect.flatMap(Schema.decodeUnknownEffect(VideoProcessingQueueMsg)));
+  }).pipe(
+    Effect.flatMap(Schema.decodeUnknownEffect(R2ObjectCreateEventSchema)),
+  );

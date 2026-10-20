@@ -1,9 +1,13 @@
-import { UploadsBucket, VideoProcessingQueue, VideosBucket } from "@repo/infra";
+import {
+  UploadsBucket,
+  VideoProcessingQueue,
+  VideosBucket,
+} from "@repo/infra/ressources";
 import {
   VideoStorageCacheWorker,
   VideoStorageGatewayWorker,
-} from "@repo/infra/video-storage";
-import { WSWorker } from "@repo/infra/ws";
+  WSWorker,
+} from "@repo/infra/workers";
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Effect } from "effect";
@@ -30,6 +34,18 @@ export default Alchemy.Stack(
     const ws = yield* WSWorker;
     const web = yield* Web;
     yield* VideoProcessingWorker;
+
+    yield* Cloudflare.R2.BucketEventNotification("videoUploadNotification", {
+      bucketName: uploadsBucket.bucketName,
+      queueId: videoProcessingQueue.queueId,
+      rules: [
+        {
+          prefix: "videos/",
+          actions: ["PutObject", "CompleteMultipartUpload"],
+          description: "Trigger video processing on upload",
+        },
+      ],
+    });
 
     yield* Cloudflare.R2.BucketEventNotification("videoUploadNotification", {
       bucketName: uploadsBucket.bucketName,

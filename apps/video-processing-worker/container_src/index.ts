@@ -31,27 +31,55 @@ const wsLayer = Layer.succeed(WS, {
       }),
     ),
 });
-const uploadFile: S3Api["uploadFile"] = (key, file, bucket, size) =>
-  Effect.gen(function* () {
-    const readableStream = yield* Stream.toReadableStreamEffect(file);
-    yield* Effect.tryPromise({
-      try: async () => {
-        const res = await fetch(`http://r2.put/${key}`, {
-          method: "PUT",
-          body: readableStream,
-          headers: { "content-length": String(size) },
-        });
-        if (!res.ok) {
-          throw new Error(`R2 upload failed ${res.status}`);
-        }
-      },
-      catch: (e) => new S3Error({ cause: e, message: "S3Error" }),
-    });
+const uploadFile: S3Api["uploadFile"] = Effect.fnUntraced(function* <E, R>(
+  key: string,
+  file: Stream.Stream<Uint8Array, E, R> | Uint8Array,
+  bucket: string,
+  size?: bigint,
+) {
+  const readableStream = yield* Stream.toReadableStreamEffect(
+    Stream.isStream(file) ? file : Stream.fromArray([file]),
+  );
+  yield* Effect.tryPromise({
+    try: async () => {
+      const res = await fetch(`http://r2.put/${key}`, {
+        method: "PUT",
+        body: readableStream,
+        headers: { "content-length": String(size) },
+      });
+      if (!res.ok) {
+        throw new Error(`R2 upload failed ${res.status}`);
+      }
+    },
+    catch: (e) => new S3Error({ cause: e, message: "S3Error" }),
   });
+});
 
 const s3Layer = Layer.succeed(S3, {
+  // uploadFile: Effect.fnUntraced(function* (
+  //   key: string,
+  //   file: Uint8Array,
+  //   bucket: string,
+  //   size?: bigint,
+  // ) {
+  //   yield* Effect.tryPromise({
+  //     try: async () => {
+  //       const res = await fetch(`http://r2.put/${key}`, {
+  //         method: "PUT",
+  //         body: Buffer.from(file),
+  //         headers: { "content-length": String(size) },
+  //       });
+  //       if (!res.ok) {
+  //         throw new Error(`R2 upload failed ${res.status}`);
+  //       }
+  //     },
+  //     catch: (e) => new S3Error({ cause: e, message: "S3Error" }),
+  //   });
+  // }),
+
+  uploadFile: uploadFile,
   deleteFile: (key, bucket) => Effect.die("Not implemented"),
-  getFile: (key, bucket) =>
+  getFile: ({ key, bucket }) =>
     Stream.unwrap(
       Effect.tryPromise({
         try: async () => {
@@ -83,13 +111,6 @@ const s3Layer = Layer.succeed(S3, {
         ),
       ),
     ),
-
-  uploadFile: uploadFile,
-  // TODO make it handle retries ...
-  uploadFiles: (files, bucket) =>
-    Effect.forEach(files, ({ file, key }) => uploadFile(key, file, bucket), {
-      concurrency: "unbounded",
-    }),
   getPresignedUrl: (params) =>
     Effect.tryPromise({
       try: async () => {

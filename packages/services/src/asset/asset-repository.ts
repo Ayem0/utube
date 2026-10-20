@@ -27,6 +27,11 @@ export interface AssetRepositoryApi {
   claimForProcessing: (params: {
     assetId: string;
   }) => Effect.Effect<Asset, EffectDrizzleQueryError | DBNotFoundError>;
+
+  unclaimFromProcessing: (params: {
+    assetId: string;
+    status: AssetStatus;
+  }) => Effect.Effect<Asset, EffectDrizzleQueryError | DBNotFoundError>;
 }
 
 export class AssetRepository extends Context.Service<
@@ -36,6 +41,25 @@ export class AssetRepository extends Context.Service<
   make: Effect.gen(function* () {
     const db = yield* DB;
     return {
+      unclaimFromProcessing: ({ assetId, status }) =>
+        db.run((cl) =>
+          cl
+            .update(asset)
+            .set({
+              status,
+            })
+            .where(eq(asset.id, assetId))
+            .returning()
+            .pipe(
+              Effect.flatMap(([res]) =>
+                UndefinedOr.match(res, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Asset not found" }),
+                  onDefined: (res) => Effect.succeed(res),
+                }),
+              ),
+            ),
+        ),
       getById: ({ assetId }) =>
         db.run((cl) =>
           cl

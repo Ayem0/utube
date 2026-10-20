@@ -1,4 +1,4 @@
-import { WSDO } from "@repo/infra/ws";
+import { WSDO } from "@repo/infra/workers";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Effect } from "effect";
 

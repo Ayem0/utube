@@ -1,5 +1,5 @@
-import { VideosBucket } from "@repo/infra";
-import { VideoStorageCacheWorker } from "@repo/infra/video-storage";
+import { VideosBucket } from "@repo/infra/ressources";
+import { VideoStorageCacheWorker } from "@repo/infra/workers";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Effect } from "effect";
 import { HttpServerRequest, HttpServerResponse } from "effect/http";

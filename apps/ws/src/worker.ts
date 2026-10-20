@@ -1,7 +1,7 @@
 import { makeAuth } from "@repo/auth/auth";
 import { makeDb } from "@repo/db";
-import { Hyperdrive } from "@repo/infra";
-import { WSDO, WSWorker } from "@repo/infra/ws";
+import { Hyperdrive } from "@repo/infra/ressources";
+import { WSDO, WSWorker } from "@repo/infra/workers";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Config, Effect, Redacted } from "effect";
 import { HttpServerRequest, HttpServerResponse } from "effect/http";

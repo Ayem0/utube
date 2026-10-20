@@ -3,10 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
-    ".": "./src/index.ts",
-    "./ws": "./src/workers/ws.ts",
-    "./video-processing": "./src/workers/video-processing.ts",
-    "./video-storage": "./src/workers/video-storage.ts"
+    "./ressources": "./src/ressources/index.ts",
+    "./types": "./src/types/index.ts",
+    "./workers": "./src/workers/index.ts"
   },
   "scripts": {},
   "devDependencies": {

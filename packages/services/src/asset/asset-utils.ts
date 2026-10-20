@@ -85,8 +85,7 @@ export function getImageExtensionFromMimeType(mimeType: string) {
   }
 }
 
-export type Prefix =
-  "videos" | "avatars" | "thumbnails" | "audios" | "subtitles";
+export type Prefix = "videos" | "images" | "audios" | "subtitles";
 
 type AssetId = string;
 type Name = string;
@@ -113,13 +112,13 @@ export function assetTypeToPrefix(type: AssetType): Prefix {
     case assetType.AUDIO:
       return "audios";
     case assetType.CHANNEL_AVATAR:
-      return "avatars";
+      return "images";
     case assetType.SUBTITLE:
       return "subtitles";
     case assetType.VIDEO:
       return "videos";
     case assetType.VIDEO_THUMBNAIL:
-      return "thumbnails";
+      return "images";
     default: {
       throw new Error(`Unable to find prefix for asset type '${type}'.`);
     }

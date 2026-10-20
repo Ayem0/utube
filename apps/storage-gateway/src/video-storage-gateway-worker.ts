@@ -1,7 +1,7 @@
 import {
   VideoStorageCacheWorker,
   VideoStorageGatewayWorker,
-} from "@repo/infra/video-storage";
+} from "@repo/infra/workers";
 import {
   VideoPlayback,
   VideoPlaybackConfig,

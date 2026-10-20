@@ -261,6 +261,7 @@
 //     Layer.provide(DB.Layer),
 //   );
 // }
+import { assetStatus } from "@repo/types/enums/asset/asset-status";
 import { videoPlaybackStatus } from "@repo/types/enums/video/video-playback-status";
 import {
   Context,
@@ -543,6 +544,10 @@ export class VideoPipeline extends Context.Service<
             );
 
             yield* Effect.gen(function* () {
+              yield* assetRepo.unclaimFromProcessing({
+                assetId: asset.id,
+                status: assetStatus.READY,
+              });
               yield* videoPlaybackRepo.update({
                 id: videoPlayback.id,
                 values: {
@@ -597,7 +602,15 @@ export class VideoPipeline extends Context.Service<
               }),
             ),
           );
-        }).pipe(Effect.catch((c) => new VideoPipelineError({cause: c, message: "Video pipeline error"}))),
+        }).pipe(
+          Effect.catch(
+            (c) =>
+              new VideoPipelineError({
+                cause: c,
+                message: "Video pipeline error",
+              }),
+          ),
+        ),
     };
   }),
 }) {

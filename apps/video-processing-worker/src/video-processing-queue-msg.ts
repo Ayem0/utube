@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 
-export const VideoProcessingQueueMsg = Schema.Struct({
+export const R2ObjectCreateEventSchema = Schema.Struct({
   account: Schema.String,
   bucket: Schema.String,
   eventTime: Schema.String,
@@ -8,7 +8,6 @@ export const VideoProcessingQueueMsg = Schema.Struct({
     "PutObject",
     "CopyObject",
     "CompleteMultipartUpload",
-    "DeleteObject",
   ]),
   object: Schema.Struct({
     key: Schema.String,
@@ -17,6 +16,6 @@ export const VideoProcessingQueueMsg = Schema.Struct({
   }),
 });
 
-export type VideoProcessingQueueMsg = Schema.Schema.Type<
-  typeof VideoProcessingQueueMsg
+export type R2ObjectCreateEvent = Schema.Schema.Type<
+  typeof R2ObjectCreateEventSchema
 >;

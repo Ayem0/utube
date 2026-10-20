@@ -22,9 +22,9 @@
     // them let the rest resolve through node_modules instead, so the root
     // typecheck and turbo's disagreed about which sources they were checking.
     "paths": {
-      "@repo/infra": ["./packages/infra/src/index.ts"],
-      "@repo/infra/ws": ["./packages/infra/src/workers/ws.ts"],
-      "@repo/infra/video-storage": ["./packages/infra/src/workers/video-storage.ts"],
+      "@repo/infra/ressources": ["./packages/infra/src/ressources/index.ts"],
+      "@repo/infra/workers": ["./packages/infra/src/workers/index.ts"],
+      
     }
   },
   "include": ["alchemy.run.ts"]

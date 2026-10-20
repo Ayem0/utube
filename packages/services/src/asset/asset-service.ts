@@ -1,5 +1,4 @@
 import type { AssetInsert } from "@repo/db/types";
-import { type AssetStatus } from "@repo/types/enums/asset/asset-status";
 import type { EffectDrizzleQueryError } from "drizzle-orm/effect-core";
 import { Context, Effect, Layer } from "effect";
 import type { SqlError } from "effect/sql/SqlError";
@@ -11,7 +10,6 @@ import {
 } from "../media/media-errors";
 import { S3Error } from "../s3/s3-errors";
 import { newId } from "../utils/id";
-import { AssetProcessingDispatcher } from "./asset-processing-dispatcher";
 import { AssetRepository } from "./asset-repository";
 import { AssetUploadFactory } from "./asset-upload-factory";
 
@@ -22,10 +20,10 @@ export interface AssetServiceApi {
     { assetId: string; presignedUrl: string },
     EffectDrizzleQueryError | InvalidMediaTypeError | DBNotFoundError | S3Error
   >;
-  updateStatus: (
-    assetId: string,
-    status: AssetStatus,
-  ) => Effect.Effect<void, unknown>;
+  // updateStatus: (
+  //   assetId: string,
+  //   status: AssetStatus,
+  // ) => Effect.Effect<void, unknown>;
 
   createWithRelation: <A, E, R>({
     input,
@@ -53,7 +51,7 @@ export class AssetService extends Context.Service<
   make: Effect.gen(function* () {
     const assetRepo = yield* AssetRepository;
     const assetUploadFactory = yield* AssetUploadFactory;
-    const assetProcessingDispatcher = yield* AssetProcessingDispatcher;
+    // const assetProcessingDispatcher = yield* AssetProcessingDispatcher;
     const db = yield* DB;
     return {
       createWithRelation: Effect.fnUntraced(function* ({ input, effect }) {
@@ -113,17 +111,18 @@ export class AssetService extends Context.Service<
           return { assetId: id, presignedUrl };
         }),
 
-      updateStatus: (assetId, status) =>
-        Effect.gen(function* () {
-          const asset = yield* assetRepo.updateAssetStatus({ assetId, status });
-          yield* assetProcessingDispatcher.dispatch(asset);
-        }),
+      // updateStatus: (assetId, status) =>
+      //   Effect.gen(function* () {
+      //     const asset = yield* assetRepo.updateAssetStatus({ assetId, status });
+      //     yield* assetProcessingDispatcher.dispatch(asset);
+      //   }),
     };
   }),
 }) {
   static Layer = Layer.effect(this, this.make).pipe(
-    Layer.provide(AssetProcessingDispatcher.Layer),
+    // Layer.provide(AssetProcessingDispatcher.Layer),
     Layer.provide(AssetRepository.Layer),
     Layer.provide(AssetUploadFactory.Layer),
+    Layer.provide(DB.Layer),
   );
 }

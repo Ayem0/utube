@@ -1,5 +1,6 @@
 import { ChannelRepository } from "@repo/services/channel/channel-repository";
 import { VideoService } from "@repo/services/video/video-service";
+import { assetType } from "@repo/types/enums/asset/asset-type";
 import { paginationSchema } from "@repo/types/schemas/pagination";
 import { videoPutSchema } from "@repo/types/schemas/video-upload";
 import { Effect } from "effect";
@@ -187,52 +188,51 @@ export const studioController = new Elysia()
       auth: true,
       runtime: true,
     },
+  )
+  .post(
+    "/studio/channels/:channelId/videos/:videoId/assets",
+    async ({ status, user, params, body, runEffect }) =>
+      runEffect(
+        Effect.gen(function* () {
+          const publisher = yield* VideoService;
+          return yield* publisher.addAsset({
+            channelId: params.channelId,
+            userId: user.id,
+            videoId: params.videoId,
+            mimeType: body.mimeType,
+            sizeBytes: body.sizeBytes,
+            assetType: body.type,
+          });
+        }).pipe(
+          Effect.match({
+            onSuccess: (value) => {
+              return status(201, value);
+            },
+            onFailure: (err) => {
+              switch (err._tag) {
+                case "InvalidMediaTypeError":
+                  return status(415);
+                case "InvalidMediaSizeError":
+                  return status(415);
+                case "DBNotFoundError":
+                  return status(404);
+                default:
+                  return status(500);
+              }
+            },
+          }),
+        ),
+      ),
+    {
+      body: z.object({
+        type: z.enum(assetType),
+        mimeType: z.string(),
+        sizeBytes: z.number().positive(),
+      }),
+      auth: true,
+      runtime: true,
+    },
   );
-// .post(
-//   "/studio/channels/:channelId/videos/:videoId/assets",
-//   async ({ status, user, params, body }) =>
-//     await apiRuntime.runPromise(
-//       Effect.gen(function* () {
-//         const publisher = yield* VideoService;
-//         return yield* publisher.addAsset({
-//           channelId: params.channelId,
-//           userId: user.id,
-//           videoId: params.videoId,
-//           data: {
-//             type: body.type,
-//             filename: body.filename,
-//             mimeType: body.mimeType,
-//             sizeBytes: body.sizeBytes,
-//           },
-//         });
-//       }).pipe(
-//         Effect.match({
-//           onSuccess: (value) => {
-//             return status(201, value);
-//           },
-//           onFailure: (err) => {
-//             switch (err._tag) {
-//               case "InvalidMediaTypeError":
-//                 return status(415);
-//               case "DBNotFoundError":
-//                 return status(404);
-//               default:
-//                 return status(500);
-//             }
-//           },
-//         }),
-//       ),
-//     ),
-//   {
-//     body: z.object({
-//       type: z.enum(assetType),
-//       filename: z.string(),
-//       mimeType: z.string(),
-//       sizeBytes: z.number().positive(),
-//     }),
-//     auth: true,
-//   },
-// )
 // .post(
 //   "/studio/channels/:channelId/videos/:videoId/assets/:assetId",
 //   async ({ status, user, params, body }) => {

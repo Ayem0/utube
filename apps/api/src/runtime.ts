@@ -1,3 +1,4 @@
+import { AssetService } from "@repo/services/asset/asset-service";
 import { CDNConfig } from "@repo/services/cdn/cdn";
 import { ChannelRepository } from "@repo/services/channel/channel-repository";
 import { DBConfig } from "@repo/services/db/db";
@@ -17,7 +18,6 @@ import { Env } from "./env";
 
 const S3Layer = Layer.sync(S3, () => {
   return {
-    uploadFiles: () => Effect.die("Not implemented"),
     getFile: () => Stream.die("Not implemented"),
     deleteFile: () => Effect.die("Not implemented"),
     getPresignedUrl: ({
@@ -71,8 +71,16 @@ export const liveLayer = Layer.provideMerge(
     ChannelRepository.Layer,
   ),
   Layer.provideMerge(
-    VideoPlayback.Layer,
-    Layer.mergeAll(S3Layer, dbConfigLayer, videoPlaybackConfigLayer, cdnLayer),
+    AssetService.Layer,
+    Layer.provideMerge(
+      VideoPlayback.Layer,
+      Layer.mergeAll(
+        S3Layer,
+        dbConfigLayer,
+        videoPlaybackConfigLayer,
+        cdnLayer,
+      ),
+    ),
   ),
 );
 
