@@ -7,11 +7,8 @@ import type {
 import type { EffectDrizzleQueryError } from "drizzle-orm/effect-core";
 import { Context, Effect, Layer } from "effect";
 import type { SqlError } from "effect/sql/SqlError";
-import { AssetRepository } from "../asset/asset-repository";
 import { AssetService } from "../asset/asset-service";
-import { AssetUploadFactory } from "../asset/asset-upload-factory";
 import { CDN } from "../cdn/cdn";
-import { DB } from "../db/db";
 import { DBNotFoundError } from "../db/db-errors";
 import {
   InvalidMediaTypeError,
@@ -124,7 +121,7 @@ export interface VideoServiceApi {
     userId: string;
     channelId: string;
     videoId: string;
-    assetType: AssetType;
+    type: AssetType;
     mimeType: string;
     sizeBytes: number;
   }) => Effect.Effect<
@@ -144,13 +141,9 @@ export class VideoService extends Context.Service<
 >()("VideoService", {
   make: Effect.gen(function* () {
     const videoRepo = yield* VideoRepository;
-    const assetRepo = yield* AssetRepository;
-    const db = yield* DB;
-    const assetUploadFactory = yield* AssetUploadFactory;
     const cdn = yield* CDN;
     const cdnBaseUrl = yield* cdn.getBaseUrl;
     const videoPlayback = yield* VideoPlaybackService;
-
     const assetService = yield* AssetService;
 
     const mapAssetVariants = (
@@ -176,25 +169,36 @@ export class VideoService extends Context.Service<
         channelId,
         mimeType,
         sizeBytes,
-        assetType,
+        type,
         userId,
         videoId,
       }) {
-        const { presignedUrl } = yield* assetService.createWithRelation({
-          input: {
-            mimeType,
-            ownerUserId: userId,
-            sizeBytes,
-            type: assetType,
-          },
-          effect: (assetId) =>
-            videoRepo.setPendingThumbnailAssetId({
-              channelId,
-              userId,
-              assetId,
-              videoId,
-            }),
+        const attach = Effect.fnUntraced(function* (assetId: string) {
+          switch (type) {
+            case assetType.VIDEO_THUMBNAIL:
+              return yield* videoRepo.setPendingThumbnailAssetId({
+                channelId,
+                userId,
+                assetId,
+                videoId,
+              });
+            default:
+              return yield* new InvalidMediaTypeError({
+                message: "Invalid asset type",
+              });
+          }
         });
+        const { presignedUrl, result } = yield* assetService.createWithRelation(
+          {
+            input: {
+              mimeType,
+              ownerUserId: userId,
+              sizeBytes,
+              type,
+            },
+            effect: attach,
+          },
+        );
         return { url: presignedUrl };
       }),
       refreshPlaybackToken: Effect.fnUntraced(function* ({ userId, videoId }) {
@@ -213,48 +217,25 @@ export class VideoService extends Context.Service<
       }) {
         const title = filename.split(".")[0] ?? "Title";
         const videoId = newId();
-        const assetId = newId();
 
-        yield* assetUploadFactory.validate({
-          mimeType,
-          sizeBytes,
-          assetType: assetType.VIDEO,
-        });
-
-        const storageKey = yield* assetUploadFactory.createAssetStorageKey({
-          id: assetId,
-          mimeType: mimeType,
-          assetType: assetType.VIDEO,
-        });
-
-        const presignedUrl = yield* assetUploadFactory.getPresignedUrl({
-          assetStorageKey: storageKey,
-          mimeType: mimeType,
-        });
-
-        return yield* Effect.gen(function* () {
-          const asset = yield* assetRepo.create({
-            id: assetId,
-            ownerUserId: userId,
-            originalStorageKey: storageKey,
-            sizeBytes: sizeBytes,
-            type: assetType.VIDEO,
-            mimeType: mimeType,
-          });
-          const video = yield* videoRepo.create({
-            id: videoId,
-            channelId: channelId,
-            title: title,
-            sourceVideoAssetId: asset.id,
+        const { assetId, presignedUrl } =
+          yield* assetService.createWithRelation({
+            input: {
+              mimeType,
+              sizeBytes,
+              type: assetType.VIDEO,
+              ownerUserId: userId,
+            },
+            effect: (assetId) =>
+              videoRepo.create({
+                id: videoId,
+                channelId: channelId,
+                title: title,
+                sourceVideoAssetId: assetId,
+              }),
           });
 
-          return {
-            assetId: asset.id,
-            videoId: video.id,
-            presignedUrl: presignedUrl,
-            title: video.title,
-          };
-        }).pipe(db.withTransaction);
+        return { assetId, presignedUrl, title, videoId };
       }),
       updateDraft: videoRepo.updateStudio,
       getStudioByChannelId: ({ userId, channelId, index, size }) =>
@@ -350,37 +331,8 @@ export class VideoService extends Context.Service<
 }) {
   static Layer = Layer.effect(this, this.make).pipe(
     Layer.provide(VideoRepository.Layer),
-    Layer.provide(AssetRepository.Layer),
-    Layer.provide(DB.Layer),
-    Layer.provide(AssetUploadFactory.Layer),
+    Layer.provide(AssetService.Layer),
+    Layer.provide(VideoPlaybackService.Layer),
     Layer.provide(CDN.Layer),
   );
-}
-
-function mapPlayback(
-  obj: Pick<
-    VideoPlayback,
-    | "dashManifestKey"
-    | "hlsMasterKey"
-    | "storyboardKey"
-    | "renditions"
-    | "status"
-  > | null,
-  cdnBaseUrl: string,
-) {
-  if (!obj) return null;
-
-  return {
-    dashManifestUrl: obj.dashManifestKey
-      ? `${cdnBaseUrl}/videos/${obj.dashManifestKey}`
-      : null,
-    hlsMasterUrl: obj.hlsMasterKey
-      ? `${cdnBaseUrl}/videos/${obj.hlsMasterKey}`
-      : null,
-    storyboardUrl: obj.storyboardKey
-      ? `${cdnBaseUrl}/videos/${obj.storyboardKey}`
-      : null,
-    renditions: obj.renditions,
-    status: obj.status,
-  };
 }

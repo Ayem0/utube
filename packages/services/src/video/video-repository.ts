@@ -34,25 +34,6 @@ type WatchLightVideo = Pick<
 type WatchFullVideo = WatchLightVideo &
   Pick<Video, "visibility"> & { playback: Pick<VideoPlayback, "id"> };
 
-const watchLightVideo = {
-  id: video.id,
-  title: video.title,
-  description: video.description,
-  publishedAt: video.publishedAt,
-  duration: video.duration,
-  channel: {
-    name: channel.name,
-    alias: channel.alias,
-    variants: asset.variants,
-  },
-  playback: {
-    dashManifestKey: videoPlayback.dashManifestKey,
-    hlsMasterKey: videoPlayback.hlsMasterKey,
-    storyboardKey: videoPlayback.storyboardKey,
-    renditions: videoPlayback.renditions,
-  },
-} as const;
-
 export type StudioLightVideo = Pick<
   Video,
   "id" | "title" | "description" | "visibility" | "duration" | "publishedAt"
@@ -61,18 +42,6 @@ export type StudioLightVideo = Pick<
     variants: Asset["variants"];
   } | null;
 };
-
-const studioLightVideo = {
-  id: video.id,
-  title: video.title,
-  description: video.description,
-  visibility: video.visibility,
-  duration: video.duration,
-  publishedAt: video.publishedAt,
-  thumbnail: {
-    variants: asset.variants,
-  },
-} as const;
 
 export type StudioFullVideo = Pick<
   Video,
@@ -90,17 +59,6 @@ export type StudioFullVideo = Pick<
   currentThumbnail: Pick<Asset, "variants" | "status"> | null;
   pendingThumbnail: Pick<Asset, "variants" | "status"> | null;
 };
-
-const studioFullVideo = {
-  ...studioLightVideo,
-  playback: {
-    dashManifestKey: videoPlayback.dashManifestKey,
-    hlsMasterKey: videoPlayback.hlsMasterKey,
-    storyboardKey: videoPlayback.storyboardKey,
-    renditions: videoPlayback.renditions,
-    status: videoPlayback.status,
-  },
-} as const;
 
 export interface VideoRepositoryService {
   create: (

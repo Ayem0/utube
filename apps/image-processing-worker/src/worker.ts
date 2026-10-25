@@ -1,18 +1,21 @@
 import { ImageProcessingQueue } from "@repo/infra/ressources";
+
 import {
   R2ObjectCreateEvent,
   R2ObjectCreateEventSchema,
 } from "@repo/infra/types";
+import { ImageProcessingDO } from "@repo/infra/workers";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Effect, Schema, SchemaIssue, Stream } from "effect";
 import { SchemaError } from "effect/Schema";
+import ImageProcessingDOLive from "./do";
 
 export default class ImageProcessingWorker extends Cloudflare.Worker<ImageProcessingWorker>()(
   "ImageProcessingWorker",
   { main: import.meta.url },
   Effect.gen(function* () {
     const imageProcessingQueue = yield* ImageProcessingQueue;
-    // const imageProcessor = yield* ImagePipeline;
+    const imageProcessingDO = yield* ImageProcessingDO;
 
     yield* Cloudflare.Queues.consumeQueueMessages<R2ObjectCreateEvent>(
       imageProcessingQueue,
@@ -31,12 +34,19 @@ export default class ImageProcessingWorker extends Cloudflare.Worker<ImageProces
             if (!assetId) {
               return yield* Effect.fail("No assetId");
             }
+            const instance = imageProcessingDO.getByName(
+              `instance-${Math.floor(Math.random() * 20)}`, // match apps/image-processing-worker/src/container.ts maxInstances
+            );
+            yield* instance.process(assetId);
           }),
         ),
     );
 
     return {};
-  }).pipe(Effect.provide(Cloudflare.Queues.EventSourceLive)),
+  }).pipe(
+    Effect.provide(ImageProcessingDOLive),
+    Effect.provide(Cloudflare.Queues.EventSourceLive),
+  ),
 ) {}
 
 const parseBody = (body: unknown | string) =>

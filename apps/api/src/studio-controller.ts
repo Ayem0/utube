@@ -201,7 +201,7 @@ export const studioController = new Elysia()
             videoId: params.videoId,
             mimeType: body.mimeType,
             sizeBytes: body.sizeBytes,
-            assetType: body.type,
+            type: body.type,
           });
         }).pipe(
           Effect.match({

@@ -20,11 +20,6 @@ export interface AssetServiceApi {
     { assetId: string; presignedUrl: string },
     EffectDrizzleQueryError | InvalidMediaTypeError | DBNotFoundError | S3Error
   >;
-  // updateStatus: (
-  //   assetId: string,
-  //   status: AssetStatus,
-  // ) => Effect.Effect<void, unknown>;
-
   createWithRelation: <A, E, R>({
     input,
     effect,
@@ -51,7 +46,6 @@ export class AssetService extends Context.Service<
   make: Effect.gen(function* () {
     const assetRepo = yield* AssetRepository;
     const assetUploadFactory = yield* AssetUploadFactory;
-    // const assetProcessingDispatcher = yield* AssetProcessingDispatcher;
     const db = yield* DB;
     return {
       createWithRelation: Effect.fnUntraced(function* ({ input, effect }) {
@@ -70,6 +64,7 @@ export class AssetService extends Context.Service<
         const presignedUrl = yield* assetUploadFactory.getPresignedUrl({
           assetStorageKey: storageKey,
           mimeType: input.mimeType,
+          sizeBytes: input.sizeBytes,
         });
 
         const res = yield* Effect.gen(function* () {
@@ -107,20 +102,14 @@ export class AssetService extends Context.Service<
           const presignedUrl = yield* assetUploadFactory.getPresignedUrl({
             assetStorageKey: storageKey,
             mimeType,
+            sizeBytes,
           });
           return { assetId: id, presignedUrl };
         }),
-
-      // updateStatus: (assetId, status) =>
-      //   Effect.gen(function* () {
-      //     const asset = yield* assetRepo.updateAssetStatus({ assetId, status });
-      //     yield* assetProcessingDispatcher.dispatch(asset);
-      //   }),
     };
   }),
 }) {
   static Layer = Layer.effect(this, this.make).pipe(
-    // Layer.provide(AssetProcessingDispatcher.Layer),
     Layer.provide(AssetRepository.Layer),
     Layer.provide(AssetUploadFactory.Layer),
     Layer.provide(DB.Layer),

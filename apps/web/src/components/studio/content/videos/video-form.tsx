@@ -116,33 +116,6 @@ export function VideoForm({
   );
   const [step, setStep] = useState<(typeof steps)[number]['value']>(0);
 
-  const content = (step: (typeof steps)[number]['value']) => (
-    <StepperContent value={step}>
-      {step === 0 ? (
-        <MetadataForm
-          form={form}
-          onGroupSubmit={() => setStep(1)}
-          renderChild={(group) => (
-            <Button type="submit" onClick={group.handleSubmit}>
-              Next
-            </Button>
-          )}
-        />
-      ) : (
-        <ThumbnailForm
-          channelId={channelId}
-          videoId={videoId}
-          form={form}
-          renderChild={(group) => (
-            <Button type="submit" onClick={group.handleSubmit}>
-              Next
-            </Button>
-          )}
-        />
-      )}
-    </StepperContent>
-  );
-
   return (
     <form onSubmit={form.handleSubmit}>
       <Stepper value={step} onValueChange={setStep}>
@@ -153,7 +126,29 @@ export function VideoForm({
             </StepperTrigger>
           ))}
         </StepperList>
-        {content(step)}
+        <StepperContent value={0}>
+          <MetadataForm
+            form={form}
+            onGroupSubmit={() => setStep(1)}
+            renderChild={(group) => (
+              <Button type="button" onClick={group.handleSubmit}>
+                Next
+              </Button>
+            )}
+          />
+        </StepperContent>
+        <StepperContent value={1}>
+          <ThumbnailForm
+            channelId={channelId}
+            videoId={videoId}
+            form={form}
+            renderChild={(group) => (
+              <Button type="button" onClick={group.handleSubmit}>
+                Next
+              </Button>
+            )}
+          />
+        </StepperContent>
       </Stepper>
     </form>
   );

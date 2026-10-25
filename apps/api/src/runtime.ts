@@ -20,32 +20,58 @@ const S3Layer = Layer.sync(S3, () => {
   return {
     getFile: () => Stream.die("Not implemented"),
     deleteFile: () => Effect.die("Not implemented"),
-    getPresignedUrl: ({
+    getPresignedUrl: Effect.fnUntraced(function* ({
       bucket,
-      expiresInSeconds = 60,
-      mimeType,
-      path,
+      key,
       method,
-    }) =>
-      Effect.tryPromise({
+      mimeType,
+      expiresInSeconds,
+      sizeBytes,
+    }: {
+      key: string;
+      bucket: string;
+      mimeType: string;
+      expiresInSeconds?: number;
+    } & (
+      | {
+          method: "PUT" | "POST";
+          sizeBytes: number;
+        }
+      | { method: "GET" | "DELETE" | "HEAD"; sizeBytes?: never }
+    )) {
+      const url = yield* Effect.tryPromise({
         try: async () => {
           const s3: Cloudflare.R2.S3CredentialsValue = JSON.parse(
             Env.S3Credentials,
           );
           const client = new AwsClient({ ...s3, service: "s3" });
           const url = new URL(
-            `${s3.endpoint}/${encodeURIComponent(s3.bucketName)}/${path}`,
+            `${s3.endpoint}/${encodeURIComponent(s3.bucketName)}/${key}`,
           );
-          url.searchParams.set("X-Amz-Expires", expiresInSeconds.toString());
+
+          const espiresInSecondsStr = (expiresInSeconds ?? 3600).toString();
+          url.searchParams.set("X-Amz-Expires", espiresInSecondsStr);
+
+          const headers: Record<string, string> =
+            method === "PUT" || method === "POST"
+              ? {
+                  "Content-Type": mimeType,
+                  "Content-Length": String(sizeBytes),
+                }
+              : {};
           const signed = await client.sign(url.toString(), {
-            method: "PUT",
-            aws: { signQuery: true },
+            method,
+            headers,
+            aws: { signQuery: true, allHeaders: true },
           });
           return signed.url;
         },
         catch: (e) =>
           new S3Error({ message: "S3 error in get presigned url", cause: e }),
-      }),
+      });
+
+      return url;
+    }),
     uploadFile: () => Effect.die("Not implemented"),
   };
 });

@@ -24,6 +24,7 @@ export interface AssetUploadFactoryApi {
   getPresignedUrl: (params: {
     assetStorageKey: AssetStorageKey;
     mimeType: string;
+    sizeBytes: number;
   }) => Effect.Effect<string, S3Error>;
 }
 
@@ -44,13 +45,14 @@ export class AssetUploadFactory extends Context.Service<
             });
           },
         }),
-      getPresignedUrl: ({ assetStorageKey, mimeType }) =>
+      getPresignedUrl: ({ assetStorageKey, mimeType, sizeBytes }) =>
         s3.getPresignedUrl({
-          bucket: "assets",
+          bucket: "uploads",
           mimeType,
-          path: assetStorageKey,
+          key: assetStorageKey,
           method: "PUT",
           expiresInSeconds: 86400,
+          sizeBytes,
         }),
       validate: ({ mimeType, sizeBytes, assetType: type }) =>
         Effect.gen(function* () {

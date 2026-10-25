@@ -1,4 +1,4 @@
-import { WSWorker } from '@repo/infra/ws';
+import { WSWorker } from '@repo/infra/workers';
 import * as Cloudflare from 'alchemy/Cloudflare';
 import { Effect } from 'effect';
 import { Api } from '../api/alchemy.run';

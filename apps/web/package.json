@@ -17,6 +17,7 @@
     "@repo/auth": "workspace:*",
     "@repo/types": "workspace:*",
     "@repo/ui": "workspace:*",
+    "@repo/infra": "workspace:*",
     "@repo/video-player": "workspace:*",
     "@tanstack/react-devtools": "^0.10.0",
     "@tanstack/react-form": "1.33.1",

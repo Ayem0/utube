@@ -4,7 +4,6 @@ import {
 } from "@repo/types/enums/image/image-type";
 import type { AssetVariant } from "@repo/types/schemas/asset-variant";
 import { Context, Layer } from "effect";
-import type { PresetEnum } from "sharp";
 
 export interface ImageProcessorConfigService {
   readonly IMAGE_PROCESSING_CONFIG_MAP: ImageProcessMap;
@@ -13,7 +12,7 @@ export interface ImageProcessorConfigService {
 type ImageProcessingOptions = {
   width: number;
   height: number;
-  preset: keyof PresetEnum;
+  loseless: boolean;
   quality: number;
 };
 type ImageProcessMap = {
@@ -33,13 +32,13 @@ export class ImageProcessorConfig extends Context.Service<
         "160x160": {
           width: 160,
           height: 160,
-          preset: "icon",
+          loseless: false,
           quality: 80,
         },
         "64x64": {
           width: 64,
           height: 64,
-          preset: "icon",
+          loseless: false,
           quality: 50,
         },
       },
@@ -47,10 +46,10 @@ export class ImageProcessorConfig extends Context.Service<
         "1280x720": {
           width: 1280,
           height: 720,
-          preset: "default",
+          loseless: true,
           quality: 80,
         },
-        "640x360": { width: 640, height: 360, preset: "default", quality: 50 },
+        "640x360": { width: 640, height: 360, loseless: true, quality: 50 },
       },
     },
   });

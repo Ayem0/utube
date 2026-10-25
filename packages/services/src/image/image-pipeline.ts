@@ -5,17 +5,11 @@ import { Context, Effect, Layer, Stream } from "effect";
 import { exponential } from "effect/Schedule";
 import { AssetRepository } from "../asset/asset-repository";
 import type { DBNotFoundError } from "../db/db-errors";
-import type { FSError } from "../file-system/file-system-errors";
-import type {
-  InvalidMediaDimensionError,
-  InvalidMediaSizeError,
-  InvalidMediaTypeError,
-} from "../media/media-errors";
 import { S3 } from "../s3/s3";
 import type { S3Error } from "../s3/s3-errors";
 import { ImageProcessingError, InvalidAssetTypeError } from "./image-errors";
 import { ImageProcessor } from "./image-processor";
-import { ImageValidator } from "./image-validator";
+import { ImageValidator, type ImageValidationError } from "./image-validator";
 
 export interface ImagePipelineService {
   process: (params: {
@@ -25,12 +19,9 @@ export interface ImagePipelineService {
     | EffectDrizzleQueryError
     | DBNotFoundError
     | S3Error
-    | ImageProcessingError
     | InvalidAssetTypeError
-    | FSError
-    | InvalidMediaTypeError
-    | InvalidMediaSizeError
-    | InvalidMediaDimensionError
+    | ImageProcessingError
+    | ImageValidationError
   >;
 }
 
@@ -57,31 +48,61 @@ export class ImagePipeline extends Context.Service<
             assetId,
             status: assetStatus.FAILED,
           });
-          return; // TODO change to Effect.fail
+          // TODO see what to do
+          return;
         }
+
+        const relation = yield* assetRepo.getRelation({
+          assetId: asset.id,
+          assetType: asset.type,
+        });
+
+        yield* Effect.log("Getting file");
         const fileStream = s3.getFile({
           key: asset.originalStorageKey,
           bucket: "uploads",
         });
+        yield* Effect.log("Got file");
 
-        const buffer = yield* fileStream.pipe(Stream.runCollect);
-        yield* imageValidator.validate({ buffer, type: asset.type });
+        yield* Effect.log("Collecting");
+
+        const collected = yield* Stream.runCollect(fileStream);
+        yield* Effect.log("Collected");
+
+        const input = Buffer.concat(collected);
+
+        yield* Effect.log("Validating");
+        yield* imageValidator.validate({ input: input, type: asset.type });
+        yield* Effect.log("Validated");
 
         const outputs = yield* imageProcessor.process({
-          buffer,
+          input: input,
           type: asset.type,
         });
 
+        yield* Effect.log("Processed");
+
         yield* Effect.forEach(outputs, (output) =>
           s3
-            .uploadFile(output.key, output.buffer, "images")
+            .uploadFile({
+              key: `${assetId}/${output.key}`,
+              file: output.buffer,
+              bucket: "images",
+              size: BigInt(output.buffer.byteLength),
+            })
             .pipe(
               Effect.retry({ times: 3, schedule: exponential("100 millis") }),
             ),
         );
+
+        // TODO update asset status and update the relation
       }),
     };
   }),
 }) {
-  static readonly Layer = Layer.effect(this, this.make);
+  static readonly Layer = Layer.effect(this, this.make).pipe(
+    Layer.provide(AssetRepository.Layer),
+    // Layer.provide(ImageProcessor.Layer),
+    // Layer.provide(ImageValidator.Layer),
+  );
 }

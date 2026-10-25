@@ -4,10 +4,28 @@
     "**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dist"
   ],
   "compilerOptions": {
+    "outDir": "dist",
+    "strictNullChecks": true,
     "module": "ESNext",
-    "moduleResolution": "Bundler"
-  }
+    "types": ["bun"],
+    "target": "ES2022",
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": false,
+    "noEmit": true,
+
+    /* Linting */
+    "skipLibCheck": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+  },
 }

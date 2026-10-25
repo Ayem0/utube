@@ -38,6 +38,7 @@ export interface ChannelRepositoryService {
   }) => Effect.Effect<Channel, EffectDrizzleQueryError | DBNotFoundError>;
 
   setPendingAvatarAssetId: (params: {
+    userId: string;
     channelId: string;
     assetId: string | null;
   }) => Effect.Effect<Channel, EffectDrizzleQueryError | DBNotFoundError>;
@@ -158,14 +159,14 @@ export class ChannelRepository extends Context.Service<
             ),
         ),
 
-      setPendingAvatarAssetId: ({ channelId, assetId }) =>
+      setPendingAvatarAssetId: ({ channelId, assetId, userId }) =>
         db.run((db) =>
           db
             .update(channel)
             .set({
               pendingAvatarAssetId: assetId,
             })
-            .where(eq(channel.id, channelId))
+            .where(and(eq(channel.id, channelId), eq(channel.userId, userId)))
             .returning()
             .pipe(
               Effect.flatMap(([row]) =>

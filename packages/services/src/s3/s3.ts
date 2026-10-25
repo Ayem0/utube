@@ -140,20 +140,27 @@ export interface S3Api {
     key: string;
     bucket: string;
   }): Stream.Stream<Uint8Array, S3Error>;
-  uploadFile<E = never, R = never>(
-    key: string,
-    file: Stream.Stream<Uint8Array, E, R> | Uint8Array,
-    bucket: string,
-    size?: bigint,
-  ): Effect.Effect<void, S3Error | E, R>;
-  deleteFile(key: string, bucket: string): Effect.Effect<void, S3Error>;
-  getPresignedUrl(params: {
-    path: string;
+  uploadFile<E = never, R = never>(params: {
+    key: string;
+    file: Stream.Stream<Uint8Array, E, R> | Uint8Array;
     bucket: string;
-    mimeType: string;
-    expiresInSeconds?: number;
-    method: "GET" | "POST" | "PUT" | "DELETE" | "HEAD";
-  }): Effect.Effect<string, S3Error>;
+    size?: bigint;
+  }): Effect.Effect<void, S3Error | E, R>;
+  deleteFile(key: string, bucket: string): Effect.Effect<void, S3Error>;
+  getPresignedUrl(
+    params: {
+      key: string;
+      bucket: string;
+      mimeType: string;
+      expiresInSeconds?: number;
+    } & (
+      | {
+          method: "PUT" | "POST";
+          sizeBytes: number;
+        }
+      | { method: "GET" | "DELETE" | "HEAD"; sizeBytes?: never }
+    ),
+  ): Effect.Effect<string, S3Error>;
 }
 
 export class S3 extends Context.Service<S3, S3Api>()("S3") {}

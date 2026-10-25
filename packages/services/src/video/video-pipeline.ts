@@ -363,7 +363,7 @@ export class VideoPipeline extends Context.Service<
             bucket: "uploads",
             method: "GET",
             mimeType: asset.mimeType,
-            path: asset.originalStorageKey,
+            key: asset.originalStorageKey,
             expiresInSeconds: 86400,
           });
 
@@ -409,7 +409,12 @@ export class VideoPipeline extends Context.Service<
                     ? `${storagePrefix}/${relativePath.replace("dash", "hls")}`
                     : `${storagePrefix}/${relativePath}`;
 
-                  yield* s3.uploadFile(path, stream, "videos", size);
+                  yield* s3.uploadFile({
+                    key: path,
+                    file: stream,
+                    bucket: "videos",
+                    size: size,
+                  });
                 }).pipe(
                   Effect.retry({
                     times: 3,

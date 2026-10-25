@@ -51,6 +51,7 @@
       "devDependencies": {
         "@repo/eslint-config": "workspace:*",
         "@repo/typescript-config": "workspace:*",
+        "@types/bun": "catalog:tooling",
       },
     },
     "apps/storage-gateway": {
@@ -89,6 +90,7 @@
       "dependencies": {
         "@repo/api-types": "workspace:*",
         "@repo/auth": "workspace:*",
+        "@repo/infra": "workspace:*",
         "@repo/types": "workspace:*",
         "@repo/ui": "workspace:*",
         "@repo/video-player": "workspace:*",

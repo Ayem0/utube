@@ -1,6 +1,5 @@
-import { UploadsBucket, VideosBucket } from "@repo/infra";
-import { VideoProcessingDO } from "@repo/infra/video-processing";
-import { WSDO, WSWorker } from "@repo/infra/ws";
+import { UploadsBucket, VideosBucket } from "@repo/infra/ressources";
+import { VideoProcessingDO, WSDO, WSWorker } from "@repo/infra/workers";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Effect, Schema } from "effect";
 import {
@@ -16,8 +15,7 @@ const VideoProcessingDOLive = VideoProcessingDO.make(
     const container = yield* VideoProcessingContainer;
     const state = yield* Cloudflare.DurableObjectState;
     const env = yield* Cloudflare.WorkerEnvironment;
-    const bucket = yield* Cloudflare.R2.ReadWriteBucket(UploadsBucket);
-    const videosBucket = yield* Cloudflare.R2.ReadWriteBucket(VideosBucket);
+    const videosBucket = yield* Cloudflare.R2.WriteBucket(VideosBucket);
 
     const presignedGet = yield* Cloudflare.R2.PresignGetObject(UploadsBucket);
     const ws = yield* WSDO.from(WSWorker);
@@ -47,13 +45,6 @@ const VideoProcessingDOLive = VideoProcessingDO.make(
           );
           console.log("pathname", pathname, "hostname", hostname);
           switch (request.headers.host) {
-            case "r2.get": {
-              const res = yield* bucket.get(pathname.substring(1)); // remove first "/" from "/videos/..."
-              if (res) {
-                return HttpServerResponse.stream(res.body);
-              }
-              return HttpServerResponse.empty({ status: 404 });
-            }
             case "r2.put": {
               yield* videosBucket.put(pathname.substring(1), request.stream, {
                 contentLength: Number(request.headers["content-length"]),
@@ -106,7 +97,7 @@ const VideoProcessingDOLive = VideoProcessingDO.make(
       };
     });
   }).pipe(
-    Effect.provide(Cloudflare.R2.ReadWriteBucketBinding),
+    Effect.provide(Cloudflare.R2.WriteBucketBinding),
     Effect.provide(Cloudflare.R2.PresignGetObjectToken),
   ),
 );

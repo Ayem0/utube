@@ -4,7 +4,7 @@ import {
   BunPath,
 } from "@effect/platform-bun";
 import { DBConfig } from "@repo/services/db/db";
-import { S3, type S3Api } from "@repo/services/s3/s3";
+import { S3 } from "@repo/services/s3/s3";
 import { S3Error } from "@repo/services/s3/s3-errors";
 import { VideoPipeline } from "@repo/services/video/video-pipeline";
 import { WS, WSMessageError } from "@repo/services/ws/ws";
@@ -31,53 +31,36 @@ const wsLayer = Layer.succeed(WS, {
       }),
     ),
 });
-const uploadFile: S3Api["uploadFile"] = Effect.fnUntraced(function* <E, R>(
-  key: string,
-  file: Stream.Stream<Uint8Array, E, R> | Uint8Array,
-  bucket: string,
-  size?: bigint,
-) {
-  const readableStream = yield* Stream.toReadableStreamEffect(
-    Stream.isStream(file) ? file : Stream.fromArray([file]),
-  );
-  yield* Effect.tryPromise({
-    try: async () => {
-      const res = await fetch(`http://r2.put/${key}`, {
-        method: "PUT",
-        body: readableStream,
-        headers: { "content-length": String(size) },
-      });
-      if (!res.ok) {
-        throw new Error(`R2 upload failed ${res.status}`);
-      }
-    },
-    catch: (e) => new S3Error({ cause: e, message: "S3Error" }),
-  });
-});
 
 const s3Layer = Layer.succeed(S3, {
-  // uploadFile: Effect.fnUntraced(function* (
-  //   key: string,
-  //   file: Uint8Array,
-  //   bucket: string,
-  //   size?: bigint,
-  // ) {
-  //   yield* Effect.tryPromise({
-  //     try: async () => {
-  //       const res = await fetch(`http://r2.put/${key}`, {
-  //         method: "PUT",
-  //         body: Buffer.from(file),
-  //         headers: { "content-length": String(size) },
-  //       });
-  //       if (!res.ok) {
-  //         throw new Error(`R2 upload failed ${res.status}`);
-  //       }
-  //     },
-  //     catch: (e) => new S3Error({ cause: e, message: "S3Error" }),
-  //   });
-  // }),
-
-  uploadFile: uploadFile,
+  uploadFile: Effect.fnUntraced(function* <E, R>({
+    bucket,
+    file,
+    key,
+    size,
+  }: {
+    key: string;
+    file: Stream.Stream<Uint8Array, E, R> | Uint8Array;
+    bucket: string;
+    size?: bigint;
+  }) {
+    const readableStream = yield* Stream.toReadableStreamEffect(
+      Stream.isStream(file) ? file : Stream.fromArray([file]),
+    );
+    yield* Effect.tryPromise({
+      try: async () => {
+        const res = await fetch(`http://r2.put/${key}`, {
+          method: "PUT",
+          body: readableStream,
+          headers: { "content-length": String(size) },
+        });
+        if (!res.ok) {
+          throw new Error(`R2 upload failed ${res.status}`);
+        }
+      },
+      catch: (e) => new S3Error({ cause: e, message: "S3Error" }),
+    });
+  }),
   deleteFile: (key, bucket) => Effect.die("Not implemented"),
   getFile: ({ key, bucket }) =>
     Stream.unwrap(
@@ -114,7 +97,7 @@ const s3Layer = Layer.succeed(S3, {
   getPresignedUrl: (params) =>
     Effect.tryPromise({
       try: async () => {
-        const res = await fetch(`http://r2.presign/${params.path}`, {
+        const res = await fetch(`http://r2.presign/${params.key}`, {
           method: "GET",
         });
         if (res.body) {
@@ -131,9 +114,9 @@ const s3Layer = Layer.succeed(S3, {
     }),
 });
 
-const dbConfigLayer = Layer.sync(DBConfig, () => ({
+const dbConfigLayer = Layer.succeed(DBConfig, {
   url: Redacted.make(env.DATABASE_URL!),
-}));
+});
 
 const appLayer = Layer.provideMerge(
   VideoPipeline.Layer,

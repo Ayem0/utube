@@ -2,6 +2,7 @@
   "name": "@repo/image-processing-worker",
   "private": true,
   "scripts": {
+    "build": "bun build ./container_src/index.ts --target=bun --outfile=dist/index.mjs"
   },
   "dependencies": {
     "@repo/services": "workspace:*",
@@ -12,6 +13,7 @@
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*"
+    "@repo/typescript-config": "workspace:*",
+    "@types/bun": "catalog:tooling"
   }
 }
