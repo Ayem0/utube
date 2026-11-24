@@ -1,4 +1,4 @@
-import * as Cloudflare from "alchemy/Cloudflare";
+import * as Cloudflare from "@alchemy.run/cloudflare";
 import { Config, Effect } from "effect";
 
 export class VideoProcessingContainer extends Cloudflare.Container<VideoProcessingContainer>()(

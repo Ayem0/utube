@@ -2,21 +2,27 @@ import { PgClient } from "@effect/sql-pg";
 import { relations } from "@repo/db/relations";
 import { EffectLogger } from "drizzle-orm/effect-core";
 import * as PgDrizzle from "drizzle-orm/effect-postgres";
-import type { PgQueryResultHKT } from "drizzle-orm/pg-core";
-import type { PgEffectTransaction } from "drizzle-orm/pg-core/effect";
+import type {
+  PgEffectDatabase,
+  PgEffectTransaction,
+} from "drizzle-orm/pg-core/effect";
 import { Context, Effect, Layer, Option, Redacted } from "effect";
 import type { SqlError } from "effect/sql/SqlError";
 
 const make = PgDrizzle.make({ relations });
-type DBApi = Effect.Success<typeof make>;
 type Relations = typeof relations;
 
-type DBTransaction = PgEffectTransaction<
+type DBClient = PgEffectDatabase<
   PgDrizzle.EffectPgQueryEffectHKT,
-  PgQueryResultHKT,
+  PgDrizzle.EffectPgQueryResultHKT,
   Relations
 >;
 
+type DBTransaction = PgEffectTransaction<
+  PgDrizzle.EffectPgQueryEffectHKT,
+  PgDrizzle.EffectPgQueryResultHKT,
+  Relations
+>;
 export class DBConfig extends Context.Service<
   DBConfig,
   {
@@ -36,7 +42,7 @@ const PgClientLayer = Layer.unwrap(
   }),
 );
 
-class DBDrizzle extends Context.Service<DBDrizzle, DBApi>()("DBDrizzle", {
+class DBDrizzle extends Context.Service<DBDrizzle, DBClient>()("DBDrizzle", {
   make: make,
 }) {
   static readonly Layer = Layer.effect(this, this.make).pipe(
@@ -51,7 +57,7 @@ class Transaction extends Context.Service<Transaction, DBTransaction>()(
 ) {}
 
 type ExecuteFn = <A, E, R>(
-  fn: (db: DBApi | DBTransaction) => Effect.Effect<A, E, R>,
+  fn: (db: DBClient) => Effect.Effect<A, E, R>,
 ) => Effect.Effect<A, E, R>;
 
 export class DB extends Context.Service<

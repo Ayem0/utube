@@ -10,6 +10,7 @@
     "@repo/infra": "workspace:*",
     "effect": "catalog:effect",
     "alchemy": "catalog:alchemy",
+    "@alchemy.run/cloudflare": "catalog:alchemy",
     "zod": "catalog:",
     "@cloudflare/containers": "0.3.7",
     "@effect/platform-bun": "catalog:effect"

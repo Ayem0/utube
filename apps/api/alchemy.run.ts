@@ -1,6 +1,6 @@
+import * as Cloudflare from "@alchemy.run/cloudflare";
 import { Hyperdrive, UploadsBucket } from "@repo/infra/ressources";
 import { VideoStorageGatewayWorker } from "@repo/infra/workers";
-import * as Cloudflare from "alchemy/Cloudflare";
 import { Config, Effect } from "effect";
 
 // export class Api extends Cloudflare.Worker<Api, {}>()("Api") {}

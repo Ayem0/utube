@@ -1,3 +1,4 @@
+import * as Cloudflare from "@alchemy.run/cloudflare";
 import {
   ImageProcessingQueue,
   ImagesBucket,
@@ -11,7 +12,6 @@ import {
   WSWorker,
 } from "@repo/infra/workers";
 import * as Alchemy from "alchemy";
-import * as Cloudflare from "alchemy/Cloudflare";
 import { Effect } from "effect";
 import { Api } from "./apps/api/alchemy.run";
 import ImageProcessingWorker from "./apps/image-processing-worker/src/worker";

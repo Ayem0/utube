@@ -5,6 +5,8 @@ import {
   type AssetStatus,
 } from "@repo/types/enums/asset/asset-status";
 import { assetType, type AssetType } from "@repo/types/enums/asset/asset-type";
+import type { ImageAssetType } from "@repo/types/enums/image/image-type";
+import type { AssetVariant } from "@repo/types/schemas/asset-variant";
 import { and, eq, or } from "drizzle-orm";
 import type { EffectDrizzleQueryError } from "drizzle-orm/effect-core";
 import { Context, Effect, Layer, UndefinedOr } from "effect";
@@ -29,10 +31,24 @@ export interface AssetRepositoryApi {
     assetId: string;
   }) => Effect.Effect<Asset, EffectDrizzleQueryError | DBNotFoundError>;
 
-  unclaimFromProcessing: (params: {
-    assetId: string;
-    status: AssetStatus;
+  confirmUploadedByKey: (params: {
+    key: string;
   }) => Effect.Effect<Asset, EffectDrizzleQueryError | DBNotFoundError>;
+
+  unclaimFromProcessingFailed: (params: {
+    assetId: string;
+    status: typeof assetStatus.FAILED;
+  }) => Effect.Effect<Asset, EffectDrizzleQueryError | DBNotFoundError>;
+
+  unclaimFromProcessingReady: <TType extends AssetType>(
+    params: {
+      assetId: string;
+      type: TType;
+      status: typeof assetStatus.READY;
+    } & (TType extends ImageAssetType
+      ? { renditions: AssetVariant }
+      : { renditions?: never }),
+  ) => Effect.Effect<Asset, EffectDrizzleQueryError | DBNotFoundError>;
 
   getRelation: <T extends AssetType>(params: {
     assetId: string;
@@ -57,6 +73,32 @@ export class AssetRepository extends Context.Service<
   make: Effect.gen(function* () {
     const db = yield* DB;
     return {
+      confirmUploadedByKey: Effect.fn(function* ({ key }) {
+        return yield* db.run((cl) =>
+          cl
+            .update(asset)
+            .set({ status: assetStatus.UPLOADED })
+            .where(
+              and(
+                eq(asset.key, key),
+                or(
+                  eq(asset.status, assetStatus.PENDING),
+                  eq(asset.status, assetStatus.UPLOADED),
+                ),
+              ),
+            )
+            .returning()
+            .pipe(
+              Effect.flatMap(([res]) =>
+                UndefinedOr.match(res, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Asset not found" }),
+                  onDefined: (res) => Effect.succeed(res),
+                }),
+              ),
+            ),
+        );
+      }),
       getRelation: Effect.fnUntraced(function* ({ assetId, assetType: type }) {
         switch (type) {
           case assetType.VIDEO: {
@@ -123,13 +165,41 @@ export class AssetRepository extends Context.Service<
             });
         }
       }) as AssetRepositoryApi["getRelation"],
-      unclaimFromProcessing: ({ assetId, status }) =>
+      unclaimFromProcessingFailed: ({ assetId, status }) =>
         db.run((cl) =>
           cl
             .update(asset)
             .set({
               status,
             })
+            .where(eq(asset.id, assetId))
+            .returning()
+            .pipe(
+              Effect.flatMap(([res]) =>
+                UndefinedOr.match(res, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Asset not found" }),
+                  onDefined: (res) => Effect.succeed(res),
+                }),
+              ),
+            ),
+        ),
+      unclaimFromProcessingReady: <TType extends AssetType>({
+        assetId,
+        status,
+        type,
+        renditions,
+      }: {
+        assetId: string;
+        status: typeof assetStatus.READY;
+        type: TType;
+      } & (TType extends ImageAssetType
+        ? { renditions: AssetVariant }
+        : { renditions?: never })) =>
+        db.run((cl) =>
+          cl
+            .update(asset)
+            .set({ status: status, variants: renditions })
             .where(eq(asset.id, assetId))
             .returning()
             .pipe(

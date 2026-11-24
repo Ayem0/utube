@@ -4,19 +4,21 @@ export interface MediaValidatorConfigService {
   readonly maxImageBytes: number;
   readonly maxVideoBytes: number;
   readonly maxImageResolution: number;
-  readonly maxVideoResolution: number;
   readonly maxVideoFps: number;
   readonly maxVideoSeconds: number;
   readonly allowedImageFormats: string[];
   readonly allowedVideoFormats: string[];
   readonly allowedVideoCodecs: string[];
   readonly allowedAudioCodecs: string[];
-  readonly minimumSampleRate: number;
-  readonly maximumSampleRate: number;
-  readonly minimumChannels: number;
-  readonly maximumChannels: number;
+  readonly minSampleRate: number;
+  readonly maxSampleRate: number;
+  readonly minChannels: number;
+  readonly maxChannels: number;
   readonly minVideoHeight: number;
   readonly minVideoWidth: number;
+  readonly minVideoSeconds: number;
+  readonly maxVideoWidth: number;
+  readonly maxVideoHeight: number;
 }
 
 export class MediaValidatorConfig extends Context.Service<
@@ -27,11 +29,11 @@ export class MediaValidatorConfig extends Context.Service<
     maxImageBytes: 5_000_000, // 5MB
     maxVideoBytes: 10_000_000_000, // 10GB
     maxImageResolution: 1920 * 1080,
-    maxVideoResolution: 3840 * 2160, // 4K
     minVideoHeight: 144,
     minVideoWidth: 144,
     maxVideoFps: 60,
-    maxVideoSeconds: 12 * 60 * 60,
+    maxVideoSeconds: 6 * 60 * 60,
+    minVideoSeconds: 1,
     allowedImageFormats: ["png", "jpeg", "webp"],
     allowedVideoFormats: [
       "mov",
@@ -71,9 +73,11 @@ export class MediaValidatorConfig extends Context.Service<
       "pcm_s24le",
       "pcm_f32le",
     ],
-    minimumSampleRate: 8000,
-    maximumSampleRate: 48000,
-    minimumChannels: 1,
-    maximumChannels: 8,
+    minSampleRate: 8000,
+    maxSampleRate: 192000,
+    minChannels: 1,
+    maxChannels: 8,
+    maxVideoHeight: 2160,
+    maxVideoWidth: 3840,
   });
 }

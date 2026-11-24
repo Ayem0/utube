@@ -1,16 +1,28 @@
 import type { ImageAssetType } from "@repo/types/enums/image/image-type";
+import type { AssetVariant } from "@repo/types/schemas/asset-variant";
 import { Context, Effect } from "effect";
 import { ImageProcessingError } from "./image-errors";
 
 export interface ImageProcessorService {
-  process: (params: {
+  process: <T extends ImageAssetType>(params: {
     input: string | ArrayBuffer | NodeJS.TypedArray | Blob;
-    type: ImageAssetType;
-  }) => Effect.Effect<
-    { buffer: Uint8Array; key: string }[],
-    ImageProcessingError
-  >;
+    type: T;
+  }) => Effect.Effect<ProcessedVariant<T>, ImageProcessingError>;
 }
+
+type ProcessedImg = {
+  buffer: Uint8Array;
+  key: string;
+};
+
+export type ProcessedVariant<T extends ImageAssetType> =
+  T extends ImageAssetType
+    ? {
+        [
+          K in keyof Extract<AssetVariant, { type: T }>["variants"]
+        ]: ProcessedImg;
+      }
+    : never;
 
 export class ImageProcessor extends Context.Service<
   ImageProcessor,

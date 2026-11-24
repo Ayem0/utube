@@ -1,5 +1,5 @@
+import * as Cloudflare from "@alchemy.run/cloudflare";
 import type { RuntimeContext } from "alchemy";
-import * as Cloudflare from "alchemy/Cloudflare";
 import type { Effect } from "effect";
 
 export class WSDO extends Cloudflare.DurableObject<

@@ -1,5 +1,6 @@
 import { ImagesBucket, UploadsBucket } from "@repo/infra/ressources";
 import { ImageProcessingDO, WSDO, WSWorker } from "@repo/infra/workers";
+import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import { Effect, Schema } from "effect";
 import {
@@ -18,6 +19,11 @@ const ImageProcessingDOLive = ImageProcessingDO.make(
     const imagesBucket = yield* Cloudflare.R2.WriteBucket(ImagesBucket);
     const uploadsBucket = yield* Cloudflare.R2.ReadBucket(UploadsBucket);
     const ws = yield* WSDO.from(WSWorker);
+
+    const onProcess = Alchemy.makeCallback(
+      "image-processing:process",
+      Effect.fnUntraced(function* ({ assetId }: { assetId: string }) {}),
+    );
 
     return Effect.gen(function* () {
       const self = Cloudflare.fromCloudflareFetcher(
@@ -83,7 +89,13 @@ const ImageProcessingDOLive = ImageProcessingDO.make(
             }
           }
         }),
-        process: Effect.fnUntraced(function* (assetId) {
+        process: Effect.fnUntraced(function* ({
+          assetId,
+          sizeBytes,
+        }: {
+          assetId: string;
+          sizeBytes: number;
+        }) {
           yield* container.interceptAllOutboundHttp(self);
           const body = yield* HttpBody.json({ assetId: assetId });
           const res = yield* container

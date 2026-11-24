@@ -22,4 +22,7 @@ export const assetVariantSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
+export type VariantKey =
+  keyof typeof channelAvatarVariants | keyof typeof videoThumbnailVariants;
+
 export type AssetVariant = z.infer<typeof assetVariantSchema>;

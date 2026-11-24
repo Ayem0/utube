@@ -151,14 +151,18 @@ export interface S3Api {
     params: {
       key: string;
       bucket: string;
-      mimeType: string;
       expiresInSeconds?: number;
     } & (
       | {
           method: "PUT" | "POST";
           sizeBytes: number;
+          mimeType: string;
         }
-      | { method: "GET" | "DELETE" | "HEAD"; sizeBytes?: never }
+      | {
+          method: "GET" | "DELETE" | "HEAD";
+          sizeBytes?: never;
+          mimeType?: never;
+        }
     ),
   ): Effect.Effect<string, S3Error>;
 }

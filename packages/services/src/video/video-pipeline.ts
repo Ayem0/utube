@@ -1,266 +1,3 @@
-// import { videoPlaybackStatus } from "@repo/types/enums/video/video-playback-status";
-// import type { EffectDrizzleQueryError } from "drizzle-orm/effect-core";
-// import { Context, Effect, Layer } from "effect";
-// import { AssetRepository } from "../asset/asset-repository";
-// import { DB } from "../db/db";
-// import { DBNotFoundError } from "../db/db-errors";
-// import { FileSystem } from "../file-system/file-system";
-// import { FSError } from "../file-system/file-system-errors";
-// import { S3 } from "../s3/s3";
-// import { S3Error } from "../s3/s3-errors";
-// import { newId } from "../utils/id";
-// import { WS } from "../ws/ws";
-// import {
-//   VideoProcessingError,
-//   VideoUploadError,
-//   VideoValidationError,
-//   type VideoStoryboardError,
-// } from "./video-errors";
-// import { VideoPlaybackRepository } from "./video-playback-repository";
-// import { VideoProcessor } from "./video-processor";
-// import { VideoRepository } from "./video-repository";
-// import { VideoStoryboardGenerator } from "./video-storyboard-generator";
-// import { VideoValidator } from "./video-validator";
-
-// export interface VideoPipelineApi {
-//   processVideo(data: {
-//     assetId: string;
-//   }): Effect.Effect<
-//     void,
-//     | DBNotFoundError
-//     | S3Error
-//     | FSError
-//     | VideoValidationError
-//     | VideoProcessingError
-//     | VideoUploadError
-//     | EffectDrizzleQueryError
-//     | VideoStoryboardError
-//   >;
-// }
-
-// export class VideoPipeline extends Context.Service<
-//   VideoPipeline,
-//   VideoPipelineApi
-// >()("VideoPipeline", {
-//   make: Effect.gen(function* () {
-//     const videoRepo = yield* VideoRepository;
-//     const fs = yield* FileSystem;
-//     const s3 = yield* S3;
-//     const videoValidator = yield* VideoValidator;
-//     const storyboardGenerator = yield* VideoStoryboardGenerator;
-//     const assetRepo = yield* AssetRepository;
-//     const videoProcessor = yield* VideoProcessor;
-//     const videoPlaybackRepo = yield* VideoPlaybackRepository;
-//     const db = yield* DB;
-//     const ws = yield* WS;
-
-//     const withTempDirAndVideoFile = ({
-//       dirPath,
-//       filePath,
-//       buffer,
-//     }: {
-//       dirPath: string;
-//       filePath: string;
-//       buffer: Uint8Array;
-//     }) =>
-//       Effect.acquireRelease(
-//         Effect.gen(function* () {
-//           console.log("AQUIRE");
-//           yield* fs.createDirectory(dirPath);
-//           yield* fs.writeFile(filePath, buffer);
-//           return { dirPath, filePath };
-//         }),
-//         ({ dirPath, filePath }) =>
-//           Effect.gen(function* () {
-//             console.log("RELEASE");
-//             yield* fs.deleteDirectory(dirPath);
-//           }).pipe(Effect.catch(() => Effect.void)),
-//       );
-
-//     return {
-//       processVideo: (data) =>
-//         Effect.gen(function* () {
-//           console.log(data);
-//           const asset = yield* assetRepo.claimForProcessing({
-//             assetId: data.assetId,
-//           });
-//           const video = yield* videoRepo.getBySourceVideoAssetId({
-//             sourceVideoAssetId: asset.id,
-//           });
-//           const videoPlayback = yield* videoPlaybackRepo.create({
-//             videoId: video.id,
-//             id: newId(),
-//           });
-
-//           const attemptProcess = Effect.gen(function* () {
-//             // Fetch video from s3
-//             const videoFile = yield* s3.getFile(
-//               asset.originalStorageKey,
-//               "assets",
-//             );
-
-//             yield* Effect.scoped(
-//               withTempDirAndVideoFile({
-//                 dirPath: `/tmp/${video.id}`,
-//                 filePath: `/tmp/${video.id}/original`,
-//                 buffer: videoFile,
-//               }).pipe(
-//                 Effect.flatMap(({ filePath, dirPath }) =>
-//                   Effect.gen(function* () {
-//                     // Validate video
-//                     const { videoMetadata, parsedFPS, duration } =
-//                       yield* videoValidator.validateVideo(filePath);
-
-//                     // Transcode video
-//                     // TODO make this function return already relative paths by hls/dash/cmaf
-//                     const { ladder, paths: transcodePaths } =
-//                       yield* videoProcessor.transcode({
-//                         originalPath: filePath,
-//                         duration: duration,
-//                         parsedFPS: parsedFPS,
-//                         videoMetadata: videoMetadata,
-//                         outputDir: dirPath,
-//                       });
-
-//                     const transcodeEntries: {
-//                       file: Uint8Array;
-//                       key: string;
-//                     }[] = [];
-
-//                     for (const path of transcodePaths) {
-//                       const buffer = yield* Effect.tryPromise({
-//                         try: async () => await Bun.file(path).bytes(),
-//                         catch: (e) => {
-//                           console.log("Error reading file bytes");
-//                           return new VideoProcessingError({
-//                             message: "Error reading file bytes",
-//                             cause: e,
-//                           });
-//                         },
-//                       });
-//                       let key = path.replace(`${dirPath}/`, "");
-//                       if (key.endsWith(".m3u8")) {
-//                         key = key.replace("dash", "hls");
-//                       }
-//                       transcodeEntries.push({
-//                         file: buffer,
-//                         key: `${video.id}/${videoPlayback.id}/${key}`,
-//                       });
-//                     }
-
-//                     console.log("transcodePaths", transcodePaths);
-
-//                     // Generate storyboard
-//                     const storyboardPaths = yield* storyboardGenerator.generate(
-//                       {
-//                         originalPath: filePath,
-//                         outputDir: `${dirPath}/storyboard`,
-//                         duration: duration,
-//                       },
-//                     );
-
-//                     const storyboardEntries: {
-//                       file: ReadableStream<Uint8Array>;
-//                       key: string;
-//                     }[] = [];
-
-//                     for (const path of storyboardPaths) {
-//                       const buffer = yield* Effect.try({
-//                         try: () => Bun.file(path).stream(),
-//                         catch: (e) => {
-//                           console.log("Error reading file bytes");
-//                           return new VideoProcessingError({
-//                             message: "Error reading file bytes",
-//                             cause: e,
-//                           });
-//                         },
-//                       });
-//                       const key = path.replace(`${dirPath}/`, "");
-//                       storyboardEntries.push({
-//                         file: buffer,
-//                         key: `${video.id}/${videoPlayback.id}/${key}`,
-//                       });
-//                     }
-
-//                     yield* s3.uploadFiles(
-//                       [...storyboardEntries, ...transcodeEntries],
-//                       "videos",
-//                     );
-
-//                     yield* Effect.gen(function* () {
-//                       yield* videoPlaybackRepo.update({
-//                         id: videoPlayback.id,
-//                         values: {
-//                           status: videoPlaybackStatus.READY,
-//                           hlsMasterKey: `${video.id}/${videoPlayback.id}/hls/master.m3u8`,
-//                           dashManifestKey: `${video.id}/${videoPlayback.id}/dash/manifest.mpd`,
-//                           storyboardKey: `${video.id}/${videoPlayback.id}/storyboard/storyboard.vtt`,
-//                           renditions: ladder.map((entry) => ({
-//                             width: entry.width,
-//                             height: entry.height,
-//                             bitrate: 0, // TODO
-//                             codec: "TODO",
-//                             framerate: entry.fps,
-//                             quality: entry.label,
-//                             path: "TODO",
-//                             durationMs: duration * 1000,
-//                             mimeType: "TODO",
-//                             qualityLabel: entry.label,
-//                           })),
-//                         },
-//                       });
-//                       yield* videoRepo.updateInternal({
-//                         videoId: video.id,
-//                         values: {
-//                           currentPlaybackId: videoPlayback.id,
-//                           duration: duration,
-//                         },
-//                       });
-//                     }).pipe(db.withTransaction);
-
-//                     yield* ws.send(asset.ownerUserId, {
-//                       type: "video.upload.updated",
-//                       videoId: video.id,
-//                       channelId: video.channelId,
-//                     });
-
-//                     console.log("Video processed successfully");
-//                   }),
-//                 ),
-//               ),
-//             );
-//           });
-
-//           yield* attemptProcess.pipe(
-//             Effect.catch((error) =>
-//               Effect.gen(function* () {
-//                 console.log("TAPERROR, attempt failed with error", error);
-//                 yield* videoPlaybackRepo.update({
-//                   id: videoPlayback.id,
-//                   values: {
-//                     status: videoPlaybackStatus.FAILED,
-//                   },
-//                 });
-//                 return error;
-//               }),
-//             ),
-//           );
-//           console.log("PROCESSED VIDEO", video.id);
-//         }),
-//     };
-//   }),
-// }) {
-//   static Layer = Layer.effect(this, this.make).pipe(
-//     Layer.provide(VideoProcessor.Layer),
-//     Layer.provide(FileSystem.Layer),
-//     Layer.provide(VideoRepository.Layer),
-//     Layer.provide(VideoStoryboardGenerator.Layer),
-//     Layer.provide(VideoValidator.Layer),
-//     Layer.provide(VideoPlaybackRepository.Layer),
-//     Layer.provide(AssetRepository.Layer),
-//     Layer.provide(DB.Layer),
-//   );
-// }
 import { assetStatus } from "@repo/types/enums/asset/asset-status";
 import { videoPlaybackStatus } from "@repo/types/enums/video/video-playback-status";
 import {
@@ -346,33 +83,38 @@ export class VideoPipeline extends Context.Service<
       processVideo: (data) =>
         Effect.gen(function* () {
           console.log(data);
-          const asset = yield* assetRepo.claimForProcessing({
-            assetId: data.assetId,
-          });
 
-          const video = yield* videoRepo.getBySourceVideoAssetId({
-            sourceVideoAssetId: asset.id,
-          });
+          const { asset, video, videoPlayback } = yield* Effect.gen(
+            function* () {
+              const asset = yield* assetRepo.claimForProcessing({
+                assetId: data.assetId,
+              });
 
-          const videoPlayback = yield* videoPlaybackRepo.create({
-            videoId: video.id,
-            id: newId(),
-          });
+              const video = yield* videoRepo.getBySourceVideoAssetId({
+                sourceVideoAssetId: asset.id,
+              });
 
-          const assetGetUrl = yield* s3.getPresignedUrl({
-            bucket: "uploads",
-            method: "GET",
-            mimeType: asset.mimeType,
-            key: asset.originalStorageKey,
-            expiresInSeconds: 86400,
-          });
+              const videoPlayback = yield* videoPlaybackRepo.create({
+                videoId: video.id,
+                id: newId(),
+              });
+              return { asset, video, videoPlayback };
+            },
+          ).pipe(db.withTransaction);
 
           yield* Effect.gen(function* () {
             const tempdir = yield* fs.makeTempDirectoryScoped({
               prefix: `video_${video.id}_${videoPlayback.id}`,
             });
 
-            const { videoMetadata, parsedFPS, duration } =
+            const assetGetUrl = yield* s3.getPresignedUrl({
+              bucket: "uploads",
+              method: "GET",
+              key: asset.originalStorageKey,
+              expiresInSeconds: 86400,
+            });
+
+            const validateResult =
               yield* videoValidator.validateVideo(assetGetUrl);
 
             yield* videoPlaybackRepo.update({
@@ -484,7 +226,7 @@ export class VideoPipeline extends Context.Service<
             ).pipe(Effect.forkScoped);
 
             const ladder = yield* videoProcessor.transcode({
-              originalPath: assetGetUrl,
+              input: assetGetUrl,
               parsedFPS: parsedFPS,
               videoMetadata: videoMetadata,
               outputDir: tempdir,
@@ -549,7 +291,8 @@ export class VideoPipeline extends Context.Service<
             );
 
             yield* Effect.gen(function* () {
-              yield* assetRepo.unclaimFromProcessing({
+              yield* assetRepo.unclaimFromProcessingReady({
+                type: asset.type,
                 assetId: asset.id,
                 status: assetStatus.READY,
               });
@@ -591,6 +334,10 @@ export class VideoPipeline extends Context.Service<
           }).pipe(
             Effect.catch((c) =>
               Effect.gen(function* () {
+                yield* assetRepo.unclaimFromProcessingFailed({
+                  assetId: asset.id,
+                  status: assetStatus.FAILED,
+                });
                 yield* videoPlaybackRepo.update({
                   id: videoPlayback.id,
                   values: { status: videoPlaybackStatus.FAILED },

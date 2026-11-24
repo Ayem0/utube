@@ -1,11 +1,11 @@
 import { ImageProcessingQueue } from "@repo/infra/ressources";
 
+import * as Cloudflare from "@alchemy.run/cloudflare";
 import {
   R2ObjectCreateEvent,
   R2ObjectCreateEventSchema,
 } from "@repo/infra/types";
 import { ImageProcessingDO } from "@repo/infra/workers";
-import * as Cloudflare from "alchemy/Cloudflare";
 import { Effect, Schema, SchemaIssue, Stream } from "effect";
 import { SchemaError } from "effect/Schema";
 import ImageProcessingDOLive from "./do";
@@ -20,7 +20,7 @@ export default class ImageProcessingWorker extends Cloudflare.Worker<ImageProces
     yield* Cloudflare.Queues.consumeQueueMessages<R2ObjectCreateEvent>(
       imageProcessingQueue,
       {
-        batchSize: 1,
+        batchSize: 10,
         maxRetries: 3,
         retryDelay: "5 seconds",
       },
@@ -34,10 +34,8 @@ export default class ImageProcessingWorker extends Cloudflare.Worker<ImageProces
             if (!assetId) {
               return yield* Effect.fail("No assetId");
             }
-            const instance = imageProcessingDO.getByName(
-              `instance-${Math.floor(Math.random() * 20)}`, // match apps/image-processing-worker/src/container.ts maxInstances
-            );
-            yield* instance.process(assetId);
+            const instance = imageProcessingDO.getByName(assetId);
+            yield* instance.process({ assetId, sizeBytes: body.object.size });
           }),
         ),
     );

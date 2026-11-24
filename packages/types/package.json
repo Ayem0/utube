@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
-    "./*": "./src/*.ts"
+    "./*": "./src/*.ts",
+    "./effect/schemas": "./src/effect/schemas/index.ts"
   },
   "scripts": {},
   "devDependencies": {
@@ -11,6 +12,7 @@
     "@repo/typescript-config": "workspace:*"
   },
   "dependencies": {
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "effect": "catalog:effect"
   }
 }

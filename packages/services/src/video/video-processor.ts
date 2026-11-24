@@ -1,5 +1,8 @@
+import {
+  type VideoMetadataValidated,
+  type VideoMetadataVideoStream,
+} from "@repo/types/effect/schemas";
 import { Context, Effect, Layer, Stream } from "effect";
-import { VideoMetadata } from "./video";
 import { VideoProcessingError } from "./video-errors";
 import {
   VideoProcessorConfig,
@@ -13,10 +16,9 @@ import type { Scope } from "effect/Scope";
 
 interface VideoProcessorService {
   transcode: (params: {
-    originalPath: string;
+    input: string;
     outputDir: string;
-    videoMetadata: VideoMetadata;
-    parsedFPS: number;
+    metadata: VideoMetadataValidated;
   }) => Effect.Effect<
     LadderEntry[],
     VideoProcessingError,
@@ -43,13 +45,13 @@ export class VideoProcessor extends Context.Service<
       );
 
     return {
-      transcode: ({ originalPath, outputDir, videoMetadata, parsedFPS }) =>
-        Effect.gen(function* () {
+      transcode: Effect.fn(
+        function* ({ input, outputDir, metadata }) {
+          // TODO make buildFfmpegArgs an effect
           const { args, ladder, hasAudio } = buildFfmpegArgs({
-            inputPath: originalPath,
+            inputPath: input,
             outputDir,
-            metadata: videoMetadata,
-            parsedFPS,
+            metadata,
             config,
           });
 
@@ -91,16 +93,16 @@ export class VideoProcessor extends Context.Service<
           yield* fs.writeFileString(`${outputDir}/hls/master.m3u8`, patched);
 
           return ladder;
-        }).pipe(
-          Effect.catchTag(
-            "PlatformError",
-            (e) =>
-              new VideoProcessingError({
-                cause: e,
-                message: "Video processing error",
-              }),
-          ),
+        },
+        Effect.catchTag(
+          "PlatformError",
+          (e) =>
+            new VideoProcessingError({
+              cause: e,
+              message: "Video processing error",
+            }),
         ),
+      ),
     };
   }),
 }) {
@@ -269,40 +271,29 @@ function buildLadder(
   }));
 }
 
-function getVideoStream(metadata: VideoMetadata) {
-  return metadata.streams?.find((s) => s.codec_type === "video");
-}
-
-function getRotation(metadata: VideoMetadata) {
-  const videoStream = getVideoStream(metadata);
+function getRotation(stream: VideoMetadataVideoStream) {
   const rotation =
-    videoStream?.tags?.rotate ??
-    videoStream?.side_data_list?.find((sd) => sd.rotation != null)?.rotation ??
+    stream?.tags?.rotate ??
+    stream?.side_data_list?.find((sd) => sd.rotation != null)?.rotation ??
     0;
 
-  return typeof rotation === "string" ? Number(rotation) : rotation;
+  return rotation;
 }
 
-function getEffectiveDimensions(metadata: VideoMetadata) {
-  const videoStream = getVideoStream(metadata);
-  const width = videoStream?.width;
-  const height = videoStream?.height;
-
-  if (!width || !height) {
-    throw new Error("No width or height found");
-  }
-
-  const rotation = getRotation(metadata);
+function getEffectiveDimensions(stream: VideoMetadataVideoStream) {
+  const rotation = getRotation(stream);
   const isRotated = rotation === 90 || rotation === 270;
 
-  return isRotated ? { width: height, height: width } : { width, height };
+  return isRotated
+    ? { width: stream.height, height: stream.width }
+    : { width: stream.width, height: stream.height };
 }
 
-function buildNormalizationFilters(metadata: VideoMetadata) {
+function buildNormalizationFilters(stream: VideoMetadataVideoStream) {
   // const vfArr: string[] = ["yadif"];
   const vfArr: string[] = [];
 
-  const rotation = getRotation(metadata);
+  const rotation = getRotation(stream);
   switch (rotation) {
     case 90:
       vfArr.push("transpose=1");
@@ -316,10 +307,10 @@ function buildNormalizationFilters(metadata: VideoMetadata) {
   }
 
   const isHDR =
-    metadata.streams?.some((s) => s.color_space === "bt2020") ||
-    metadata.streams?.some((s) => s.color_primaries === "bt2020") ||
-    metadata.streams?.some((s) => s.color_transfer === "smpte2084") ||
-    metadata.streams?.some((s) => s.color_transfer === "arib-std-b67");
+    stream.color_space === "bt2020" ||
+    stream.color_primaries === "bt2020" ||
+    stream.color_transfer === "smpte2084" ||
+    stream.color_transfer === "arib-std-b67";
 
   if (isHDR) {
     vfArr.push("zscale=t=linear:npl=100");
@@ -337,23 +328,21 @@ function buildFfmpegArgs({
   inputPath,
   outputDir,
   metadata,
-  parsedFPS,
   config,
 }: {
   inputPath: string;
   outputDir: string;
-  metadata: VideoMetadata;
-  parsedFPS: number;
+  metadata: VideoMetadataValidated;
   config: VideoProcessorConfigService;
 }) {
-  const { height, width } = getEffectiveDimensions(metadata);
-  const ladder = buildLadder(height, parsedFPS);
+  const { height, width } = getEffectiveDimensions(metadata.videoStream);
+  const ladder = buildLadder(height, metadata.videoStream.fps);
 
   if (ladder.length === 0) {
     throw new Error("No valid ABR ladder could be generated");
   }
 
-  const normalizeFilters = buildNormalizationFilters(metadata);
+  const normalizeFilters = buildNormalizationFilters(metadata.videoStream);
   const splitLabels = ladder.map((_, i) => `[s${i}]`).join("");
 
   const filterComplexParts: string[] = [
@@ -399,8 +388,7 @@ function buildFfmpegArgs({
     ];
   });
 
-  const hasAudio =
-    metadata.streams?.some((s) => s.codec_type === "audio") ?? false;
+  const hasAudio = !!metadata.audioStream;
 
   const audioArgs = hasAudio
     ? ["-map", "0:a:0?", "-c:a", "aac", "-b:a", "128k", "-ac", "2"]

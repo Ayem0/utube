@@ -1,10 +1,10 @@
+import * as Cloudflare from "@alchemy.run/cloudflare";
 import { VideoProcessingQueue } from "@repo/infra/ressources";
 import {
   type R2ObjectCreateEvent,
   R2ObjectCreateEventSchema,
 } from "@repo/infra/types";
 import { VideoProcessingDO } from "@repo/infra/workers";
-import * as Cloudflare from "alchemy/Cloudflare";
 import { Effect, Schema, SchemaIssue, Stream } from "effect";
 import { SchemaError } from "effect/Schema";
 import VideoProcessingDOLive from "./do";
@@ -33,10 +33,8 @@ export default class VideoProcessingWorker extends Cloudflare.Worker<VideoProces
             if (!assetId) {
               return yield* Effect.fail("No assetId");
             }
-            const instance = videoProcessingDo.getByName(
-              `instance-${Math.floor(Math.random() * 20)}`, // match apps/video-processing-worker/src/container.ts maxInstances
-            );
-            yield* instance.process(assetId);
+            const instance = videoProcessingDo.getByName(assetId);
+            yield* instance.process({ assetId, sizeBytes: body.object.size });
           }),
         ),
     );

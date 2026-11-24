@@ -5,7 +5,9 @@
   "exports": {
     "./ressources": "./src/ressources/index.ts",
     "./types": "./src/types/index.ts",
-    "./workers": "./src/workers/index.ts"
+    "./workers": "./src/workers/index.ts",
+    "./do": "./src/do/index.ts",
+    "./workflows": "./src/workflows/index.ts"
   },
   "scripts": {},
   "devDependencies": {
@@ -14,6 +16,8 @@
   },
   "dependencies": {
     "effect": "catalog:effect",
-    "alchemy": "catalog:alchemy"
+    "alchemy": "catalog:alchemy",
+    "@alchemy.run/cloudflare":"catalog:alchemy",
+    "@repo/types": "workspace:*"
   }
 }

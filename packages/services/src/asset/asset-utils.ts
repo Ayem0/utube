@@ -124,22 +124,3 @@ export function assetTypeToPrefix(type: AssetType): Prefix {
     }
   }
 }
-
-export function assetTypeToBucket(type: AssetType, isProcessed = false) {
-  if (!isProcessed) return "assets";
-  switch (type) {
-    case assetType.VIDEO:
-      return "videos";
-    case assetType.VIDEO_THUMBNAIL:
-      return "thumbnails";
-    case assetType.CHANNEL_AVATAR:
-      return "avatars";
-    case assetType.AUDIO:
-      return "audios";
-    case assetType.SUBTITLE:
-      return "subtitles";
-    default: {
-      throw new Error("Unable to find bucket for asset type.");
-    }
-  }
-}

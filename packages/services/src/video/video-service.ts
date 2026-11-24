@@ -49,7 +49,6 @@ type StudioVideo = Pick<
     } | null;
   };
   playback: {
-    status: VideoPlayback["status"];
     hlsMasterUrl: string | null;
     dashManifestUrl: string | null;
     storyboardUrl: string | null;
@@ -66,7 +65,6 @@ export interface VideoServiceApi {
   }) => Effect.Effect<
     {
       videoId: string;
-      assetId: string;
       presignedUrl: string;
       title: string;
     },
@@ -195,6 +193,7 @@ export class VideoService extends Context.Service<
               ownerUserId: userId,
               sizeBytes,
               type,
+              expiresInSeconds: 86400,
             },
             effect: attach,
           },
@@ -208,7 +207,7 @@ export class VideoService extends Context.Service<
         });
         return yield* videoPlayback.createPlaybackToken(res);
       }),
-      createDraft: Effect.fnUntraced(function* ({
+      createDraft: Effect.fn(function* ({
         userId,
         channelId,
         filename,
@@ -225,6 +224,7 @@ export class VideoService extends Context.Service<
               sizeBytes,
               type: assetType.VIDEO,
               ownerUserId: userId,
+              expiresInSeconds: 86400,
             },
             effect: (assetId) =>
               videoRepo.create({
@@ -232,6 +232,7 @@ export class VideoService extends Context.Service<
                 channelId: channelId,
                 title: title,
                 sourceVideoAssetId: assetId,
+                userId,
               }),
           });
 
@@ -267,7 +268,7 @@ export class VideoService extends Context.Service<
             channel: {
               alias: row.channel.alias,
               name: row.channel.name,
-              variants: mapAssetVariants(row.channel.variants),
+              variants: row.channel.variants?.variants,
             },
             token: token,
             exp: exp,
@@ -309,21 +310,12 @@ export class VideoService extends Context.Service<
             },
             publishedAt: row.publishedAt,
             duration: row.duration,
-            playback: row.playback
-              ? {
-                  status: row.playback.status,
-                  hlsMasterUrl: row.playback.hlsMasterKey
-                    ? `${cdnBaseUrl}/${row.playback.hlsMasterKey}`
-                    : null,
-                  dashManifestUrl: row.playback.dashManifestKey
-                    ? `${cdnBaseUrl}/${row.playback.dashManifestKey}`
-                    : null,
-                  storyboardUrl: row.playback.storyboardKey
-                    ? `${cdnBaseUrl}/${row.playback.storyboardKey}`
-                    : null,
-                  renditions: row.playback.renditions,
-                }
-              : null,
+            playback: {
+              hlsMasterUrl: `${cdnBaseUrl}/${row.playback.hlsMasterKey}`,
+              dashManifestUrl: `${cdnBaseUrl}/${row.playback.dashManifestKey}`,
+              storyboardUrl: `${cdnBaseUrl}/${row.playback.storyboardKey}`,
+              renditions: row.playback.renditions,
+            },
           };
         }),
     };

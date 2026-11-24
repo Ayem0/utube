@@ -1,3 +1,4 @@
+import * as Cloudflare from "@alchemy.run/cloudflare";
 import {
   VideoStorageCacheWorker,
   VideoStorageGatewayWorker,
@@ -6,7 +7,6 @@ import {
   VideoPlayback,
   VideoPlaybackConfig,
 } from "@repo/services/video/video-playback";
-import * as Cloudflare from "alchemy/Cloudflare";
 import { Config, Effect } from "effect";
 import { HttpServerRequest, HttpServerResponse } from "effect/http";
 

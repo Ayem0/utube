@@ -1,7 +1,10 @@
 import { DBConfig } from "@repo/services/db/db";
 import { ImageProcessingError } from "@repo/services/image/image-errors";
 import { ImagePipeline } from "@repo/services/image/image-pipeline";
-import { ImageProcessor } from "@repo/services/image/image-processor";
+import {
+  ImageProcessor,
+  ProcessedVariant,
+} from "@repo/services/image/image-processor";
 import { ImageProcessorConfig } from "@repo/services/image/image-processor-config";
 import {
   ImageValidationError,
@@ -11,6 +14,8 @@ import { MediaValidatorConfig } from "@repo/services/media/media-validator-confi
 import { S3 } from "@repo/services/s3/s3";
 import { S3Error } from "@repo/services/s3/s3-errors";
 import { WS, WSMessageError } from "@repo/services/ws/ws";
+import type { ImageAssetType } from "@repo/types/enums/image/image-type";
+import { entries, fromEntries } from "@repo/types/utils/typed-entries";
 import { env } from "bun";
 import { Effect, Layer, Redacted, Stream } from "effect";
 
@@ -79,11 +84,17 @@ const imageProcessorLayer = Layer.effect(
   Effect.gen(function* () {
     const cfg = yield* ImageProcessorConfig;
     return {
-      process: Effect.fnUntraced(function* ({ input, type }) {
+      process: Effect.fnUntraced(function* <T extends ImageAssetType>({
+        input,
+        type,
+      }: {
+        input: string | ArrayBuffer | NodeJS.TypedArray | Blob;
+        type: T;
+      }) {
         const img = new Bun.Image(input);
         const map = cfg.IMAGE_PROCESSING_CONFIG_MAP[type];
         const out = yield* Effect.forEach(
-          Object.entries(map),
+          entries(map),
           ([variant, options]) =>
             Effect.tryPromise({
               try: async () => {
@@ -94,7 +105,7 @@ const imageProcessorLayer = Layer.effect(
                     lossless: options.loseless,
                   })
                   .buffer();
-                return { buffer, key: `${variant}.webp` };
+                return { buffer, key: `${variant.toString()}.webp`, variant };
               },
               catch: (e) => {
                 console.log("Error processing image", e);
@@ -106,7 +117,11 @@ const imageProcessorLayer = Layer.effect(
             }),
           { concurrency: 4 },
         );
-        return out;
+
+        const res = fromEntries(
+          out.map((o) => [o.variant, { buffer: o.buffer, key: o.key }]),
+        );
+        return res as ProcessedVariant<T>;
       }),
     };
   }),

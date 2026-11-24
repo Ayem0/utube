@@ -8,23 +8,21 @@ import {
   InvalidMediaTypeError,
   type InvalidMediaSizeError,
 } from "../media/media-errors";
+import { S3 } from "../s3/s3";
 import { S3Error } from "../s3/s3-errors";
 import { newId } from "../utils/id";
 import { AssetRepository } from "./asset-repository";
 import { AssetUploadFactory } from "./asset-upload-factory";
 
 export interface AssetServiceApi {
-  create: (
-    input: Omit<AssetInsert, "id" | "originalStorageKey">,
-  ) => Effect.Effect<
-    { assetId: string; presignedUrl: string },
-    EffectDrizzleQueryError | InvalidMediaTypeError | DBNotFoundError | S3Error
-  >;
   createWithRelation: <A, E, R>({
     input,
     effect,
   }: {
-    input: Omit<AssetInsert, "id" | "originalStorageKey">;
+    input: Pick<
+      AssetInsert,
+      "mimeType" | "ownerUserId" | "sizeBytes" | "type"
+    > & { expiresInSeconds: number };
     effect: (assetId: string) => Effect.Effect<A, E, R>;
   }) => Effect.Effect<
     { assetId: string; presignedUrl: string; result: A },
@@ -47,6 +45,7 @@ export class AssetService extends Context.Service<
     const assetRepo = yield* AssetRepository;
     const assetUploadFactory = yield* AssetUploadFactory;
     const db = yield* DB;
+    const s3 = yield* S3;
     return {
       createWithRelation: Effect.fnUntraced(function* ({ input, effect }) {
         const id = newId();
@@ -55,14 +54,17 @@ export class AssetService extends Context.Service<
           mimeType: input.mimeType,
           sizeBytes: input.sizeBytes,
         });
-        const storageKey = yield* assetUploadFactory.createAssetStorageKey({
+        const key = yield* assetUploadFactory.createAssetStorageKey({
           id,
           mimeType: input.mimeType,
           assetType: input.type,
         });
 
-        const presignedUrl = yield* assetUploadFactory.getPresignedUrl({
-          assetStorageKey: storageKey,
+        const presignedUrl = yield* s3.getPresignedUrl({
+          method: "PUT",
+          key,
+          bucket: "uploads",
+          expiresInSeconds: input.expiresInSeconds,
           mimeType: input.mimeType,
           sizeBytes: input.sizeBytes,
         });
@@ -74,7 +76,10 @@ export class AssetService extends Context.Service<
             mimeType: input.mimeType,
             sizeBytes: input.sizeBytes,
             type: input.type,
-            originalStorageKey: storageKey,
+            key,
+            uploadExpiresAt: new Date(
+              Date.now() + input.expiresInSeconds * 1000,
+            ),
           });
           const creatorRes = yield* effect(id);
           return creatorRes;
@@ -82,30 +87,6 @@ export class AssetService extends Context.Service<
 
         return { assetId: id, presignedUrl, result: res };
       }),
-      create: ({ ownerUserId, mimeType, sizeBytes, type }) =>
-        Effect.gen(function* () {
-          const id = newId();
-          const storageKey = yield* assetUploadFactory.createAssetStorageKey({
-            id,
-            mimeType,
-            assetType: type,
-          });
-
-          yield* assetRepo.create({
-            id,
-            ownerUserId,
-            mimeType,
-            sizeBytes,
-            type,
-            originalStorageKey: storageKey,
-          });
-          const presignedUrl = yield* assetUploadFactory.getPresignedUrl({
-            assetStorageKey: storageKey,
-            mimeType,
-            sizeBytes,
-          });
-          return { assetId: id, presignedUrl };
-        }),
     };
   }),
 }) {

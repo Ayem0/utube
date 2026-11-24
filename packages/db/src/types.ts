@@ -11,3 +11,6 @@ export type AssetInsert = typeof schema.asset.$inferInsert;
 
 export type VideoPlayback = typeof schema.videoPlayback.$inferSelect;
 export type VideoPlaybackInsert = typeof schema.videoPlayback.$inferInsert;
+
+export type VideoAttempt = typeof schema.videoAttempt.$inferSelect;
+export type VideoAttemptInsert = typeof schema.videoAttempt.$inferInsert;

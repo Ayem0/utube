@@ -1,24 +1,42 @@
-import { asset, channel, video, videoPlayback } from "@repo/db/schema";
+import {
+  asset,
+  channel,
+  video,
+  videoAttempt,
+  videoPlayback,
+} from "@repo/db/schema";
 import type {
   Asset,
   Channel,
   Video,
+  VideoAttempt,
   VideoInsert,
   VideoPlayback,
 } from "@repo/db/types";
-import { videoPlaybackStatus } from "@repo/types/enums/video/video-playback-status";
 import { videoVisibility } from "@repo/types/enums/video/video-visibility";
 import type {
   PaginationRequest,
   PaginationResult,
 } from "@repo/types/types/pagination";
-import { and, count, desc, eq, exists, isNotNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  exists,
+  isNotNull,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import type { EffectDrizzleQueryError } from "drizzle-orm/effect-core";
 import { alias } from "drizzle-orm/pg-core";
 import { Context, Effect, Layer, UndefinedOr } from "effect";
+import type { SqlError } from "effect/sql/SqlError";
 import { DB } from "../db/db";
 import { DBNotFoundError } from "../db/db-errors";
 import { InvalidMediaTypeError } from "../media/media-errors";
+import { newId } from "../utils/id";
 
 type WatchLightVideo = Pick<
   Video,
@@ -49,12 +67,8 @@ export type StudioFullVideo = Pick<
 > & {
   playback: Pick<
     VideoPlayback,
-    | "dashManifestKey"
-    | "hlsMasterKey"
-    | "renditions"
-    | "status"
-    | "storyboardKey"
-  > | null;
+    "dashManifestKey" | "hlsMasterKey" | "renditions" | "storyboardKey"
+  >;
   sourceVideoAsset: Pick<Asset, "status">;
   currentThumbnail: Pick<Asset, "variants" | "status"> | null;
   pendingThumbnail: Pick<Asset, "variants" | "status"> | null;
@@ -62,8 +76,11 @@ export type StudioFullVideo = Pick<
 
 export interface VideoRepositoryService {
   create: (
-    params: VideoInsert,
-  ) => Effect.Effect<Video, EffectDrizzleQueryError | DBNotFoundError>;
+    params: VideoInsert & { userId: string },
+  ) => Effect.Effect<
+    Video,
+    EffectDrizzleQueryError | DBNotFoundError | SqlError
+  >;
 
   getWatchById: (params: {
     id: string;
@@ -114,6 +131,10 @@ export interface VideoRepositoryService {
     videoId: string;
   }) => Effect.Effect<Video, EffectDrizzleQueryError | DBNotFoundError>;
 
+  updateCurrentThumbnailAssetIdWithPendingAssetId: (params: {
+    videoId: string;
+  }) => Effect.Effect<Video, EffectDrizzleQueryError | DBNotFoundError>;
+
   updateInternal: (params: {
     videoId: string;
     values: Partial<
@@ -131,47 +152,6 @@ export interface VideoRepositoryService {
     >;
   }) => Effect.Effect<Video, EffectDrizzleQueryError | DBNotFoundError>;
 
-  // deleteStudio: (params: {
-  //   userId: string;
-  //   channelId: string;
-  //   videoId: string;
-  // }) => Effect.Effect<
-  //   { id: string },
-  //   EffectDrizzleQueryError | DBNotFoundError
-  // >;
-
-  // getPublicByChannelId: (params: {
-  //   channelId: string;
-  //   index: number;
-  //   size: number;
-  // }) => Effect.Effect<
-  //   PaginationResult<PublicLightVideo[]>,
-  //   EffectDrizzleQueryError
-  // >;
-
-  // getPublicById: (
-  //   id: string,
-  // ) => Effect.Effect<
-  //   PublicFullVideo,
-  //   EffectDrizzleQueryError | DBNotFoundError
-  // >;
-
-  // getStudioByChannelId: (params: {
-  //   userId: string;
-  //   channelId: string;
-  //   index: number;
-  //   size: number;
-  // }) => Effect.Effect<
-  //   PaginationResult<StudioVideo[]>,
-  //   EffectDrizzleQueryError | DBNotFoundError
-  // >;
-
-  // getStudioById: (params: {
-  //   userId: string;
-  //   channelId: string;
-  //   videoId: string;
-  // }) => Effect.Effect<StudioVideo, EffectDrizzleQueryError | DBNotFoundError>;
-
   getBySourceVideoAssetId: (params: {
     sourceVideoAssetId: string;
   }) => Effect.Effect<Video, EffectDrizzleQueryError | DBNotFoundError>;
@@ -179,6 +159,10 @@ export interface VideoRepositoryService {
   getByCurrentThumbnailAssetId: (params: {
     currentThumbnailAssetId: string;
   }) => Effect.Effect<Video, EffectDrizzleQueryError | DBNotFoundError>;
+
+  getVideoAttemptByAssetId: (params: {
+    assetId: string;
+  }) => Effect.Effect<VideoAttempt, EffectDrizzleQueryError | DBNotFoundError>;
 }
 
 export class VideoRepository extends Context.Service<
@@ -193,6 +177,58 @@ export class VideoRepository extends Context.Service<
     const sourceVideoAsset = alias(asset, "source_video_asset");
 
     return {
+      getVideoAttemptByAssetId: ({ assetId }) =>
+        db
+          .run((cl) =>
+            cl
+              .select()
+              .from(videoAttempt)
+              .where(
+                and(
+                  eq(videoAttempt.assetId, assetId),
+                  exists(
+                    cl
+                      .select()
+                      .from(video)
+                      .where(
+                        and(
+                          eq(video.id, videoAttempt.videoId),
+                          eq(video.latestAttemptId, videoAttempt.id),
+                        ),
+                      ),
+                  ),
+                ),
+              ),
+          )
+          .pipe(
+            Effect.flatMap(([res]) =>
+              UndefinedOr.match(res, {
+                onUndefined: () =>
+                  new DBNotFoundError({ message: "Video attempt not found" }),
+                onDefined: (res) => Effect.succeed(res),
+              }),
+            ),
+          ),
+      updateCurrentThumbnailAssetIdWithPendingAssetId: ({ videoId }) =>
+        db.run((db) =>
+          db
+            .update(video)
+            .set({
+              currentPlaybackId: video.pendingThumbnailAssetId,
+              pendingThumbnailAssetId: null,
+            })
+            .where(eq(video.id, videoId))
+            .returning()
+            .pipe(
+              Effect.flatMap(([res]) =>
+                UndefinedOr.match(res, {
+                  onUndefined: () =>
+                    new DBNotFoundError({ message: "Video not found" }),
+                  onDefined: (res) => Effect.succeed(res),
+                }),
+              ),
+            ),
+        ),
       setPendingThumbnailAssetId: ({ assetId, channelId, userId, videoId }) =>
         db.run((db) =>
           db
@@ -236,16 +272,15 @@ export class VideoRepository extends Context.Service<
               durationSeconds: video.duration,
             })
             .from(video)
-            .innerJoin(videoPlayback, eq(video.id, videoPlayback.videoId))
+            .innerJoin(
+              videoPlayback,
+              eq(video.currentPlaybackId, videoPlayback.id),
+            )
             .innerJoin(channel, eq(video.channelId, channel.id))
             .where(
               and(
                 eq(video.id, videoId),
-                eq(videoPlayback.status, videoPlaybackStatus.READY),
                 isNotNull(video.duration),
-                isNotNull(videoPlayback.hlsMasterKey),
-                isNotNull(videoPlayback.dashManifestKey),
-                isNotNull(videoPlayback.storyboardKey),
                 userId
                   ? or(
                       or(
@@ -309,8 +344,6 @@ export class VideoRepository extends Context.Service<
             const normalizedIndex =
               index > maxPageIndex || index < 0 ? 0 : index;
 
-            const rowsStartTime = performance.now();
-
             const rows = yield* db
               .select({
                 id: video.id,
@@ -367,17 +400,16 @@ export class VideoRepository extends Context.Service<
               },
             })
             .from(video)
-            .innerJoin(videoPlayback, eq(video.id, videoPlayback.videoId))
+            .innerJoin(
+              videoPlayback,
+              eq(video.currentPlaybackId, videoPlayback.id),
+            )
             .innerJoin(channel, eq(video.channelId, channel.id))
             .leftJoin(asset, eq(channel.currentAvatarAssetId, asset.id))
             .where(
               and(
                 eq(video.id, id),
-                eq(videoPlayback.status, videoPlaybackStatus.READY),
                 isNotNull(video.duration),
-                isNotNull(videoPlayback.hlsMasterKey),
-                isNotNull(videoPlayback.dashManifestKey),
-                isNotNull(videoPlayback.storyboardKey),
                 userId
                   ? or(
                       or(
@@ -466,23 +498,78 @@ export class VideoRepository extends Context.Service<
               ),
             ),
         ),
+      create: Effect.fn(function* (input) {
+        const param = <T>(value: T) => sql<T>`${value}`;
 
-      create: (input) =>
-        db.run((db) =>
-          db
+        const fields = {
+          id: param<VideoInsert["id"]>(input.id).as("id"),
+          channelId: channel.id,
+          sourceVideoAssetId: param<VideoInsert["sourceVideoAssetId"]>(
+            input.sourceVideoAssetId,
+          ).as("sourceVideoAssetId"),
+          title: param<VideoInsert["title"]>(input.title).as("title"),
+          description: param<VideoInsert["description"]>(
+            input.description ?? null,
+          ).as("description"),
+        } satisfies {
+          id: SQL.Aliased<VideoInsert["id"]>;
+          channelId: typeof channel.id;
+          sourceVideoAssetId: SQL.Aliased<VideoInsert["sourceVideoAssetId"]>;
+          title: SQL.Aliased<VideoInsert["title"]>;
+          description: SQL.Aliased<VideoInsert["description"]>;
+        };
+        const [videoRow] = yield* db.run((cl) =>
+          cl
             .insert(video)
-            .values(input)
-            .returning()
-            .pipe(
-              Effect.flatMap(([res]) =>
-                UndefinedOr.match(res, {
-                  onUndefined: () =>
-                    new DBNotFoundError({ message: "Video not found" }),
-                  onDefined: (res) => Effect.succeed(res),
-                }),
-              ),
-            ),
-        ),
+            .select(
+              cl
+                .select(fields)
+                .from(channel)
+                .where(
+                  and(
+                    eq(channel.id, input.channelId),
+                    eq(channel.userId, input.userId),
+                  ),
+                ),
+            )
+            .returning(),
+        );
+
+        if (!videoRow) {
+          return yield* new DBNotFoundError({ message: "Video not created" });
+        }
+
+        const [videoAttemptRow] = yield* db.run((cl) =>
+          cl
+            .insert(videoAttempt)
+            .values({
+              assetId: input.sourceVideoAssetId,
+              id: newId(),
+              videoId: videoRow.id,
+            })
+            .returning(),
+        );
+
+        if (!videoAttemptRow) {
+          return yield* new DBNotFoundError({
+            message: "Video attempt not created",
+          });
+        }
+        const [updatedVideo] = yield* db.run((cl) =>
+          cl
+            .update(video)
+            .set({ latestAttemptId: videoAttemptRow.id })
+            .where(eq(video.id, videoRow.id))
+            .returning(),
+        );
+
+        if (!updatedVideo) {
+          return yield* new DBNotFoundError({
+            message: "Video not updated",
+          });
+        }
+        return updatedVideo;
+      }, db.withTransaction),
 
       getBySourceVideoAssetId: ({ sourceVideoAssetId }) =>
         db.run((db) =>
@@ -546,7 +633,6 @@ export class VideoRepository extends Context.Service<
                 hlsMasterKey: videoPlayback.hlsMasterKey,
                 storyboardKey: videoPlayback.storyboardKey,
                 renditions: videoPlayback.renditions,
-                status: videoPlayback.status,
               },
             })
             .from(video)

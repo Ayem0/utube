@@ -76,24 +76,26 @@ const VideoProcessingDOLive = VideoProcessingDO.make(
             }
           }
         }),
-        process: (assetId: string) =>
-          Effect.gen(function* () {
-            yield* container.interceptAllOutboundHttp(self);
-            // yield* Effect.promise(() =>
-            //   state.container!.interceptAllOutboundHttp(self.raw),
-            // );
-            const body = yield* HttpBody.json({ assetId: assetId });
-            const res = yield* container
-              .start({ enableInternet: true })
-              .pipe(
-                Effect.andThen(
-                  fetch(HttpClientRequest.post("http://container/", { body })),
-                ),
-              );
-            const resJson = yield* res.json;
+        process: Effect.fnUntraced(function* ({
+          assetId,
+          sizeBytes,
+        }: {
+          assetId: string;
+          sizeBytes: number;
+        }) {
+          yield* container.interceptAllOutboundHttp(self);
+          const body = yield* HttpBody.json({ assetId: assetId });
+          const res = yield* container
+            .start({ enableInternet: true })
+            .pipe(
+              Effect.andThen(
+                fetch(HttpClientRequest.post("http://container/", { body })),
+              ),
+            );
+          const resJson = yield* res.json;
 
-            console.log("RESPONSE FROM PROCESS", resJson?.toString());
-          }),
+          console.log("RESPONSE FROM PROCESS", resJson?.toString());
+        }),
       };
     });
   }).pipe(

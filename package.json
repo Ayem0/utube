@@ -21,6 +21,7 @@
     "turbo": "^2.9.14",
     "typescript": "catalog:tooling",
     "alchemy": "catalog:alchemy",
+    "@alchemy.run/cloudflare": "catalog:alchemy",
     "effect": "catalog:effect",
     "@cloudflare/workers-types": "catalog:alchemy",
     "@effect/platform-bun": "catalog:effect",
@@ -53,7 +54,8 @@
       "@effect/sql-pg": "4.0.0"
     },
     "alchemy": {
-      "alchemy": "2.0.0-beta.83",
+      "alchemy": "2.0.0-beta.85",
+      "@alchemy.run/cloudflare": "2.0.0-beta.85",
       "@cloudflare/workers-types": "5.20261002.1"
     },
     "drizzle": {

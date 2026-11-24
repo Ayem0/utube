@@ -46,10 +46,10 @@ export class ImageProcessorConfig extends Context.Service<
         "1280x720": {
           width: 1280,
           height: 720,
-          loseless: true,
+          loseless: false,
           quality: 80,
         },
-        "640x360": { width: 640, height: 360, loseless: true, quality: 50 },
+        "640x360": { width: 640, height: 360, loseless: false, quality: 50 },
       },
     },
   });
